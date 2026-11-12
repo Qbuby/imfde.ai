@@ -1,0 +1,482 @@
+{
+ "issue": "第 8 期",
+ "snapshot": "2026-11-12",
+ "published": "2026-11-12",
+ "replaces": "第 7 期（三条判断均为自有管线自审，已撤回）",
+ "revision": "v4 — 可读性重写：正文 6399→1911 字，首屏数据 15→7 个，内部术语清零；严谨性搬到本证据卡",
+ "window": {
+  "label": "2026-10-29 至 2026-11-11（案例不限窗口，6 篇在 2026-11-12 均可访问）",
+  "start": "2026-10-29",
+  "end": "2026-11-11"
+ },
+ "judgments": [
+  {
+   "id": "J1",
+   "level": "暂定结论",
+   "headline": "同样在招八百多个岗位，Databricks 的 FDE 是 OpenAI 的三倍；差别在招什么人，不在招多少",
+   "likelihood": "几乎确定",
+   "confidence": "中",
+   "confidence_basis": "两板全量快照，条数可逐行复核；但「两种生意」的解释只凭岗位结构，未取得毛利与合同数据。",
+   "cross_period": {
+    "state": "首次",
+    "note": "此前各期只报单家岗位数，未做同口径对照。"
+   },
+   "facts": [
+    {
+     "text": "Databricks 招聘板 2026-11-12 快照 912 条在架；OpenAI 同日 822 条在架。两家总量相差 11%。",
+     "source": "S7, S8",
+     "source_code": "API",
+     "scope": {
+      "sample": "两板全量在架",
+      "window": "2026-11-12 单日快照",
+      "denominator": "912 / 822"
+     },
+     "stock": "stock"
+    },
+    {
+     "text": "FDE 家族：Databricks 118 条（占全板 12.9%），OpenAI 39 条（占全板 4.7%）。占比相差 2.7 倍，条数相差 3.0 倍。",
+     "source": "S7, S8",
+     "source_code": "API",
+     "scope": {
+      "sample": "标题含 FDE / Forward Deploy / Deployment Strategist；OpenAI 另限 Forward Deployed Engineering 部门",
+      "window": "同上",
+      "denominator": "118 / 912 与 39 / 822"
+     },
+     "stock": "stock"
+    },
+    {
+     "text": "Databricks 的 118 条按职能切成六条序列：工程 81、策略/产品 12、管理 8、架构/TPM 8、商业/签约 8、SI 伙伴 1。非工程 37 条（31%）。按标题去重后 118 条是 54 个唯一岗位——工程岗按城市复制，策略岗按行业复制。",
+     "source": "S8",
+     "source_code": "API",
+     "scope": {
+      "sample": "118 条 FDE 家族挂出",
+      "window": "同上",
+      "denominator": "118 → 54"
+     },
+     "stock": "stock"
+    },
+    {
+     "text": "Databricks 的 FDE 岗覆盖 48 个城市或地区；OpenAI 的 39 条覆盖 13 个（纽约 11、旧金山 10、东京 3、西雅图 3，其余为慕尼黑、巴黎、苏黎世、马德里、伦敦、新加坡、悉尼、首尔、阿布扎比各 1–2 条）。",
+     "source": "S7, S8",
+     "source_code": "API",
+     "scope": {
+      "sample": "两家 FDE 家族岗的工作地点字段",
+      "window": "同上",
+      "denominator": "48 / 13"
+     },
+     "stock": "stock"
+    },
+    {
+     "text": "OpenAI 的 39 条全部挂在 Forward Deployed Engineering 部门下：行业标签 13 条（生命科学 3、医疗 3、法律 2、金融 2、网络 2、半导体 1），管理或 Lead 11 条，两者并集 21 条（54%）。没有策略、签约、架构、伙伴序列。",
+     "source": "S7",
+     "source_code": "API",
+     "scope": {
+      "sample": "39 条 FDE 岗",
+      "window": "同上",
+      "denominator": "39；并集 13 + 11 − 3 重复"
+     },
+     "stock": "stock"
+    },
+    {
+     "text": "OpenAI 把交付管理放在销售组织下而不放在 FDE 下：Go To Market 有 AI Deployment Manager 6 条（旧金山 3、纽约 1、新加坡 1、伦敦 1）、Applied AI Delivery Lead 5 条（旧金山、山景城、伦敦、纽约、美洲远程）。Databricks 的对应职能在 FDE 序列内（Deployment Lead、Engagement Manager）。",
+     "source": "S7, S8",
+     "source_code": "API",
+     "scope": {
+      "sample": "两板中交付管理类岗的所属部门",
+      "window": "同上",
+      "denominator": "11 / 8"
+     },
+     "stock": "stock"
+    }
+   ],
+   "reasoning": "两家总量差 11%，FDE 占比差 2.7 倍——不是规模差异，是投入结构差异。更关键的是切法：Databricks 按职能切，策略、签约、架构、TPM、伙伴各成序列，覆盖 48 城；OpenAI 按市场切，六个行业标签加 13 个城市，交付管理另挂在 GTM 下。按职能切意味着卖的是「派人把事做成」，所以要签约、要 TPM、要伙伴管理，覆盖越广越好；按市场切意味着卖的是「这个行业的解法」，所以每个垂直配懂行的人，城市只设在有客户的 hub。",
+   "inference_step": "「两种切法对应两种成本结构——前者人力密集、后者产品密集」是推断。可确认的只有岗位结构与覆盖范围；毛利、人均产出、合同条款本期均未取得。",
+   "assumptions": [
+    {
+     "text": "岗位标题能代理职能与市场属性。",
+     "if_wrong": "若「(FDE), Healthcare」只是招聘时的地点标签而非行业归属，OpenAI 的「按市场切」会削弱，本条退化为「OpenAI 的 FDE 更小更集中」。"
+    },
+    {
+     "text": "两家招聘板都是「在架全量」，未隐藏岗位。",
+     "if_wrong": "2.7 倍的差距需要一方漏掉一半以上 FDE 岗才会消失——若某板系统性隐藏了服务类岗位，本条方向会变。"
+    }
+   ],
+   "alternatives": [
+    {
+     "text": "H2：Databricks 是数据平台公司，客户买的是「帮我把平台用起来」，本来就比模型公司需要更多服务人力。这与「是否重视 FDE」无关，只反映业务类型。",
+     "distinguish": "部分成立，且这正是本条要说的：FDE 强度由业务类型决定。若成立，则「OpenAI 应该追上 Databricks」这个推论不成立——两家在各自的合理配置上。区分方法：看 Databricks 的 FDE 是否也服务非平台客户；本期未查。"
+    },
+    {
+     "text": "H3：OpenAI 把交付人力放在合作伙伴那里，不自建。",
+     "distinguish": "未排除。若成立，OpenAI 的实际交付人力被低估，2.7 倍会缩小。可区分：查 OpenAI 的解决方案集成伙伴计划与联合交付案例；本期未查。"
+    }
+   ],
+   "contrary": "Databricks 本身就是服务密集的数据平台公司（912 条里 Go To Market 181、Applied AI 123、Scaling 93），FDE 强度高可能一直如此，不是新趋势。本期无历史快照，不能判断「上升」。",
+   "next_check": {
+    "who": "本期编辑台",
+    "when": "2026-11-26 前",
+    "observable": "用完全相同的口径（标题匹配 + 部门归属 + 全板占比）拉 Palantir 与 Scale AI 的在架全量。若 Palantir 的 FDE 占比接近 13%，则 Databricks 是标准强度、OpenAI 是低配；若接近 5%，则 OpenAI 才是常态，Databricks 是重资产异类。两种结果都会改写本条的解释，而不是只改数字。"
+   },
+   "blind_spot": "只覆盖两家公司，不构成行业分布。Databricks 的 updated_at 不是首次挂出日，因此本条只用条数不用时间。OpenAI 的行业标签由标题判断，未读 JD 确认其归属。"
+  },
+  {
+   "id": "J2",
+   "level": "暂定结论",
+   "headline": "OpenAI 的 FDE 团队是最近三个月才搭起来的：三条互不相干的线索撞在同一季度",
+   "likelihood": "很可能",
+   "confidence": "中",
+   "confidence_basis": "发布日期可逐条复核，四条痕迹相互独立；但依赖 publishedAt 的字段语义，且只有一家公司。",
+   "cross_period": {
+    "state": "首次",
+    "note": "此前各期只报在招总量，未看发布时间分布。"
+   },
+   "facts": [
+    {
+     "text": "39 条 FDE 岗里 30 条发布于 2026-08 之后（77%），其中 9 条落在 2026-11（本期新增，按发布日计）。",
+     "source": "S7",
+     "source_code": "API",
+     "scope": {
+      "sample": "39 条 FDE 岗",
+      "window": "按 publishedAt 计",
+      "denominator": "30 / 39"
+     },
+     "stock": "new"
+    },
+    {
+     "text": "11 条管理或 Lead 岗里 8 条发布于 2026-09 之后；最早一条 FDE 岗发布于 2025-09-16，说明该板已收录一年以上。",
+     "source": "S7",
+     "source_code": "API",
+     "scope": {
+      "sample": "11 条管理岗 / 39 条全部",
+      "window": "同上",
+      "denominator": "8 / 11"
+     },
+     "stock": "mixed"
+    },
+    {
+     "text": "Go To Market 下的 AI Deployment Manager 6 条发布于 2026-10-13 至 11-05；Applied AI Delivery Lead 5 条发布于 2026-09-29 至 11-05。",
+     "source": "S7",
+     "source_code": "API",
+     "scope": {
+      "sample": "11 条 GTM 交付管理岗",
+      "window": "2026-09-29 至 11-05",
+      "denominator": "11"
+     },
+     "stock": "new"
+    },
+    {
+     "text": "对照：2025-09 至 2026-07 的近一年里，该板只挂出 9 条 FDE 岗。",
+     "source": "S7",
+     "source_code": "API",
+     "scope": {
+      "sample": "39 条中发布于 2026-08 之前者",
+      "window": "2025-09-16 至 2026-07-31",
+      "denominator": "9"
+     },
+     "stock": "stock"
+    }
+   ],
+   "reasoning": "四条痕迹各自独立：FDE 工程岗、FDE 管理岗、GTM 部署经理、Applied AI 交付主管，全部集中在 2026-09 至 11。一个已运转多年的团队不会在三个月里挂出 77% 的岗位、同时把 28% 设成管理层、再在销售组织下另开 11 个交付管理岗。三件事同时发生于同一季度，指向组织扩容而非零星补缺。",
+   "inference_step": "「因此 OpenAI 的 FDE 在这一季度从精锐小队转成有管理层的组织」是推断。可确认的只有发布日期分布；「转成」需要读到汇报关系与团队规模才能证实。",
+   "assumptions": [
+    {
+     "text": "publishedAt 是首次挂出日，不是最近更新日。",
+     "if_wrong": "若它是更新日，所有岗位都可能是老岗刷新，「三个月搭起来」不成立，本条应整条撤回。"
+    },
+    {
+     "text": "同一岗位在多城市重复挂出时，发布日相同或接近。",
+     "if_wrong": "若逐城分批发布，发布日期分布会被拉长，但仍然落在 8 月之后，结论方向不变。"
+    }
+   ],
+   "alternatives": [
+    {
+     "text": "H2：这些是替换离职，不是新增。",
+     "distinguish": "无法逐条区分。但三个月替换 77% 的岗位并同时新设三层管理岗，不合常理；若成立，说明流失率极高，同样是重要信号。"
+    },
+    {
+     "text": "H3：OpenAI 一直这样招，只是这个招聘板最近才被收录完整。",
+     "distinguish": "部分排除：板上最早一条 FDE 岗发布于 2025-09-16，已收录一年以上；若一直这样招，2025-09 至 2026-07 应有更多条目，实测只有 9 条。"
+    }
+   ],
+   "contrary": "9 条更早的岗位存在，说明 FDE 团队不是零基础——这是扩张，不是新建。另一侧：本期只有发布日期，没有入职人数，挂出来不等于招到。",
+   "next_check": {
+    "who": "本期编辑台",
+    "when": "2026-11-26 前",
+    "observable": "读 2025 年那 4 条最早岗位的 JD（东京、政府、旧金山、纽约），看是否已写明 Deployment Lead 层级与汇报关系。若已写明，则「转成」不成立，只能写「扩张」；若未写明、只有个人贡献岗，则支持「这一季度才开始分层」。"
+   },
+   "blind_spot": "只有一家公司，不能推及行业。publishedAt 的语义未向 OpenAI 核实，仅按 Ashby 公开字段解读。未取得入职人数，因此「搭成组织」是招聘口径而非编制口径。"
+  },
+  {
+   "id": "J3",
+   "level": "观察",
+   "headline": "公开案例的 6 个成效数字，5 个算不出来",
+   "likelihood": "可能性偏低",
+   "confidence": "低",
+   "confidence_basis": "6 篇逐页可复核、计数无歧义；但只有 2 篇含数字，且没有可比的行业基线，因此只能算观察。",
+   "cross_period": {
+    "state": "改判",
+    "note": "第 6 期曾判断「公开案例量化结果比例偏低」并归因于厂商不披露；本期逐篇读完后，问题不是有没有数字，而是数字没有基线。"
+   },
+   "facts": [
+    {
+     "text": "通读 6 篇客户案例页，来自 4 家厂商：Sierra 1 篇（Guardian）、Cresta 2 篇（Brinks Home、Aqua Finance）、Glean 2 篇（Uniqus、Harvey）、Devin 1 篇（Mercor）。",
+     "source": "S1-S6",
+     "source_code": "PUB",
+     "scope": {
+      "sample": "人工选样，优先近两周有公开动作的厂商",
+      "window": "不限；6 篇在 2026-11-12 均可访问",
+      "denominator": "6"
+     },
+     "stock": "stock"
+    },
+    {
+     "text": "按页分：2 篇有成效数字（均为 Cresta）、1 篇只有覆盖声明（Guardian，写明要覆盖年约 100 万通牙科核验电话，但未写已上线多少、已处理多少）、3 篇无任何成效描述（Glean 2、Devin 1）。",
+     "source": "S1-S6",
+     "source_code": "PUB",
+     "scope": {
+      "sample": "6 篇",
+      "window": "同上",
+      "denominator": "2 + 1 + 3 = 6"
+     },
+     "stock": "stock"
+    },
+    {
+     "text": "按指标分：6 个成效指标里 4 个来自 Brinks 一篇（NPS +30pt、质检成本 −50%、转账率 30%→8%、平均通话时长 −8%），2 个来自 Aqua（每小时催回金额 +61%、通话后处理时间 −50%）。",
+     "source": "S2, S3",
+     "source_code": "PUB",
+     "scope": {
+      "sample": "6 篇中的全部成效数字",
+      "window": "同上",
+      "denominator": "6，其中 4 个同源"
+     },
+     "stock": "stock"
+    },
+    {
+     "text": "6 个指标里，带起点值的 1 个（转账率 30%→8%）；带观察窗口的 1 个（Brinks「上线后 6 周」）；带样本量或标准差的 0 个。Aqua 一篇无发布日期、无观察窗口。",
+     "source": "S2, S3",
+     "source_code": "PUB",
+     "scope": {
+      "sample": "6 个成效指标",
+      "window": "同上",
+      "denominator": "6"
+     },
+     "stock": "stock"
+    },
+    {
+     "text": "6 篇里 0 篇写明这套部署实际处理了多少量。Brinks 未写坐席数或通话量；Aqua 未写坐席数或案件量，其「under $7 billion」是贷款组合规模。",
+     "source": "S1, S2, S3",
+     "source_code": "PUB",
+     "scope": {
+      "sample": "6 篇中的部署量口径",
+      "window": "同上",
+      "denominator": "6"
+     },
+     "stock": "stock"
+    }
+   ],
+   "reasoning": "6 个指标里 5 个只有单向变化幅度，没有起点值——没有起点值就算不出变化率的分母；0 个带样本量，就看不出这个变化是否在正常波动范围内；0 篇写处理量，就算不出总收益。三项加起来，这些数字能当宣传语，不能当验收证据。",
+   "inference_step": "「因此公开案例不能支撑跨厂商比较或 ROI 测算」限定在这 6 篇内成立，因为缺基线即无法计算；推到「所有 FDE 案例」则是外推，本期不支持——有效样本只有 2 篇，且同属一家厂商。",
+   "assumptions": [
+    {
+     "text": "这 6 篇是随机选的吗？不是。选样偏向近两周有公开动作的厂商，因此不能代表案例页这一体裁的整体。",
+     "if_wrong": "若改成随机抽样，需重抽并重算；本条的所有计数只对这 6 篇成立。"
+    },
+    {
+     "text": "Brinks 的「上线后 6 周」适用于全部 4 个指标。",
+     "if_wrong": "若只适用于转账率，则其余 3 个连窗口都没有，本条结论更强而非更弱。"
+    }
+   ],
+   "alternatives": [
+    {
+     "text": "H2：内容团队按模板写，模板里本来就没有基线字段。",
+     "distinguish": "本期无法区分「模板如此」与「有意如此」。但两种情况下读者处境相同：都算不出来。因此本条不依赖动机判断。"
+    },
+    {
+     "text": "H3：Cresta 的指标来自产品自带埋点，天然可测；Sierra 的成效要跑满一年才出得来。",
+     "distinguish": "可区分：若 H3 成立，Cresta 其余案例也应普遍给起点值。查 Cresta 另外 3 篇即可——都带则本条降级为「Cresta 一家做得比同行好」；都不带则 H3 不成立。本期未查。"
+    }
+   ],
+   "contrary": "Brinks 给出了 30%→8% 的起点值，说明这些字段可写，不是技术障碍。另一侧：Aqua 的「100% 通话被监听、评分、辅导」是能力陈述不是成效，却排在结果区，读者容易把覆盖率误读为收益。",
+   "next_check": {
+    "who": "本期编辑台",
+    "when": "2026-11-26 前",
+    "observable": "读 Cresta 另外 3 篇客户案例页，逐篇记录是否给出起点值。若 3 篇都给，本条降级为「Cresta 一家做得比同行好」；若 3 篇都不给，本条扩到 9 篇；若只给部分，按页记录比例，不再使用「0 个」这类全称。"
+   },
+   "blind_spot": "6 篇为人工选样，非全量；有效样本只有 2 篇且同属 Cresta。自有抓取管线的案例关联字段自 2026-08-26 起停写，本期案例无法从库内取，只能逐页读，这也是样本只有 6 篇的直接原因。"
+  }
+ ],
+ "ledger": [
+  {
+   "issue": "第 5 期",
+   "judgment": "非工程类 FDE 岗位开始出现",
+   "state": "兑现",
+   "note": "本期给出 Databricks 六序列、OpenAI 无策略/签约序列的具体结构。当时只有单面信号、无口径。"
+  },
+  {
+   "issue": "第 6 期",
+   "judgment": "公开案例量化结果比例偏低",
+   "state": "证伪",
+   "note": "原归因为「厂商不披露」。本期逐篇读完，数字是有的，问题是不可复算：6 个指标里 5 个没有起点值。归因改写。"
+  },
+  {
+   "issue": "第 7 期",
+   "judgment": "案例关联停写 / 新管理岗集中 / 5 条案例未入库",
+   "state": "作废",
+   "note": "三条均为自有管线自审，不构成 FDE 情报。本期撤回，管线状态降为首屏脚注，不再占用判断位。"
+  },
+  {
+   "issue": "第 8 期",
+   "judgment": "两家 FDE 强度差 2.7 倍、切法不同",
+   "state": "追踪中",
+   "note": "下期以 Palantir、Scale AI 同口径占比为判据：接近 13% 则 OpenAI 是低配，接近 5% 则 Databricks 是重资产异类。"
+  },
+  {
+   "issue": "第 8 期",
+   "judgment": "OpenAI 的 FDE 在 2026 Q4 才分层",
+   "state": "追踪中",
+   "note": "下期以 2025 年 4 条早期 JD 是否已写 Deployment Lead 层级为判据；已写则降级为「扩张」。"
+  }
+ ],
+ "sources": [
+  {
+   "id": "S1",
+   "type": "客户案例页",
+   "name": "Sierra × Guardian Life",
+   "url": "https://sierra.ai/customers/guardian",
+   "fetch": "公开网页",
+   "status": "verified",
+   "note": "发布于 2026-11-05"
+  },
+  {
+   "id": "S2",
+   "type": "客户案例页",
+   "name": "Cresta × Brinks Home",
+   "url": "https://cresta.com/customers/brinks-home",
+   "fetch": "公开网页",
+   "status": "verified",
+   "note": "页面无发布日期"
+  },
+  {
+   "id": "S3",
+   "type": "客户案例页",
+   "name": "Cresta × Aqua Finance",
+   "url": "https://cresta.com/customers/aqua-finance",
+   "fetch": "公开网页",
+   "status": "verified",
+   "note": "无发布日期、无观察窗口"
+  },
+  {
+   "id": "S4",
+   "type": "客户案例页",
+   "name": "Glean × Uniqus",
+   "url": "https://www.glean.com/resources/customer-stories/uniqus",
+   "fetch": "公开网页",
+   "status": "verified",
+   "note": "播客体，无数字"
+  },
+  {
+   "id": "S5",
+   "type": "客户案例页",
+   "name": "Glean × Harvey",
+   "url": "https://www.glean.com/resources/customer-stories/harvey-unprompted",
+   "fetch": "公开网页",
+   "status": "verified",
+   "note": "播客体，无数字"
+  },
+  {
+   "id": "S6",
+   "type": "客户案例页",
+   "name": "Devin × Mercor",
+   "url": "https://devin.ai/customers/mercor",
+   "fetch": "公开网页",
+   "status": "verified",
+   "note": "正文仅公司简介"
+  },
+  {
+   "id": "S7",
+   "type": "招聘板 API",
+   "name": "OpenAI（Ashby）822 条在架",
+   "url": "https://api.ashbyhq.com/posting-api/job-board/openai",
+   "fetch": "API",
+   "status": "verified",
+   "note": "2026-11-12 快照；publishedAt 为该板字段"
+  },
+  {
+   "id": "S8",
+   "type": "招聘板 API",
+   "name": "Databricks（Greenhouse）912 条在架",
+   "url": "https://boards-api.greenhouse.io/v1/boards/databricks/jobs",
+   "fetch": "API",
+   "status": "verified",
+   "note": "2026-11-12 快照；updated_at 非首次挂出日"
+  },
+  {
+   "id": "S9",
+   "type": "JD 全文",
+   "name": "Databricks Delivery Partner Manager, FDE",
+   "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8920618002",
+   "fetch": "公开网页",
+   "status": "verified",
+   "note": "个人贡献岗"
+  },
+  {
+   "id": "S10",
+   "type": "JD 全文",
+   "name": "Databricks Forward Deployed Strategist",
+   "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8922945002",
+   "fetch": "公开网页",
+   "status": "verified",
+   "note": "Sydney"
+  }
+ ],
+ "self_check": {
+  "content": {
+   "R1": "pass — 10 个来源 ID，逐条标注获取方式（公开网页 / API）与快照日",
+   "R2": "pass — 未使用绕墙材料；全部为厂商公开页与公开招聘 API",
+   "R3": "pass — 912/822、118/39、按页 2+1+3 与按指标 6 均给出",
+   "R4": "pass — 区分「在架」「发布」「上线后 6 周」；未把招聘写成已建成",
+   "R5": "pass — 写「未读」「未写」，未写「效果为零」",
+   "R6": "pass — 事实/判断/假设/替代/下期核对分区",
+   "R7": "pass — 每个数字带样本/窗口/分母",
+   "R8": "pass — 招聘板标存量快照；OpenAI 发布日单独标本期新增",
+   "R9": "pass — J3 单源、有效样本 2 篇，维持观察",
+   "R10": "pass — 每条含替代解释与区分方法；J1 的 H2 指向本条自身解释",
+   "R11": "pass — 全部为客户案例页与招聘页，均为厂商自述；方法区声明立场",
+   "R12": "pass — 第 7 期标「作废」并说明原因，不假装连续",
+   "R13": "pass — 三条下期核对含谁/何时/看什么与判定阈值",
+   "R14": "pass — 首屏披露样本量 6、人工选样与案例关联停写"
+  },
+  "display": {
+   "D1": "pass — 两轮独立复核：第一轮指出三条 L1 是读后记录而非判断，已把判断对象换成 FDE 市场本身",
+   "D2": "pass — L1 三条独立成立",
+   "D3": "pass — 事实句到来源表 ≤1 次点击",
+   "D4": "pass — 含数字段落无缺口径",
+   "D5": "pass — 关样式后分区文字仍在",
+   "D6": "pass — likelihood 取七档，confidence 独立行",
+   "D7": "pass — 推理链 + 替代 + 确定度来源 + 推翻条件",
+   "D8": "pass — 反证区默认展开",
+   "D9": "pass — 每条含跨期状态与下期核对",
+   "D10": "pass — 零图表、零进度条"
+  },
+  "interpretation": {
+   "I1": "pass — 每条标 inference_step",
+   "I2": "pass — J1 明写只覆盖两家；J3 明写有效样本 2 篇",
+   "I3": "pass — 假设含若错后果",
+   "I4": "pass — 替代含区分方法，无法区分的明确写「本期无法区分」",
+   "I5": "pass — confidence 附依据",
+   "I6": "pass — 「可复核」与「推断」分列",
+   "I7": "pass — 推翻条件含日期与阈值",
+   "I8": "pass — 不写意图；J3 的动机判断留空",
+   "I9": "pass — 无采购/招聘/定价建议",
+   "J5": "J1 有诊断性证据：两板同日全量、同一分类规则下的跨公司对照；J2 有四条独立痕迹同向；J3 只有 2 篇同源样本，维持观察"
+  },
+  "independent_review": {
+   "round1": "指出：J1 的交集论证无基线、机制方向反了、Guardian 与 Aqua 编码标准不一致、指标计放大单篇权重；J2 的 52% 在合并行业版本后反转消失，复制方式只是算术重述，Conf 高与 H4 未排除不自洽，L1 四类与正文五桶不一致；J3 把 co-deliver 写成转给、专门被 Services 同族反驳、跨厂商并置。",
+   "round1_fix": "全部采纳但修得不彻底，见第二轮。",
+   "round2": "指出：改后仍是「高置信度放计数、低置信度放判断」，读者记住的是方法而不是 FDE；J1 的「三者缺一」是新的绝对规则；J1 假设与下期核对矛盾；J2 的 48/157 是跨公司拼盘，六序列只属于 Databricks；J3 的「复制」把推断写进观察位。",
+   "round2_fix": "结构性重写：判断对象从「我数了什么」换成「FDE 市场是什么样」。J1 改为岗位总量相近下的 2.7 倍 FDE 强度差与两种切法；J2 改为 OpenAI 四条独立痕迹集中在同一季度的建制时点；J3 降为观察、写明有效样本 2 篇同源，并把「动机」整段留空。",
+   "not_adopted": "第三轮建议删除 J3。未采纳：它是唯一一条关于「买方能否验证成效」的判断，且已标为观察、已写明有效样本 2 篇。"
+  }
+ },
+ "_note": "本文件是第 8 期的证据卡：每条判断的事实、口径、假设、替代解释、反证与下期核对。index.html 由它生成。"
+}
