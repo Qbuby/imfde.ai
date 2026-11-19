@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "imfde",
+  "main": "./workers/app.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./build/client",
+    "not_found_handling": "none"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "imfde",
+      "database_id": "99b2f49c-366f-499a-a742-a3e2cc9248bd",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // www.imfde.ai is served by a zone Workers route + proxied CNAME, so it is
+  // intentionally not listed here; binding it as a custom domain would clash
+  // with that existing record.
+  "routes": [{ "pattern": "imfde.ai", "custom_domain": true }]
+}

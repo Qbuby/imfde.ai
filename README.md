@@ -1,49 +1,88 @@
-# imfde.ai
+# iMFDE
 
-FDE（Forward Deployed Engineer）行业情报。
+FDE（Forward Deployed Engineer）的展示网络。一个主页、一份作品集、一条能持续更新的动态。
 
-不是岗位聚合，也不是厂商宣传的搬运。每一期从一个具体问题出发，用公开一手材料（厂商客户案例页、公开招聘板全量、岗位说明全文）回答它，然后写下三条可以被下期推翻的结论。
+线上：[imfde.ai](https://imfde.ai)
 
-## 这一期
+## 这个产品是什么
 
-**第 8 期 · 2026-11-12**
+FDE 做的事通常散在 GitHub、LinkedIn、demo 视频和聊天记录里。iMFDE 把它们收拢到一个可以搜索、可以分享、可以写进简历和邮件签名的地址：`imfde.ai/@你的名字`。
 
-同样在招八百多个岗位，Databricks 的 FDE 是 OpenAI 的三倍。
+它刻意不是这些东西：
 
-差别不在数量，在招什么人。Databricks 的 118 个 FDE 岗里只有 81 个是工程师，其余是定方案、谈合同、管进度、管架构，还有一个岗全部工作就是「把项目转给系统集成商一起做」。OpenAI 的 39 个里 28 个一线工程师、11 个管理或带队岗，按行业分开招，没有方案岗也没有人管外包。
+- 不是交易市场：平台不经手合同、不收款、不做托管
+- 不是认证机构：不给信用分、不给能力等级、不给排行榜
+- 不是招聘网站：主页长得像作品集，不像简历
 
-同样写着 FDE，在 Databricks 是流水线上的一道工序，在 OpenAI 是行业小队里的一个人。
+平台只做一件事：把可观察的信息展示清楚，让访问者自己判断。所以每个页面都会标明信息从哪来——本人自述、外部链接、平台行为，三者分开列。
 
-打开 [`docs/imfde-v2/index.html`](docs/imfde-v2/index.html) 看全文。单文件，不依赖构建，直接用浏览器打开即可。
+## 技术栈
+
+- **Cloudflare Workers** 承载全部请求（SSR）
+- **D1** 存数据，SQLite 语法
+- **React Router v7** framework mode，服务端渲染 + 类型化路由
+- **Tailwind CSS v4**，设计 token 写在 `app/app.css`
+- 字体自托管（Inter + Instrument Sans），不依赖外部 CDN
+
+## 本地跑起来
+
+```bash
+npm install
+npx wrangler d1 migrations apply imfde --local   # 建本地库
+printf 'SECRET_KEY=%s
+' "$(openssl rand -hex 32)" > .dev.vars
+npm run dev                                      # 改代码即时生效
+```
+
+想看和线上一致的构建产物：
+
+```bash
+npm run build
+npx wrangler dev --port 8866 --local
+```
+
+## 部署
+
+```bash
+npx wrangler d1 create imfde                 # 首次：把 id 填进 wrangler.jsonc
+npx wrangler d1 migrations apply imfde --remote
+npx wrangler secret put SECRET_KEY           # 会话 cookie 的 HMAC 密钥
+npm run deploy
+```
+
+`www.imfde.ai` 由 zone 里的 Workers route 加一条代理 CNAME 提供，不写进 `routes`，否则会和已有记录冲突。
 
 ## 目录
 
 ```
-docs/
-  imfde-v2/
-    index.html                  第 8 期正文（单页，无 JS）
-    intel.css                   样式
-    issue-08-evidence-card.json 证据卡：每条判断的事实、口径、假设、替代解释、反证
-    ACCEPTANCE.md               验收报告：机器可检 25 项 + 三轮独立复核记录
-  standards/
-    00-paywall-policy.md        信源政策：只用合法公开渠道，不绕付费墙
-    01-content.md               内容标准 R1–R14
-    02-display.md               展示标准 P1–P10 / D1–D10
-    03-interpretation.md        解读标准 I1–I9 / J1–J9
+app/
+  routes/           每个页面对应一个路由模块
+    shell.tsx       导航与页脚，所有登录态页面都挂在它下面
+    home.tsx        落地页（未登录）/ 动态流（已登录）
+    profile.tsx     /@handle 主页
+    project.tsx     /projects/{slug} 作品详情
+    post.tsx        /posts/{id} 动态详情与评论
+    discover*.tsx   发现 FDE 与发现作品
+    settings-*.tsx  主页、外部账号、隐私
+    actions-*.tsx   点赞 / 关注 / 评论（resource route）
+  lib/
+    db.server.ts    D1 绑定与查询 helpers
+    auth.server.ts  PBKDF2 密码、HMAC 会话 cookie
+    queries.server.ts 列表与搜索
+    format.ts       时间、计数、封面配色
+  components/       卡片、头像、封面
+workers/app.ts      Worker 入口，把请求交给 React Router
+migrations/         D1 schema
+docs/PRD.md         产品需求文档 v0.1
 ```
 
-## 三条规矩
+## 四条不能破的规矩
 
-1. **每个数字带口径**：样本、窗口、分母，缺一个就不写。
-2. **区分「可能性」和「信心」**：前者是事情会不会这样，后者是我有多确定；两件事分开标。
-3. **写下期怎么推翻它**：每条判断附带一个可判定的核对项，下期兑现、降级或作废，改判留痕。
-
-## 来源
-
-全部是公开一手材料。不引用二手转述，不使用绕墙手段获取内容，不以自有数据库统计作为判断主体。
-
-第 8 期用到的材料：Databricks 与 OpenAI 招聘板全量（2026-11-12 同日）、2 份岗位说明全文、6 篇客户案例页。
+1. **不合成评分。** 关注数、点赞数、作品数分别显示，不汇总成一个总分，也不做等级。
+2. **注明信息来源。** 自述、外部链接、平台行为在数据层就是不同字段，展示时不许混成「已认证」。
+3. **不经手交易。** 没有订单、支付、托管、佣金，也不展示成交与收入。
+4. **先展示，再判断。** 页面给事实，不给结论。
 
 ## 许可
 
-MIT，见 [LICENSE](LICENSE)。
+MIT。

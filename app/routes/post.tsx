@@ -1,0 +1,233 @@
+import type { Route } from "./+types/post";
+import { Form, Link, useFetcher } from "react-router";
+import { getMe } from "~/lib/session.server";
+import { many, one } from "~/lib/db.server";
+import { Avatar } from "~/components/media";
+import { HeartIcon } from "~/components/cards";
+import { absoluteDate, compact, relativeTime } from "~/lib/format";
+
+const KIND_LABEL: Record<string, string> = {
+  show: "Show Work",
+  build: "Build in Public",
+  thought: "Thoughts",
+  discussion: "Discussion",
+};
+
+interface PostDetail {
+  id: string;
+  kind: string;
+  body: string;
+  created_at: number;
+  author_id: string;
+  handle: string;
+  display_name: string;
+  avatar_url: string | null;
+  headline: string | null;
+  project_slug: string | null;
+  project_title: string | null;
+  likes: number;
+}
+
+export async function loader({ request, context, params }: Route.LoaderArgs) {
+  const me = await getMe(context, request);
+
+  const post = await one<PostDetail>(
+    context,
+    `SELECT po.id, po.kind, po.body, po.created_at, po.author_id,
+            u.handle, p.display_name, p.avatar_url, p.headline,
+            pr.slug AS project_slug, pr.title AS project_title,
+            (SELECT COUNT(*) FROM reactions r
+              WHERE r.target_type='post' AND r.target_id = po.id AND r.type='like') AS likes
+       FROM posts po
+       JOIN users u ON u.id = po.author_id
+       JOIN profiles p ON p.user_id = po.author_id
+       LEFT JOIN projects pr ON pr.id = po.project_id
+      WHERE po.id = ?1 AND po.deleted_at IS NULL`,
+    params.id,
+  );
+
+  if (!post) throw new Response("Not Found", { status: 404 });
+
+  const comments = await many<{
+    id: string;
+    body: string;
+    created_at: number;
+    author_id: string;
+    handle: string;
+    display_name: string;
+    avatar_url: string | null;
+  }>(
+    context,
+    `SELECT c.id, c.body, c.created_at, c.author_id,
+            u.handle, p.display_name, p.avatar_url
+       FROM comments c
+       JOIN users u ON u.id = c.author_id
+       JOIN profiles p ON p.user_id = c.author_id
+      WHERE c.post_id = ?1 AND c.deleted_at IS NULL
+      ORDER BY c.created_at ASC`,
+    post.id,
+  );
+
+  const liked = me
+    ? await one<{ n: number }>(
+        context,
+        `SELECT COUNT(*) AS n FROM reactions
+          WHERE user_id = ?1 AND target_type='post' AND target_id = ?2 AND type='like'`,
+        me.id,
+        post.id,
+      )
+    : null;
+
+  return {
+    me,
+    post: { ...post, time_label: relativeTime(post.created_at) },
+    comments: comments.map((c) => ({ ...c, time_label: relativeTime(c.created_at) })),
+    liked: Boolean(liked?.n),
+  };
+}
+
+export const meta: Route.MetaFunction = ({ data }) => {
+  if (!data?.post) return [{ title: "动态不存在 — iMFDE" }];
+  const body = data.post.body.slice(0, 150);
+  return [
+    { title: `${data.post.display_name}：${data.post.body.slice(0, 40)} — iMFDE` },
+    { name: "description", content: body },
+    { property: "og:title", content: `${data.post.display_name} on iMFDE` },
+    { property: "og:description", content: body },
+    { property: "og:type", content: "article" },
+  ];
+};
+
+export default function Post({ loaderData }: Route.ComponentProps) {
+  const { me, post, comments, liked } = loaderData;
+  const likeFetcher = useFetcher();
+  const isLiked = likeFetcher.formData
+    ? likeFetcher.formData.get("intent") === "like"
+    : liked;
+
+  return (
+    <article className="mx-auto max-w-[680px]">
+      <Link
+        to={`/@${post.handle}`}
+        className="flex items-center gap-3 transition hover:opacity-80"
+      >
+        <Avatar name={post.display_name} src={post.avatar_url} size={44} />
+        <div>
+          <p className="text-[15px] font-medium">{post.display_name}</p>
+          <p className="font-mono text-[11.5px] tracking-wide text-[var(--color-faint)]">
+            @{post.handle} · {post.time_label}
+          </p>
+        </div>
+        <span className="chip chip-teal ml-auto !h-[26px]">
+          {KIND_LABEL[post.kind] ?? post.kind}
+        </span>
+      </Link>
+
+      <div className="mt-5 whitespace-pre-wrap text-[17px] leading-[1.8] text-[var(--color-ink)]">
+        {post.body}
+      </div>
+
+      {post.project_slug && (
+        <Link
+          to={`/projects/${post.project_slug}`}
+          className="mt-5 flex items-center gap-2.5 rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-sunken)] px-4 py-3 text-[13.5px] transition hover:border-[var(--color-teal)]"
+        >
+          <span className="chip !h-[22px] !text-[10.5px]">作品</span>
+          <span className="truncate">{post.project_title}</span>
+          <span className="ml-auto shrink-0 text-[var(--color-faint)]">→</span>
+        </Link>
+      )}
+
+      <div className="mt-6 flex items-center gap-1 border-y border-[var(--color-line-soft)] py-2.5">
+        <likeFetcher.Form method="post" action="/actions/like">
+          <input type="hidden" name="target_type" value="post" />
+          <input type="hidden" name="target_id" value={post.id} />
+          <input type="hidden" name="intent" value={isLiked ? "unlike" : "like"} />
+          <button
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[13px] transition hover:bg-[var(--color-sunken)] ${
+              isLiked ? "text-[var(--color-teal)]" : "text-[var(--color-muted)]"
+            }`}
+          >
+            <HeartIcon filled={isLiked} />
+            {post.likes > 0 ? compact(post.likes) : "赞"}
+          </button>
+        </likeFetcher.Form>
+        <span className="text-[13px] text-[var(--color-muted)]">
+          {comments.length} 条评论
+        </span>
+        <p className="ml-auto text-[12px] text-[var(--color-faint)]">
+          {absoluteDate(post.created_at)}
+        </p>
+      </div>
+
+      <section id="comments" className="mt-6">
+        {comments.length === 0 ? (
+          <p className="py-6 text-center text-[13.5px] text-[var(--color-muted)]">
+            还没有评论。
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {comments.map((c) => (
+              <div key={c.id} className="flex gap-3">
+                <Link to={`/@${c.handle}`} className="shrink-0">
+                  <Avatar name={c.display_name} src={c.avatar_url} size={32} />
+                </Link>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-[12.5px]">
+                    <Link
+                      to={`/@${c.handle}`}
+                      className="font-medium hover:text-[var(--color-teal)]"
+                    >
+                      {c.display_name}
+                    </Link>
+                    <span className="font-mono text-[10.5px] text-[var(--color-faint)]">
+                      {c.time_label}
+                    </span>
+                    {me?.id === c.author_id && (
+                      <Form method="post" action="/actions/comment">
+                        <input type="hidden" name="post_id" value={post.id} />
+                        <input type="hidden" name="comment_id" value={c.id} />
+                        <input type="hidden" name="intent" value="delete" />
+                        <button className="text-[11.5px] text-[var(--color-faint)] hover:text-[var(--color-ink)]">
+                          删除
+                        </button>
+                      </Form>
+                    )}
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-[14px] leading-[1.75] text-[var(--color-ink-2)]">
+                    {c.body}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {me ? (
+          <form method="post" action="/actions/comment" className="mt-6">
+            <input type="hidden" name="post_id" value={post.id} />
+            <textarea
+              name="body"
+              required
+              maxLength={2000}
+              placeholder="说说你的看法……"
+              className="field field-area !min-h-[96px]"
+            />
+            <div className="mt-2 flex justify-end">
+              <button className="btn btn-primary btn-sm">评论</button>
+            </div>
+          </form>
+        ) : (
+          <div className="card mt-6 flex items-center justify-between gap-4 p-4">
+            <p className="text-[13px] text-[var(--color-muted)]">
+              登录后可以参与讨论。
+            </p>
+            <Link to="/login" className="btn btn-primary btn-sm shrink-0">
+              登录
+            </Link>
+          </div>
+        )}
+      </section>
+    </article>
+  );
+}

@@ -1,3 +1,11 @@
+.qa/
+.react-router/
+.wrangler/
+node_modules/
+build/
+dist/
+.dev.vars
+.env
+*.log
 .DS_Store
 Thumbs.db
-*.log
