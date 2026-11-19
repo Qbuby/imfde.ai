@@ -85,7 +85,7 @@ export default function SettingsPrivacy({
               type="checkbox"
               name="hide_follows"
               defaultChecked={Boolean(profile?.hide_follows)}
-              className="h-[18px] w-[18px] shrink-0 accent-[var(--color-teal)]"
+              className="h-[18px] w-[18px] shrink-0 accent-[var(--color-ink-soft)]"
             />
           </label>
         </div>

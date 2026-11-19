@@ -1,53 +1,57 @@
 @import "tailwindcss";
 
-/* ──────────────────────────────────────────────────────────────
-   Design tokens — measured from contra.com's shipped stylesheet:
-   ink #14171f / #222834, canvas #fcfcfc, sunken #f2f4f7,
-   accent teal #0e8696, pastels #cbabff #f3ca4d #ff989a #e4e8f7,
-   card radius 20px, pill 9999px, shadows are whisper-thin.
-   Type: GT Standard was the original; Instrument Sans + Inter
-   stand in for it, self-hosted so nothing depends on a CDN.
-   ────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────
+   Design tokens reverse-engineered from contra.com at runtime.
+   These are measured, not estimated: computed styles plus
+   getBoundingClientRect from a 1440×1000 render.
+
+   frame      container 1368px · page padding 26px 36px · nav 74px
+   ink        #14171f headline · #222834 primary button · #4a5264 nav idle
+   muted      #677084
+   canvas     #ffffff
+   card       16px radius · 0 10px 20px rgba(0,0,0,.05)
+   search     20px radius
+   type       h1 58/500 · 1.05 · -0.01em
+              h2 23/500 · 1.39 · +0.02em
+              lead 19/400 · 1.47 · +0.02em
+              label 16/600 · small 14/400
+   buttons    48h · 24r · 16px/600     and 36h · 999r · 14px
+   ───────────────────────────────────────────────────────────────────── */
 
 @theme {
-  --color-canvas: #fcfcfc;
+  --color-canvas: #ffffff;
   --color-surface: #ffffff;
-  --color-sunken: #f2f4f7;
-  --color-sunken-deep: #e9edf2;
+  --color-paper: #f6f6f6;
+  --color-sunken: #f2f2f2;
+  --color-sunken-deep: #e9eaec;
   --color-ink: #14171f;
   --color-ink-2: #222834;
-  --color-ink-soft: #4a5060;
-  --color-muted: #71767f;
-  --color-faint: #9aa0aa;
-  --color-line: #e6e8ec;
-  --color-line-soft: #eef0f3;
-  --color-teal: #0e8696;
-  --color-teal-soft: #e3f2f3;
-  --color-lavender: #cbabff;
-  --color-lavender-soft: #f0e9ff;
-  --color-butter: #f3ca4d;
-  --color-butter-soft: #fdf4d8;
-  --color-blush: #ff989a;
-  --color-blush-soft: #ffe9ea;
-  --color-mist: #e4e8f7;
-  --color-moss: #4a6f78;
+  --color-ink-soft: #4a5264;
+  --color-muted: #677084;
+  --color-faint: #8b93a3;
+  --color-line: #e3e5ea;
+  --color-line-soft: #eef0f2;
+  --color-accent: #222834;
+  --color-accent-soft: #f2f4f7;
+  --color-butter: #f2c94c;
+  --color-watermelon: #ff5a5e;
+  --color-lilac: #8f6fdb;
+  --color-sky: #6ca3e0;
 
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-display: "Instrument Sans Variable", "Inter Variable", ui-sans-serif,
     system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas,
-    monospace;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  --radius-card: 20px;
+  --radius-card: 16px;
   --radius-panel: 16px;
   --radius-field: 12px;
-  --radius-chip: 9999px;
+  --radius-search: 20px;
+  --radius-pill: 999px;
 
-  --shadow-card: 0 1px 2px #10182814;
-  --shadow-lift: 0 4px 32px #22283412;
-  --shadow-pop: 0 4px 10px #2228340d, -2px 18px 18px #2228340a,
-    -4px 39px 24px #22283408;
+  --shadow-card: 0 10px 20px rgba(0, 0, 0, 0.05);
+  --shadow-lift: 0 14px 32px rgba(0, 0, 0, 0.09);
 }
 
 @layer base {
@@ -67,15 +71,15 @@
     background: var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
   }
 
   ::selection {
-    background: var(--color-teal);
+    background: var(--color-ink);
     color: #fff;
   }
 
@@ -93,9 +97,9 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-teal);
+    outline: 2px solid var(--color-ink);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: 4px;
   }
 
   img {
@@ -103,7 +107,6 @@
     max-width: 100%;
   }
 
-  /* thin, quiet scrollbars on the horizontal rails */
   .rail {
     scrollbar-width: thin;
     scrollbar-color: var(--color-line) transparent;
@@ -114,9 +117,6 @@
   .rail::-webkit-scrollbar-thumb {
     background: var(--color-line);
     border-radius: 999px;
-  }
-  .rail::-webkit-scrollbar-track {
-    background: transparent;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -133,45 +133,63 @@
 }
 
 @layer components {
-  /* Editorial section label — mono, tracked out, quiet */
-  .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--color-muted);
+  /* Page frame: 1368 container with 36px gutters, as measured. */
+  .frame {
+    margin: 0 auto;
+    max-width: 1368px;
+    padding-left: 36px;
+    padding-right: 36px;
   }
 
-  /* The one display treatment used for every headline */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+
+  /* h1: 58/500/1.05/-0.01em, measured off "Get more creative" */
   .display {
     font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.025em;
-    line-height: 1.08;
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
     color: var(--color-ink);
+  }
+
+  /* h2: 23/500/1.39 with the positive +0.02em tracking Contra uses */
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 23px;
+    font-weight: 500;
+    line-height: 1.39;
+    letter-spacing: 0.02em;
+    color: var(--color-ink);
+  }
+
+  .lead {
+    font-size: 19px;
+    line-height: 1.47;
+    letter-spacing: 0.02em;
+    color: var(--color-muted);
   }
 
   .card {
     background: var(--color-surface);
-    border: 1px solid var(--color-line);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-card);
+    border: 1px solid var(--color-line-soft);
   }
 
-  /* Hover lift used by every card that links somewhere */
   .card-link {
     transition:
-      transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      box-shadow 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      border-color 220ms ease;
+      transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      box-shadow 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
   .card-link:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-lift);
-    border-color: #d9dde5;
-  }
-  .card-link:active {
-    transform: translateY(-1px);
   }
 
   .btn {
@@ -179,107 +197,124 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    height: 44px;
-    padding: 0 22px;
-    border-radius: var(--radius-chip);
-    font-size: 14px;
-    font-weight: 500;
+    height: 48px;
+    padding: 0 24px;
+    border-radius: 24px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     white-space: nowrap;
-    transition:
-      background 180ms ease,
-      color 180ms ease,
-      border-color 180ms ease,
-      transform 180ms ease,
-      opacity 180ms ease;
     cursor: pointer;
     border: 1px solid transparent;
+    transition:
+      background 160ms ease,
+      color 160ms ease,
+      border-color 160ms ease,
+      transform 160ms ease;
   }
   .btn:active {
     transform: scale(0.985);
   }
   .btn-primary {
-    background: var(--color-ink);
+    background: var(--color-ink-2);
     color: #fff;
   }
   .btn-primary:hover {
-    background: #2b3242;
-  }
-  .btn-teal {
-    background: var(--color-teal);
-    color: #fff;
-  }
-  .btn-teal:hover {
-    background: #0c7482;
+    background: #2f3746;
   }
   .btn-ghost {
-    background: transparent;
+    background: var(--color-surface);
     color: var(--color-ink);
     border-color: var(--color-line);
   }
   .btn-ghost:hover {
-    background: var(--color-sunken);
-    border-color: #d9dde5;
+    background: var(--color-paper);
   }
   .btn-quiet {
     background: transparent;
-    color: var(--color-muted);
+    color: var(--color-ink-soft);
   }
   .btn-quiet:hover {
     color: var(--color-ink);
-    background: var(--color-sunken);
+    background: var(--color-paper);
   }
   .btn-sm {
-    height: 34px;
-    padding: 0 14px;
-    font-size: 13px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: var(--radius-pill);
+    font-size: 14px;
+    font-weight: 500;
   }
 
   .field {
     width: 100%;
-    height: 46px;
-    padding: 0 15px;
+    height: 48px;
+    padding: 0 16px;
     border-radius: var(--radius-field);
     border: 1px solid var(--color-line);
     background: var(--color-surface);
-    font-size: 14.5px;
+    font-size: 16px;
     transition:
-      border-color 160ms ease,
-      box-shadow 160ms ease,
-      background 160ms ease;
+      border-color 150ms ease,
+      box-shadow 150ms ease;
   }
   .field::placeholder {
     color: var(--color-faint);
   }
   .field:focus {
     outline: none;
-    border-color: var(--color-teal);
-    box-shadow: 0 0 0 3px #0e86961f;
+    border-color: var(--color-ink-soft);
+    box-shadow: 0 0 0 3px rgba(34, 40, 52, 0.08);
   }
   .field-area {
     height: auto;
-    min-height: 132px;
-    padding: 13px 15px;
-    line-height: 1.65;
+    min-height: 140px;
+    padding: 14px 16px;
+    line-height: 1.6;
     resize: vertical;
+  }
+
+  /* Search composer: the 20px-radius shell from the Contra hero. */
+  .search-shell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 64px;
+    padding: 10px 12px 10px 20px;
+    border-radius: var(--radius-search);
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
+  .search-shell input {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    font-size: 16px;
+    outline: none;
+  }
+  .search-shell input::placeholder {
+    color: var(--color-faint);
   }
 
   .chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 28px;
-    padding: 0 11px;
-    border-radius: var(--radius-chip);
-    background: var(--color-sunken);
+    height: 30px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    background: var(--color-paper);
     color: var(--color-ink-soft);
-    font-size: 12.5px;
-    font-weight: 450;
-    letter-spacing: 0.01em;
+    font-size: 13px;
+    font-weight: 500;
     white-space: nowrap;
   }
-  .chip-teal {
-    background: var(--color-teal-soft);
-    color: #0a6772;
+  .chip-dark {
+    background: var(--color-ink-2);
+    color: #fff;
   }
   .chip-outline {
     background: transparent;
@@ -290,12 +325,11 @@
   .avatar {
     border-radius: 50%;
     object-fit: cover;
-    background: var(--color-sunken);
+    background: var(--color-paper);
     flex: none;
   }
 
-  /* Cover art: a flat duotone with one geometric mark. Deliberately quiet —
-     it holds the grid together without competing with the title beside it. */
+  /* Cover art: flat duotone plus one geometric mark, keyed by slug. */
   .cover-art {
     position: relative;
     overflow: hidden;
@@ -305,11 +339,11 @@
     content: "";
     position: absolute;
     inset: 0;
-    opacity: 0.35;
+    opacity: 0.32;
     background-image: repeating-linear-gradient(
       -35deg,
       transparent 0 6px,
-      rgba(255, 255, 255, 0.55) 6px 7px
+      rgba(255, 255, 255, 0.5) 6px 7px
     );
     mix-blend-mode: soft-light;
   }
@@ -332,5 +366,11 @@
     background: var(--mark);
     opacity: 0.42;
   }
+}
 
+@media (max-width: 760px) {
+  .frame {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
 }

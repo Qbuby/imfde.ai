@@ -132,7 +132,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
         <CoverArt
           seed={`${user.handle}-cover`}
           src={user.cover_url}
-          aspect="16 / 5"
+          aspect="3 / 1"
         />
       </div>
 
@@ -211,7 +211,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                 href={l.profile_url}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-[12.5px] transition hover:border-[var(--color-teal)] hover:text-[var(--color-teal)]"
+                className="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-[12.5px] transition hover:border-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
               >
                 <span className="font-mono text-[10.5px] font-semibold text-[var(--color-muted)]">
                   {PROVIDER_ICON[l.provider] ?? "↗"}
@@ -258,11 +258,11 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
       {/* projects */}
       <section className="mt-10">
         <div className="mb-4 flex items-end justify-between">
-          <h2 className="display text-[20px]">作品</h2>
+          <h2 className="section-title">作品</h2>
           {projects.length > 6 && (
             <Link
               to={`/@${user.handle}/projects`}
-              className="text-[12.5px] text-[var(--color-teal)] hover:underline"
+              className="text-[12.5px] text-[var(--color-ink-soft)] hover:underline"
             >
               全部 {projects.length} 个 →
             </Link>
@@ -291,7 +291,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
       {/* posts */}
       {posts.length > 0 && (
         <section className="mt-12">
-          <h2 className="display mb-4 text-[20px]">动态</h2>
+          <h2 className="section-title mb-4">动态</h2>
           <div className="space-y-3">
             {posts.slice(0, 6).map((p) => (
               <PostCard key={p.id} post={p} />

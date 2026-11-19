@@ -165,7 +165,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
             <input type="hidden" name="target_type" value="project" />
             <input type="hidden" name="target_id" value={project.id} />
             <button
-              className={`btn btn-ghost btn-sm ${liked ? "!text-[var(--color-teal)]" : ""}`}
+              className={`btn btn-ghost btn-sm ${liked ? "!text-[var(--color-ink-soft)]" : ""}`}
             >
               <HeartIcon filled={liked} />
               {likes > 0 ? compact(likes) : "赞"}
@@ -246,7 +246,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
                 <div className="overflow-hidden rounded-[16px] border border-[var(--color-line)] transition group-hover:border-[#d9dde5]">
                   <CoverArt seed={m.slug} src={m.cover_url} aspect="4 / 3"  />
                 </div>
-                <p className="mt-2 truncate text-[13.5px] font-medium group-hover:text-[var(--color-teal)]">
+                <p className="mt-2 truncate text-[13.5px] font-medium group-hover:text-[var(--color-ink)]">
                   {m.title}
                 </p>
               </Link>

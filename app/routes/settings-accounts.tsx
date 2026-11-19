@@ -117,7 +117,7 @@ export default function SettingsAccounts({
                 href={a.profile_url}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="min-w-0 flex-1 truncate text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-teal)]"
+                className="min-w-0 flex-1 truncate text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
               >
                 {a.profile_url}
               </a>

@@ -16,32 +16,28 @@ const NAV = [
 
 export default function Shell({ loaderData }: Route.ComponentProps) {
   const me = loaderData?.me ?? null;
-  // Guests get a marketing-ish nav (discover + work); the feed tab only
-  // makes sense once you are signed in and have something to follow.
-  const nav = me ? NAV.filter((n) => !n.guestOnly) : NAV.filter((n) => !n.needsAuth);
+  const nav = me ? NAV : NAV.filter((n) => !n.needsAuth);
 
   return (
     <div className="min-h-dvh bg-[var(--color-canvas)]">
-      <header className="sticky top-0 z-40 border-b border-[var(--color-line-soft)] bg-[color-mix(in_srgb,var(--color-canvas)_86%,transparent)] backdrop-blur-xl">
-        <div className="mx-auto flex h-[64px] max-w-[1240px] items-center gap-2 px-5 sm:px-8">
-          <Link to="/" className="mr-1 flex items-baseline gap-0.5">
-            <span className="display text-[21px] leading-none">iMFDE</span>
-            <span className="text-[21px] leading-none text-[var(--color-teal)]">
-              .
-            </span>
+      {/* nav: 74px tall, links 16/600, actions are 48px pills — measured */}
+      <header className="sticky top-0 z-40 border-b border-[var(--color-line-soft)] bg-[color-mix(in_srgb,#fff_88%,transparent)] backdrop-blur-xl">
+        <div className="frame flex h-[74px] items-center gap-1">
+          <Link to="/" className="mr-6 shrink-0">
+            <span className="display text-[24px] tracking-[-0.02em]">iMFDE</span>
           </Link>
 
-          <nav className="hidden items-center gap-0.5 md:flex">
+          <nav className="hidden items-center gap-1 md:flex">
             {nav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `rounded-full px-3.5 py-2 text-[13.5px] transition ${
+                  `rounded-full px-3 py-2 text-[16px] font-semibold transition ${
                     isActive
-                      ? "bg-[var(--color-sunken)] font-medium text-[var(--color-ink)]"
-                      : "text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+                      ? "text-[var(--color-ink)]"
+                      : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
                   }`
                 }
               >
@@ -50,10 +46,10 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-2">
             <Link
               to="/discover"
-              className="grid h-9 w-9 place-items-center rounded-full text-[var(--color-muted)] transition hover:bg-[var(--color-sunken)] hover:text-[var(--color-ink)] md:hidden"
+              className="grid h-10 w-10 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-paper)] md:hidden"
               aria-label="搜索"
             >
               <SearchIcon />
@@ -63,35 +59,28 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
               <>
                 <Link
                   to="/notifications"
-                  className="relative grid h-9 w-9 place-items-center rounded-full text-[var(--color-muted)] transition hover:bg-[var(--color-sunken)] hover:text-[var(--color-ink)]"
+                  className="grid h-10 w-10 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-paper)] hover:text-[var(--color-ink)]"
                   aria-label="通知"
                 >
                   <BellIcon />
                 </Link>
-                <Link
-                  to="/new/post"
-                  className="btn btn-primary btn-sm hidden sm:inline-flex"
-                >
+                <Link to="/new/post" className="btn btn-primary hidden sm:inline-flex">
                   写点什么
                 </Link>
                 <Link
                   to={`/@${me.handle}`}
-                  className="ml-0.5 rounded-full transition hover:opacity-80"
+                  className="ml-1 rounded-full transition hover:opacity-80"
                   aria-label="我的主页"
                 >
-                  <Avatar
-                    name={me.display_name}
-                    src={me.avatar_url}
-                    size={34}
-                  />
+                  <Avatar name={me.display_name} src={me.avatar_url} size={40} />
                 </Link>
               </>
             ) : (
               <>
-                <Link to="/login" className="btn btn-quiet btn-sm">
+                <Link to="/login" className="btn btn-ghost hidden sm:inline-flex">
                   登录
                 </Link>
-                <Link to="/join" className="btn btn-primary btn-sm">
+                <Link to="/join" className="btn btn-primary">
                   加入
                 </Link>
               </>
@@ -100,17 +89,17 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
         </div>
 
         {/* mobile nav row */}
-        <div className="flex gap-1 overflow-x-auto px-4 pb-2 md:hidden">
+        <div className="frame flex gap-1 overflow-x-auto pb-3 md:hidden">
           {nav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `shrink-0 rounded-full px-3 py-1.5 text-[13px] transition ${
+                `shrink-0 rounded-full px-3 py-1.5 text-[14px] font-medium transition ${
                   isActive
-                    ? "bg-[var(--color-sunken)] font-medium text-[var(--color-ink)]"
-                    : "text-[var(--color-muted)]"
+                    ? "bg-[var(--color-paper)] text-[var(--color-ink)]"
+                    : "text-[var(--color-ink-soft)]"
                 }`
               }
             >
@@ -120,19 +109,19 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1240px] px-5 pb-28 pt-8 sm:px-8">
+      <main className="frame pb-28 pt-6">
         <Outlet />
       </main>
 
       <footer className="border-t border-[var(--color-line-soft)]">
-        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 px-5 py-9 sm:px-8">
+        <div className="frame flex flex-wrap items-center justify-between gap-4 py-10">
           <div>
-            <p className="display text-[15px]">iMFDE</p>
-            <p className="mt-1 max-w-[420px] text-[12.5px] leading-relaxed text-[var(--color-muted)]">
+            <p className="display text-[16px]">iMFDE</p>
+            <p className="mt-1.5 max-w-[440px] text-[14px] leading-relaxed text-[var(--color-muted)]">
               展示可观察的信息，由访问者自行判断。平台不提供信用分、认证等级，也不经手任何交易。
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-4 text-[12.5px] text-[var(--color-muted)]">
+          <div className="flex flex-wrap items-center gap-5 text-[14px] text-[var(--color-muted)]">
             <Link to="/discover" className="hover:text-[var(--color-ink)]">
               发现
             </Link>
@@ -141,10 +130,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
             </Link>
             {me ? (
               <>
-                <Link
-                  to="/settings/profile"
-                  className="hover:text-[var(--color-ink)]"
-                >
+                <Link to="/settings/profile" className="hover:text-[var(--color-ink)]">
                   设置
                 </Link>
                 <Form method="post" action="/logout">
@@ -165,7 +151,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
 
 function SearchIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.7" />
       <path d="M16 16l4.5 4.5" stroke="currentColor" strokeWidth="1.7" />
     </svg>
@@ -174,18 +160,14 @@ function SearchIcon() {
 
 function BellIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M6 9.5a6 6 0 0112 0v3.2l1.6 3.1c.3.6-.1 1.2-.8 1.2H5.2c-.7 0-1.1-.6-.8-1.2L6 12.7V9.5z"
         stroke="currentColor"
         strokeWidth="1.7"
         strokeLinejoin="round"
       />
-      <path
-        d="M9.6 19.4a2.5 2.5 0 004.8 0"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
+      <path d="M9.6 19.4a2.5 2.5 0 004.8 0" stroke="currentColor" strokeWidth="1.7" />
     </svg>
   );
 }

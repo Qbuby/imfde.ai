@@ -103,7 +103,7 @@ export default function Login({ loaderData, actionData }: Route.ComponentProps) 
 
         <p className="pt-1 text-center text-[12.5px] text-[var(--color-muted)]">
           还没有账号？
-          <Link to="/join" className="ml-1 text-[var(--color-teal)] hover:underline">
+          <Link to="/join" className="ml-1 text-[var(--color-ink-soft)] hover:underline">
             建一个
           </Link>
         </p>

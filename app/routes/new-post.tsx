@@ -74,7 +74,7 @@ export default function NewPost({ loaderData }: Route.ComponentProps) {
             {KINDS.map((k, i) => (
               <label
                 key={k.v}
-                className="cursor-pointer rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-surface)] p-3 transition has-[:checked]:border-[var(--color-teal)] has-[:checked]:bg-[var(--color-teal-soft)]"
+                className="cursor-pointer rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-surface)] p-3 transition has-[:checked]:border-[var(--color-ink-soft)] has-[:checked]:bg-[var(--color-accent-soft)]"
               >
                 <input
                   type="radio"

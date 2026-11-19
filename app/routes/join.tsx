@@ -164,7 +164,7 @@ export default function Join({ actionData }: Route.ComponentProps) {
             ].map((o) => (
               <label
                 key={o.v}
-                className="cursor-pointer rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-surface)] p-3 transition has-[:checked]:border-[var(--color-teal)] has-[:checked]:bg-[var(--color-teal-soft)]"
+                className="cursor-pointer rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-surface)] p-3 transition has-[:checked]:border-[var(--color-ink-soft)] has-[:checked]:bg-[var(--color-accent-soft)]"
               >
                 <input
                   type="radio"
@@ -186,7 +186,7 @@ export default function Join({ actionData }: Route.ComponentProps) {
 
         <p className="pt-1 text-center text-[12.5px] text-[var(--color-muted)]">
           已经有账号？
-          <Link to="/login" className="ml-1 text-[var(--color-teal)] hover:underline">
+          <Link to="/login" className="ml-1 text-[var(--color-ink-soft)] hover:underline">
             登录
           </Link>
         </p>
@@ -236,7 +236,7 @@ export function AuthShell({
       <div className="mx-auto grid min-h-dvh max-w-[1100px] items-center gap-12 px-6 py-12 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
         <div>
           <Link to="/" className="display text-[22px]">
-            iMFDE<span className="text-[var(--color-teal)]">.</span>
+            iMFDE<span className="text-[var(--color-ink-soft)]">.</span>
           </Link>
           <h1 className="display mt-8 text-[clamp(26px,3.2vw,34px)]">{title}</h1>
           <p className="mt-2 text-[13.5px] text-[var(--color-muted)]">{subtitle}</p>
@@ -258,7 +258,7 @@ export function AuthShell({
             <ul className="mt-7 space-y-3.5">
               {side.points.map((p) => (
                 <li key={p} className="flex items-start gap-2.5 text-[13.5px] text-[var(--color-ink-soft)]">
-                  <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[var(--color-teal)] text-[10px] text-white">
+                  <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[var(--color-ink-2)] text-[10px] text-white">
                     ✓
                   </span>
                   {p}

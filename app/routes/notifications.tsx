@@ -105,7 +105,7 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
                 }`}
               >
                 {!n.read_at && (
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-teal)]" />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-ink-soft)]" />
                 )}
                 <Avatar
                   name={n.actor_name ?? "?"}

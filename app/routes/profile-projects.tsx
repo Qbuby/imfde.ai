@@ -55,7 +55,7 @@ export default function ProfileProjects({ loaderData }: Route.ComponentProps) {
       <div className="mt-6 flex items-end justify-between">
         <div>
           <p className="eyebrow">Work</p>
-          <h1 className="display mt-2 text-[clamp(24px,3.2vw,34px)]">
+          <h1 className="display mt-2 text-[clamp(26px,3vw,38px)]">
             全部作品
           </h1>
         </div>

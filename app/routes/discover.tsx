@@ -49,7 +49,7 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
     <div>
       <header className="max-w-[640px]">
         <p className="eyebrow">Discover</p>
-        <h1 className="display mt-2 text-[clamp(26px,3.6vw,38px)]">
+        <h1 className="display mt-2 text-[clamp(28px,3.4vw,42px)]">
           找到正在现场做事的人
         </h1>
         <p className="mt-3 text-[14px] leading-relaxed text-[var(--color-muted)]">
@@ -107,7 +107,7 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
       {skill && (
         <div className="mt-4 flex items-center gap-2 text-[12.5px] text-[var(--color-muted)]">
           技能筛选：<span className="chip chip-teal">{skill}</span>
-          <Link to={withParam("skill", "")} className="text-[var(--color-teal)] hover:underline">
+          <Link to={withParam("skill", "")} className="text-[var(--color-ink-soft)] hover:underline">
             清除
           </Link>
         </div>

@@ -39,16 +39,16 @@ export function ProjectCard({ project }: { project: ProjectCardRow }) {
       <div className="mt-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link to={href} className="block">
-            <h3 className="truncate text-[15px] font-medium text-[var(--color-ink)] transition group-hover:text-[var(--color-teal)]">
+            <h3 className="truncate text-[16px] font-semibold text-[var(--color-ink)] transition group-hover:opacity-70">
               {project.title}
             </h3>
           </Link>
-          <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-[var(--color-muted)]">
+          <p className="mt-1.5 line-clamp-2 text-[14px] leading-relaxed text-[var(--color-muted)]">
             {project.summary}
           </p>
         </div>
       </div>
-      <div className="mt-2.5 flex items-center gap-2 text-[12.5px] text-[var(--color-faint)]">
+      <div className="mt-3 flex items-center gap-2 text-[13px] text-[var(--color-faint)]">
         <Link
           to={`/@${project.handle}`}
           className="flex min-w-0 items-center gap-1.5 transition hover:text-[var(--color-ink)]"
@@ -80,7 +80,7 @@ export function PersonCard({ person }: { person: PersonRow }) {
       <Avatar name={person.display_name} src={person.avatar_url} size={46} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="truncate text-[14.5px] font-medium">
+          <p className="truncate text-[15px] font-semibold">
             {person.display_name}
           </p>
           {person.kind === "team" && (
@@ -89,10 +89,10 @@ export function PersonCard({ person }: { person: PersonRow }) {
             </span>
           )}
         </div>
-        <p className="mt-0.5 truncate text-[12.5px] text-[var(--color-muted)]">
+        <p className="mt-0.5 truncate text-[13px] text-[var(--color-muted)]">
           {person.headline || `@${person.handle}`}
         </p>
-        <p className="mt-1.5 flex items-center gap-2.5 font-mono text-[11px] tracking-wide text-[var(--color-faint)]">
+        <p className="mt-1.5 flex items-center gap-2.5 font-mono text-[11.5px] tracking-wide text-[var(--color-faint)]">
           <span>{person.projects} 作品</span>
           <span>{compact(person.followers)} 关注者</span>
         </p>
@@ -129,21 +129,21 @@ export function PostCard({
         <div className="min-w-0">
           <Link
             to={`/@${post.handle}`}
-            className="block truncate text-[14px] font-medium hover:text-[var(--color-teal)]"
+            className="block truncate text-[15px] font-semibold hover:opacity-70"
           >
             {post.display_name}
           </Link>
-          <p className="font-mono text-[11px] tracking-wide text-[var(--color-faint)]">
+          <p className="font-mono text-[11.5px] tracking-wide text-[var(--color-faint)]">
             @{post.handle} · {post.time_label}
           </p>
         </div>
-        <span className="chip chip-teal ml-auto shrink-0 !h-[24px] !text-[11px]">
+        <span className="chip chip-dark ml-auto shrink-0 !h-[24px] !text-[11px]">
           {POST_KIND_LABEL[post.kind] ?? post.kind}
         </span>
       </header>
 
       <Link to={`/posts/${post.id}`} className="mt-3 block">
-        <p className="whitespace-pre-wrap text-[14.5px] leading-[1.75] text-[var(--color-ink-2)]">
+        <p className="whitespace-pre-wrap text-[16px] leading-[1.6] text-[var(--color-ink-2)]">
           {post.body}
         </p>
       </Link>
@@ -151,7 +151,7 @@ export function PostCard({
       {post.project_slug ? (
         <Link
           to={`/projects/${post.project_slug}`}
-          className="mt-3 flex items-center gap-2 rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-sunken)] px-3 py-2.5 text-[12.5px] text-[var(--color-ink-soft)] transition hover:border-[var(--color-teal)]"
+          className="mt-3 flex items-center gap-2 rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-sunken)] px-3 py-2.5 text-[12.5px] text-[var(--color-ink-soft)] transition hover:border-[var(--color-ink-soft)]"
         >
           <span className="chip !h-[22px] !text-[10.5px]">作品</span>
           <span className="truncate">{post.project_title}</span>
@@ -160,7 +160,7 @@ export function PostCard({
       ) : null}
 
       {showActions ? (
-        <footer className="mt-3.5 flex items-center gap-1 text-[12.5px] text-[var(--color-muted)]">
+        <footer className="mt-3.5 flex items-center gap-1 text-[13px] text-[var(--color-muted)]">
           <likeFetcher.Form method="post" action="/actions/like">
             <input type="hidden" name="target_type" value="post" />
             <input type="hidden" name="target_id" value={post.id} />
@@ -171,7 +171,7 @@ export function PostCard({
             />
             <button
               className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition hover:bg-[var(--color-sunken)] ${
-                liked ? "text-[var(--color-teal)]" : ""
+                liked ? "text-[var(--color-ink)]" : ""
               }`}
               aria-pressed={liked}
             >

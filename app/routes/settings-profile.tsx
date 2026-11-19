@@ -106,7 +106,7 @@ export default function SettingsProfile({
   return (
     <div className="mx-auto max-w-[760px]">
       {welcome && (
-        <div className="mb-6 rounded-[var(--radius-panel)] border border-[var(--color-teal)] bg-[var(--color-teal-soft)] px-4 py-3.5">
+        <div className="mb-6 rounded-[var(--radius-panel)] border border-[var(--color-ink-soft)] bg-[var(--color-accent-soft)] px-4 py-3.5">
           <p className="text-[13.5px] font-medium text-[#0a6772]">
             主页建好了。接着把它填完整——
           </p>

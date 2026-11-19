@@ -39,7 +39,7 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
     <div>
       <header className="max-w-[640px]">
         <p className="eyebrow">Work</p>
-        <h1 className="display mt-2 text-[clamp(26px,3.6vw,38px)]">
+        <h1 className="display mt-2 text-[clamp(28px,3.4vw,42px)]">
           有人真的把它跑起来了
         </h1>
         <p className="mt-3 text-[14px] leading-relaxed text-[var(--color-muted)]">

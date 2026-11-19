@@ -130,7 +130,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
       {post.project_slug && (
         <Link
           to={`/projects/${post.project_slug}`}
-          className="mt-5 flex items-center gap-2.5 rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-sunken)] px-4 py-3 text-[13.5px] transition hover:border-[var(--color-teal)]"
+          className="mt-5 flex items-center gap-2.5 rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-sunken)] px-4 py-3 text-[13.5px] transition hover:border-[var(--color-ink-soft)]"
         >
           <span className="chip !h-[22px] !text-[10.5px]">作品</span>
           <span className="truncate">{post.project_title}</span>
@@ -145,7 +145,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
           <input type="hidden" name="intent" value={isLiked ? "unlike" : "like"} />
           <button
             className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[13px] transition hover:bg-[var(--color-sunken)] ${
-              isLiked ? "text-[var(--color-teal)]" : "text-[var(--color-muted)]"
+              isLiked ? "text-[var(--color-ink-soft)]" : "text-[var(--color-muted)]"
             }`}
           >
             <HeartIcon filled={isLiked} />
@@ -176,7 +176,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
                   <div className="flex items-center gap-2 text-[12.5px]">
                     <Link
                       to={`/@${c.handle}`}
-                      className="font-medium hover:text-[var(--color-teal)]"
+                      className="font-medium hover:text-[var(--color-ink)]"
                     >
                       {c.display_name}
                     </Link>
