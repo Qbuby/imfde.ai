@@ -5,6 +5,7 @@ import { one } from "~/lib/db.server";
 import { ProjectCard } from "~/components/cards";
 import { Avatar } from "~/components/media";
 import { projectsByOwner } from "~/lib/queries.server";
+import { PageHead } from "~/components/page-head";
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
   const handle = normalizeHandle(params.handle);
@@ -52,21 +53,17 @@ export default function ProfileProjects({ loaderData }: Route.ComponentProps) {
         </div>
       </Link>
 
-      <div className="mt-6 flex items-end justify-between">
-        <div>
-          <p className="eyebrow">Work</p>
-          <h1 className="display mt-2 text-[clamp(26px,3vw,38px)]">
-            全部作品
-          </h1>
-        </div>
-        <p className="font-mono text-[11.5px] tracking-[0.1em] text-[var(--color-faint)] uppercase">
-          {projects.length} 个
-        </p>
+      <div className="mt-7">
+        <PageHead
+          label="Work"
+          title="全部作品"
+          description={`${user.display_name} 公开的 ${projects.length} 件作品。`}
+        />
       </div>
 
       {projects.length === 0 ? (
-        <div className="card mt-8 px-6 py-16 text-center">
-          <p className="text-[13.5px] text-[var(--color-muted)]">
+        <div className="mt-8 border-t border-[var(--color-line-soft)] py-16 text-center">
+          <p className="text-[13.5px] text-[var(--color-ink-soft)]">
             这个人还没有公开作品。
           </p>
           {isSelf && (
@@ -76,7 +73,7 @@ export default function ProfileProjects({ loaderData }: Route.ComponentProps) {
           )}
         </div>
       ) : (
-        <div className="mt-8 grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-x-6 gap-y-8 border-t border-[var(--color-line-soft)] pt-6 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
             <ProjectCard key={p.id} project={p} />
           ))}

@@ -3,6 +3,7 @@ import { data, Form, Link, redirect } from "react-router";
 import { requireMe } from "~/lib/session.server";
 import { many, run } from "~/lib/db.server";
 import { cleanUrl } from "~/lib/validate";
+import { PageHead } from "~/components/page-head";
 
 const PROVIDERS = [
   { v: "github", t: "GitHub", ph: "https://github.com/yourname" },
@@ -87,29 +88,22 @@ export default function SettingsAccounts({
   const { accounts } = loaderData;
 
   return (
-    <div className="mx-auto max-w-[720px]">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Settings</p>
-          <h1 className="display mt-2 text-[clamp(24px,3.2vw,32px)]">外部账号</h1>
-        </div>
-        <Link to="/settings/profile" className="btn btn-ghost btn-sm">
-          编辑主页
-        </Link>
-      </header>
-
-      <p className="mt-3 max-w-[560px] text-[13.5px] leading-relaxed text-[var(--color-muted)]">
-        加 GitHub、LinkedIn 这些链接，会显示在主页上，并标注为「外部链接」——
-        意思是我们不核实那边的内容，访问者点过去自己看。
-      </p>
+    <div className="max-w-[760px]">
+      <PageHead
+        label="Settings"
+        title="外部账号"
+        description="加 GitHub、LinkedIn 这些链接，会显示在主页上，并标注为「外部链接」——意思是我们不核实那边的内容，访问者点过去自己看。"
+        actions={
+          <Link to="/settings/profile" className="btn btn-ghost btn-sm">
+            编辑主页
+          </Link>
+        }
+      />
 
       {accounts.length > 0 && (
-        <div className="mt-7 space-y-2">
+        <div className="mt-7 divide-y divide-[var(--color-line-soft)] border-y border-[var(--color-line-soft)]">
           {accounts.map((a) => (
-            <div
-              key={a.id}
-              className="card flex items-center gap-3 p-3.5"
-            >
+            <div key={a.id} className="flex items-center gap-3 py-3.5">
               <span className="chip chip-outline shrink-0">
                 {LABEL[a.provider] ?? a.provider}
               </span>
@@ -133,7 +127,7 @@ export default function SettingsAccounts({
 
       <Form
         method="post"
-        className="mt-6 rounded-[var(--radius-panel)] border border-[var(--color-line)] bg-[var(--color-sunken)] p-4"
+        className="mt-6 rounded-[12px] border border-[var(--color-line-soft)] bg-[var(--color-paper)] p-4"
       >
         <p className="mb-3 text-[12.5px] font-medium">添加一个</p>
         <div className="grid gap-3 sm:grid-cols-[150px_minmax(0,1fr)]">

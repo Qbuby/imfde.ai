@@ -4,6 +4,7 @@ import { requireMe } from "~/lib/session.server";
 import { many, run } from "~/lib/db.server";
 import { Avatar } from "~/components/media";
 import { relativeTime } from "~/lib/format";
+import { PageHead } from "~/components/page-head";
 
 const TEXT: Record<string, string> = {
   follow: "关注了你",
@@ -64,28 +65,28 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
   const { items, unread } = loaderData;
 
   return (
-    <div className="mx-auto max-w-[620px]">
-      <header className="flex items-end justify-between">
-        <div>
-          <p className="eyebrow">Activity</p>
-          <h1 className="display mt-2 text-[clamp(24px,3.2vw,32px)]">通知</h1>
-        </div>
-        {unread > 0 && (
-          <form method="post">
-            <button className="btn btn-ghost btn-sm">全部标为已读</button>
-          </form>
-        )}
-      </header>
+    <div>
+      <PageHead
+        label="Activity"
+        title="通知"
+        actions={
+          unread > 0 ? (
+            <form method="post">
+              <button className="btn btn-ghost btn-sm">全部标为已读</button>
+            </form>
+          ) : undefined
+        }
+      />
 
       {items.length === 0 ? (
-        <div className="card mt-7 px-6 py-16 text-center">
-          <p className="display text-[18px]">还没有通知</p>
-          <p className="mt-2 text-[13.5px] text-[var(--color-muted)]">
+        <div className="mt-8 border-t border-[var(--color-line-soft)] py-16">
+          <p className="text-[16px] font-semibold">还没有通知</p>
+          <p className="mt-1.5 text-[13.5px] text-[var(--color-ink-soft)]">
             有人关注你、赞你的作品或评论你的动态时，会出现在这里。
           </p>
         </div>
       ) : (
-        <div className="mt-7 space-y-1.5">
+        <div className="mt-8 divide-y divide-[var(--color-line-soft)] border-t border-[var(--color-line-soft)]">
           {items.map((n) => {
             const href =
               n.post_id
@@ -100,8 +101,8 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
               <Link
                 key={n.id}
                 to={href}
-                className={`card flex items-center gap-3 p-3.5 transition hover:border-[#d9dde5] ${
-                  n.read_at ? "opacity-65" : ""
+                className={`flex items-center gap-3 px-1 py-3.5 transition hover:bg-[var(--color-paper)] ${
+                  n.read_at ? "opacity-55" : ""
                 }`}
               >
                 {!n.read_at && (

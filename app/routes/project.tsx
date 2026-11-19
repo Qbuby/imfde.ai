@@ -118,13 +118,9 @@ export default function Project({ loaderData }: Route.ComponentProps) {
   const likes = project.likes + (fetcher.formData ? (liked ? 1 : 0) : 0);
 
   return (
-    <article className="mx-auto max-w-[900px]">
-      <div className="overflow-hidden rounded-[24px] border border-[var(--color-line)]">
-        <CoverArt
-          seed={project.slug}
-          src={project.cover_url}
-                    aspect="16 / 9"
-        />
+    <article className="max-w-[1060px]">
+      <div className="overflow-hidden rounded-[12px]">
+        <CoverArt seed={project.slug} src={project.cover_url} aspect="16 / 9" />
       </div>
 
       <header className="mt-7 flex flex-wrap items-center gap-2">
@@ -135,7 +131,9 @@ export default function Project({ loaderData }: Route.ComponentProps) {
         )}
       </header>
 
-      <h1 className="display mt-4 text-[clamp(26px,3.2vw,36px)]">{project.title}</h1>
+      <h1 className="mt-4 text-[34px] font-semibold leading-tight tracking-[-0.02em]">
+        {project.title}
+      </h1>
       <p className="mt-3 max-w-[680px] text-[15px] leading-[1.7] text-[var(--color-ink-soft)]">
         {project.summary}
       </p>
@@ -176,7 +174,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
 
       {project.description && (
         <section className="mt-8">
-          <h2 className="eyebrow mb-3">它是什么</h2>
+          <h2 className="mb-3 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">它是什么</h2>
           <div className="whitespace-pre-wrap text-[15px] leading-[1.85] text-[var(--color-ink-2)]">
             {project.description}
           </div>
@@ -185,7 +183,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
 
       {project.role && (
         <section className="mt-8 rounded-[var(--radius-panel)] border border-[var(--color-line)] bg-[var(--color-sunken)] p-5">
-          <h2 className="eyebrow mb-2">我负责的部分</h2>
+          <h2 className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">我负责的部分</h2>
           <p className="whitespace-pre-wrap text-[14px] leading-[1.8] text-[var(--color-ink-2)]">
             {project.role}
           </p>
@@ -197,7 +195,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
 
       {project.limitations && (
         <section className="mt-6">
-          <h2 className="eyebrow mb-2">限制与前提</h2>
+          <h2 className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">限制与前提</h2>
           <p className="whitespace-pre-wrap text-[14px] leading-[1.8] text-[var(--color-muted)]">
             {project.limitations}
           </p>
@@ -206,7 +204,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
 
       {(project.demo_url || project.docs_url || project.repo_url) && (
         <section className="mt-8">
-          <h2 className="eyebrow mb-3">外部链接</h2>
+          <h2 className="mb-3 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">外部链接</h2>
           <div className="flex flex-wrap gap-2">
             {project.demo_url && (
               <ExternalLink href={project.demo_url} label="在线 Demo" />
@@ -226,7 +224,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
 
       {skills.length > 0 && (
         <section className="mt-8">
-          <h2 className="eyebrow mb-3">用到的</h2>
+          <h2 className="mb-3 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">用到的</h2>
           <div className="flex flex-wrap gap-1.5">
             {skills.map((s) => (
               <span key={s} className="chip">
@@ -239,7 +237,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
 
       {more.length > 0 && (
         <section className="mt-12 border-t border-[var(--color-line-soft)] pt-8">
-          <h2 className="eyebrow mb-3">{project.display_name} 的其他作品</h2>
+          <h2 className="mb-3 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">{project.display_name} 的其他作品</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {more.map((m) => (
               <Link key={m.id} to={`/projects/${m.slug}`} className="group">

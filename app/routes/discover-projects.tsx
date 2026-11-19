@@ -2,6 +2,7 @@ import type { Route } from "./+types/discover-projects";
 import { Link, useSearchParams } from "react-router";
 import { searchProjects } from "~/lib/queries.server";
 import { ProjectCard } from "~/components/cards";
+import { PageHead } from "~/components/page-head";
 
 const KINDS = [
   { v: "all", label: "全部" },
@@ -37,15 +38,11 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
 
   return (
     <div>
-      <header className="max-w-[640px]">
-        <p className="eyebrow">Work</p>
-        <h1 className="display mt-2 text-[clamp(28px,3.4vw,42px)]">
-          有人真的把它跑起来了
-        </h1>
-        <p className="mt-3 text-[14px] leading-relaxed text-[var(--color-muted)]">
-          项目、Agent、自动化流程。每一条都由作者自己写，链接指向他们愿意公开的地方。
-        </p>
-      </header>
+      <PageHead
+        label="Work"
+        title="有人真的把它跑起来了"
+        description="项目、Agent、自动化流程。每一条都由作者自己写，链接指向他们愿意公开的地方。"
+      />
 
       <form method="get" className="mt-7 flex flex-wrap items-center gap-2">
         <div className="relative min-w-[240px] flex-1">
@@ -108,11 +105,19 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
         ))}
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 border-t border-[var(--color-line-soft)]">
+        <div className="flex items-baseline justify-between gap-3 border-b border-[var(--color-line-soft)] py-2.5">
+          <span className="font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+            作品
+          </span>
+          <span className="font-mono text-[11px] text-[var(--color-faint)] tabular-nums">
+            {projects.length} 件
+          </span>
+        </div>
         {projects.length === 0 ? (
-          <div className="card px-6 py-16 text-center">
-            <p className="display text-[18px]">还没有这样的作品</p>
-            <p className="mt-2 text-[13.5px] text-[var(--color-muted)]">
+          <div className="py-16 text-center">
+            <p className="text-[16px] font-semibold">还没有这样的作品</p>
+            <p className="mt-1.5 text-[13.5px] text-[var(--color-ink-soft)]">
               换个类型或关键词试试。
             </p>
             <Link to="/new/project" className="btn btn-primary btn-sm mt-5">
@@ -120,7 +125,7 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-x-6 gap-y-8 pt-5 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((p) => (
               <ProjectCard key={p.id} project={p} />
             ))}

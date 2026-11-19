@@ -166,7 +166,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   <Link
                     key={pr.id}
                     to={`/projects/${pr.slug}`}
-                    className="flex items-center gap-2.5 rounded-[10px] p-1.5 transition hover:bg-[var(--color-paper)]"
+                    className="flex items-center gap-2.5 py-1.5 transition hover:opacity-70"
                   >
                     <span className="w-[42px] shrink-0 overflow-hidden rounded-[8px]">
                       <CoverArt seed={pr.slug} src={pr.cover_url} aspect="1 / 1" />
@@ -229,16 +229,16 @@ function TabLink({
 
 function EmptyFeed({ tab }: { tab: string }) {
   return (
-    <div className="card px-6 py-16 text-center">
-      <p className="display text-[23px]">
+    <div className="py-16 text-center">
+      <p className="text-[16px] font-semibold">
         {tab === "following" ? "关注还没开始" : "全站还没有动态"}
       </p>
-      <p className="mx-auto mt-3 max-w-[380px] text-[16px] leading-relaxed text-[var(--color-muted)]">
+      <p className="mx-auto mt-1.5 max-w-[380px] text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">
         {tab === "following"
           ? "去发现页找几位正在做事的 FDE，关注之后他们的更新会出现在这里。"
           : "第一个发帖的人会出现在这里。"}
       </p>
-      <div className="mt-7 flex justify-center gap-2">
+      <div className="mt-5 flex justify-center gap-2">
         <Link to="/discover" className="btn btn-ghost btn-sm">
           去发现 FDE
         </Link>
@@ -358,7 +358,7 @@ function Landing({
         </form>
       </section>
 
-      <section className="mt-14 grid gap-4 sm:grid-cols-3">
+      <section className="mt-16 grid gap-px overflow-hidden border-y border-[var(--color-line-soft)] bg-[var(--color-line-soft)] sm:grid-cols-3">
         {[
           {
             t: "一个稳定地址",
@@ -373,9 +373,11 @@ function Landing({
             d: "发动态、关注人、被关注。专业关系从真实做过的事开始，不从粉丝数开始。",
           },
         ].map((x) => (
-          <div key={x.t} className="card p-6">
-            <h3 className="display text-[19px]">{x.t}</h3>
-            <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-muted)]">
+          <div key={x.t} className="bg-white px-1 py-6 sm:px-6">
+            <h3 className="font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+              {x.t}
+            </h3>
+            <p className="mt-2.5 text-[15px] leading-[1.6] text-[var(--color-ink)]">
               {x.d}
             </p>
           </div>
@@ -393,7 +395,7 @@ function Landing({
               全部作品 →
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-7 lg:grid-cols-4">
             {projects.slice(0, 4).map((p) => (
               <ProjectCard key={p.id} project={p} />
             ))}
@@ -421,9 +423,17 @@ function Landing({
       )}
 
       {posts.length > 0 && (
-        <section className="mt-14">
-          <h2 className="section-title mb-4">最近在说什么</h2>
-          <div className="grid gap-4 lg:grid-cols-2">
+        <section className="mt-16">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="section-title">最近在说什么</h2>
+            <Link
+              to="/discover"
+              className="hidden text-[14px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] sm:block"
+            >
+              去发现页 →
+            </Link>
+          </div>
+          <div className="border-t border-[var(--color-line-soft)] lg:grid lg:grid-cols-2 lg:gap-x-10">
             {posts.slice(0, 4).map((post) => (
               <PostCard key={post.id} post={post} showActions={false} />
             ))}
@@ -431,16 +441,16 @@ function Landing({
         </section>
       )}
 
-      <section className="mt-14 overflow-hidden rounded-[20px] bg-[var(--color-ink)] px-6 py-16 text-center sm:px-10">
-        <h2 className="display text-[clamp(26px,3vw,40px)] text-white">
+      <section className="mt-16 overflow-hidden rounded-[16px] bg-[var(--color-ink)] px-6 py-14 text-center sm:px-10">
+        <h2 className="text-[32px] font-semibold tracking-[-0.02em] text-white">
           先把自己放上来。
         </h2>
-        <p className="mx-auto mt-3 max-w-[460px] text-[16px] leading-relaxed text-white/65">
+        <p className="mx-auto mt-2.5 max-w-[460px] text-[15px] leading-relaxed text-white/65">
           注册不需要认证。填一个 handle，写一句话，贴一个作品，就足够开始了。
         </p>
         <Link
           to="/join"
-          className="btn mt-8 bg-white text-[var(--color-ink)] hover:bg-white/90"
+          className="btn mt-7 bg-white text-[var(--color-ink)] hover:bg-white/90"
         >
           免费建主页
         </Link>

@@ -2,6 +2,7 @@ import type { Route } from "./+types/new-post";
 import { Form, Link, redirect } from "react-router";
 import { requireMe } from "~/lib/session.server";
 import { many, run } from "~/lib/db.server";
+import { PageHead } from "~/components/page-head";
 
 const KINDS = [
   { v: "show", t: "Show Work", d: "展示一个作品或阶段成果" },
@@ -55,17 +56,17 @@ export default function NewPost({ loaderData }: Route.ComponentProps) {
   const { me, projects } = loaderData;
 
   return (
-    <div className="mx-auto max-w-[680px]">
-      <header className="flex items-center gap-3">
-        <p className="eyebrow">Create</p>
-        <Link to="/" className="ml-auto text-[12.5px] text-[var(--color-muted)] hover:text-[var(--color-ink)]">
-          取消
-        </Link>
-      </header>
-      <h1 className="display mt-2 text-[clamp(24px,3.2vw,32px)]">发一条动态</h1>
-      <p className="mt-2 text-[13.5px] text-[var(--color-muted)]">
-        以 @{me.handle} 的身份发布。发布后所有人可见。
-      </p>
+    <div className="max-w-[760px]">
+      <PageHead
+        label="Create"
+        title="发一条动态"
+        description={`以 @${me.handle} 的身份发布。发布后所有人可见。`}
+        actions={
+          <Link to="/" className="btn btn-ghost btn-sm">
+            取消
+          </Link>
+        }
+      />
 
       <Form method="post" className="mt-7 space-y-5">
         <fieldset>

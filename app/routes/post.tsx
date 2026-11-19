@@ -106,7 +106,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
     : liked;
 
   return (
-    <article className="mx-auto max-w-[680px]">
+    <article className="max-w-[760px]">
       <Link
         to={`/@${post.handle}`}
         className="flex items-center gap-3 transition hover:opacity-80"
@@ -218,8 +218,8 @@ export default function Post({ loaderData }: Route.ComponentProps) {
             </div>
           </form>
         ) : (
-          <div className="card mt-6 flex items-center justify-between gap-4 p-4">
-            <p className="text-[13px] text-[var(--color-muted)]">
+          <div className="mt-6 flex items-center justify-between gap-4 border-t border-[var(--color-line-soft)] pt-5">
+            <p className="text-[13.5px] text-[var(--color-ink-soft)]">
               登录后可以参与讨论。
             </p>
             <Link to="/login" className="btn btn-primary btn-sm shrink-0">

@@ -1,5 +1,5 @@
 import type { Route } from "./+types/shell";
-import { Link, NavLink, Outlet, Form } from "react-router";
+import { Link, NavLink, Outlet } from "react-router";
 import { getMe } from "~/lib/session.server";
 import { AppShell } from "~/components/app-shell";
 
@@ -102,9 +102,12 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
             <Link to="/discover/projects" className="hover:text-[var(--color-ink)]">
               作品
             </Link>
-            <Form method="post" action="/logout">
-              <button className="hover:text-[var(--color-ink)]">退出</button>
-            </Form>
+            <Link to="/login" className="hover:text-[var(--color-ink)]">
+              登录
+            </Link>
+            <Link to="/join" className="hover:text-[var(--color-ink)]">
+              加入
+            </Link>
           </div>
         </div>
       </footer>

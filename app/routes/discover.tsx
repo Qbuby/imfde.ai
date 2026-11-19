@@ -2,6 +2,7 @@ import type { Route } from "./+types/discover";
 import { Link, useSearchParams } from "react-router";
 import { searchPeople } from "~/lib/queries.server";
 import { PersonCard } from "~/components/cards";
+import { PageHead } from "~/components/page-head";
 
 const KINDS = [
   { v: "", label: "全部" },
@@ -47,16 +48,11 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
 
   return (
     <div>
-      <header className="max-w-[640px]">
-        <p className="eyebrow">Discover</p>
-        <h1 className="display mt-2 text-[clamp(28px,3.4vw,42px)]">
-          找到正在现场做事的人
-        </h1>
-        <p className="mt-3 text-[14px] leading-relaxed text-[var(--color-muted)]">
-          按名字、方向或技能找。页面上看到的都是原始信息：作品数、关注者、他们自己写的话。
-          平台不做排名，也不给任何人打等级。
-        </p>
-      </header>
+      <PageHead
+        label="Discover"
+        title="找到正在现场做事的人"
+        description="按名字、方向或技能找。页面上看到的都是原始信息：作品数、关注者、他们自己写的话。平台不做排名，也不给任何人打等级。"
+      />
 
       <form method="get" className="mt-7 flex flex-wrap items-center gap-2">
         <div className="relative min-w-[240px] flex-1">
@@ -113,14 +109,23 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
         </div>
       )}
 
-      <div className="mt-8">
-        <p className="mb-3 font-mono text-[11.5px] tracking-[0.1em] text-[var(--color-faint)] uppercase">
-          {people.length} 位
-        </p>
+      <div className="mt-8 border-t border-[var(--color-line-soft)]">
+        <div className="flex items-baseline justify-between gap-3 border-b border-[var(--color-line-soft)] py-2.5">
+          <span className="font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+            {kind === "team"
+              ? "团队 / Studio"
+              : kind === "individual"
+                ? "独立 FDE"
+                : "全部 FDE"}
+          </span>
+          <span className="font-mono text-[11px] text-[var(--color-faint)] tabular-nums">
+            {people.length} 位
+          </span>
+        </div>
         {people.length === 0 ? (
-          <div className="card px-6 py-16 text-center">
-            <p className="display text-[18px]">没找到</p>
-            <p className="mt-2 text-[13.5px] text-[var(--color-muted)]">
+          <div className="py-16 text-center">
+            <p className="text-[16px] font-semibold">没找到</p>
+            <p className="mt-1.5 text-[13.5px] text-[var(--color-ink-soft)]">
               换个关键词，或者去掉筛选条件。
             </p>
             <Link to="/discover" className="btn btn-ghost btn-sm mt-5">
@@ -128,7 +133,7 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="divide-y divide-[var(--color-line-soft)]">
             {people.map((p) => (
               <PersonCard key={p.id} person={p} />
             ))}

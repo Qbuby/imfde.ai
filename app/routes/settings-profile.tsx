@@ -4,6 +4,7 @@ import { requireMe } from "~/lib/session.server";
 import { many, one, stmt, batch } from "~/lib/db.server";
 import { cleanUrl, clamp } from "~/lib/validate";
 import { Avatar, CoverArt } from "~/components/media";
+import { PageHead } from "~/components/page-head";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await requireMe(context, request);
@@ -104,7 +105,7 @@ export default function SettingsProfile({
   const p = profile!;
 
   return (
-    <div className="mx-auto max-w-[760px]">
+    <div className="max-w-[900px]">
       {welcome && (
         <div className="mb-6 rounded-[var(--radius-panel)] border border-[var(--color-ink-soft)] bg-[var(--color-accent-soft)] px-4 py-3.5">
           <p className="text-[13.5px] font-medium text-[#0a6772]">
@@ -116,23 +117,24 @@ export default function SettingsProfile({
         </div>
       )}
 
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Settings</p>
-          <h1 className="display mt-2 text-[clamp(24px,3.2vw,32px)]">编辑主页</h1>
-        </div>
-        <div className="flex gap-2">
-          <Link to={`/@${me.handle}`} className="btn btn-ghost btn-sm">
-            看主页
-          </Link>
-          <Link to="/settings/accounts" className="btn btn-ghost btn-sm">
-            外部账号
-          </Link>
-        </div>
-      </header>
+      <PageHead
+        label="Settings"
+        title="编辑主页"
+        description="别人看到的这一页，就是这里填的东西。"
+        actions={
+          <>
+            <Link to={`/@${me.handle}`} className="btn btn-ghost btn-sm">
+              看主页
+            </Link>
+            <Link to="/settings/accounts" className="btn btn-ghost btn-sm">
+              外部账号
+            </Link>
+          </>
+        }
+      />
 
       {/* live preview header */}
-      <div className="mt-7 overflow-hidden rounded-[20px] border border-[var(--color-line)]">
+      <div className="mt-7 overflow-hidden rounded-[12px] border border-[var(--color-line-soft)]">
         <CoverArt
           seed={`${me.handle}-cover`}
           src={p.cover_url}

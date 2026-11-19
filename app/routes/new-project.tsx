@@ -4,6 +4,7 @@ import { requireMe } from "~/lib/session.server";
 import { one, stmt, batch } from "~/lib/db.server";
 import { cleanUrl, clamp } from "~/lib/validate";
 import { slugify } from "~/lib/format";
+import { PageHead } from "~/components/page-head";
 
 const KINDS = [
   { v: "project", t: "项目" },
@@ -112,20 +113,17 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
   const errors = actionData?.errors ?? {};
 
   return (
-    <div className="mx-auto max-w-[760px]">
-      <header className="flex items-center">
-        <p className="eyebrow">Create</p>
-        <Link
-          to="/"
-          className="ml-auto text-[12.5px] text-[var(--color-muted)] hover:text-[var(--color-ink)]"
-        >
-          取消
-        </Link>
-      </header>
-      <h1 className="display mt-2 text-[clamp(24px,3.2vw,32px)]">上传一个作品</h1>
-      <p className="mt-2 max-w-[560px] text-[13.5px] leading-relaxed text-[var(--color-muted)]">
-        标题之外都可以先跳过。作品页会明确标注哪些是本人自述、哪些是外部链接。
-      </p>
+    <div className="max-w-[900px]">
+      <PageHead
+        label="Create"
+        title="上传一个作品"
+        description="标题之外都可以先跳过。作品页会明确标注哪些是本人自述、哪些是外部链接。"
+        actions={
+          <Link to="/" className="btn btn-ghost btn-sm">
+            取消
+          </Link>
+        }
+      />
 
       <Form method="post" className="mt-8 space-y-5">
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_200px]">

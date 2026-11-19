@@ -2,6 +2,7 @@ import type { Route } from "./+types/settings-privacy";
 import { Form, Link, redirect } from "react-router";
 import { requireMe } from "~/lib/session.server";
 import { one, run } from "~/lib/db.server";
+import { PageHead } from "~/components/page-head";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await requireMe(context, request);
@@ -44,20 +45,21 @@ export default function SettingsPrivacy({
   const { profile } = loaderData;
 
   return (
-    <div className="mx-auto max-w-[680px]">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Settings</p>
-          <h1 className="display mt-2 text-[clamp(24px,3.2vw,32px)]">隐私</h1>
-        </div>
-        <Link to="/settings/profile" className="btn btn-ghost btn-sm">
-          编辑主页
-        </Link>
-      </header>
+    <div className="max-w-[760px]">
+      <PageHead
+        label="Settings"
+        title="隐私"
+        description="这些开关只影响别人看到什么，不影响数据本身。"
+        actions={
+          <Link to="/settings/profile" className="btn btn-ghost btn-sm">
+            编辑主页
+          </Link>
+        }
+      />
 
       <Form method="post" className="mt-7 space-y-3">
-        <div className="card divide-y divide-[var(--color-line-soft)]">
-          <label className="flex items-center justify-between gap-4 p-4">
+        <div className="divide-y divide-[var(--color-line-soft)] border-y border-[var(--color-line-soft)]">
+          <label className="flex items-center justify-between gap-4 py-4">
             <span>
               <span className="block text-[13px] font-medium">主页公开</span>
               <span className="mt-0.5 block text-[12px] text-[var(--color-muted)]">
@@ -74,7 +76,7 @@ export default function SettingsPrivacy({
             </select>
           </label>
 
-          <label className="flex items-center justify-between gap-4 p-4">
+          <label className="flex items-center justify-between gap-4 py-4">
             <span>
               <span className="block text-[13px] font-medium">隐藏关注数与关注列表</span>
               <span className="mt-0.5 block text-[12px] text-[var(--color-muted)]">

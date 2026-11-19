@@ -23,44 +23,69 @@ const POST_KIND_LABEL: Record<string, string> = {
   discussion: "Discussion",
 };
 
-export function ProjectCard({ project }: { project: ProjectCardRow }) {
+export function ProjectCard({
+  project,
+  variant = "grid",
+}: {
+  project: ProjectCardRow;
+  variant?: "grid" | "row";
+}) {
   const href = `/projects/${project.slug}`;
+
+  if (variant === "row") {
+    return (
+      <Link
+        to={href}
+        className="group flex items-center gap-3 rounded-[10px] px-2 py-2.5 transition hover:bg-[var(--color-paper)]"
+      >
+        <span className="w-[52px] shrink-0 overflow-hidden rounded-[8px]">
+          <CoverArt seed={project.slug} src={project.cover_url} aspect="1 / 1" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[14.5px] font-semibold group-hover:underline">
+            {project.title}
+          </span>
+          <span className="mt-0.5 block truncate text-[13px] text-[var(--color-ink-soft)]">
+            {project.summary}
+          </span>
+          <span className="mt-1 flex items-center gap-2 text-[12px] text-[var(--color-faint)]">
+            <span>{project.display_name}</span>
+            <span>·</span>
+            <span>{KIND_LABEL[project.kind] ?? project.kind}</span>
+            <span className="ml-auto flex items-center gap-1">
+              <HeartIcon />
+              {compact(project.likes)}
+            </span>
+          </span>
+        </span>
+      </Link>
+    );
+  }
+
   return (
     <article className="group">
       <Link to={href} className="block">
-        <div className="card card-link overflow-hidden">
-          <CoverArt
-            seed={project.slug}
-            src={project.cover_url}
-                        aspect="4 / 3"
-          />
+        <div className="overflow-hidden rounded-[12px]">
+          <CoverArt seed={project.slug} src={project.cover_url} aspect="4 / 3" />
         </div>
       </Link>
-      <div className="mt-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link to={href} className="block">
-            <h3 className="truncate text-[16px] font-semibold text-[var(--color-ink)] transition group-hover:opacity-70">
-              {project.title}
-            </h3>
-          </Link>
-          <p className="mt-1.5 line-clamp-2 text-[14px] leading-relaxed text-[var(--color-muted)]">
-            {project.summary}
-          </p>
-        </div>
-      </div>
-      <div className="mt-3 flex items-center gap-2 text-[13px] text-[var(--color-faint)]">
+      <Link to={href} className="mt-2.5 block">
+        <h3 className="truncate text-[15px] font-semibold group-hover:underline">
+          {project.title}
+        </h3>
+      </Link>
+      <p className="mt-1 line-clamp-2 text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">
+        {project.summary}
+      </p>
+      <div className="mt-2 flex items-center gap-2 text-[12.5px] text-[var(--color-faint)]">
         <Link
           to={`/@${project.handle}`}
-          className="flex min-w-0 items-center gap-1.5 transition hover:text-[var(--color-ink)]"
+          className="flex min-w-0 items-center gap-1.5 hover:text-[var(--color-ink)]"
         >
-          <Avatar
-            name={project.display_name}
-            src={project.avatar_url}
-            size={22}
-          />
+          <Avatar name={project.display_name} src={project.avatar_url} size={20} />
           <span className="truncate">{project.display_name}</span>
         </Link>
-        <span className="text-[var(--color-line)]">·</span>
+        <span>·</span>
         <span className="shrink-0">{KIND_LABEL[project.kind] ?? project.kind}</span>
         <span className="ml-auto flex shrink-0 items-center gap-1">
           <HeartIcon />
@@ -75,12 +100,12 @@ export function PersonCard({ person }: { person: PersonRow }) {
   return (
     <Link
       to={`/@${person.handle}`}
-      className="group flex items-center gap-3 rounded-[10px] px-2 py-2 transition hover:bg-[var(--color-paper)]"
+      className="group flex items-center gap-3 px-1 py-3.5 transition hover:bg-[var(--color-paper)]"
     >
       <Avatar name={person.display_name} src={person.avatar_url} size={46} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="truncate text-[14.5px] font-semibold group-hover:underline">
+          <p className="truncate text-[15px] font-semibold group-hover:underline">
             {person.display_name}
           </p>
           {person.kind === "team" && (
@@ -89,10 +114,10 @@ export function PersonCard({ person }: { person: PersonRow }) {
             </span>
           )}
         </div>
-        <p className="mt-0.5 truncate text-[13px] text-[var(--color-muted)]">
+        <p className="mt-0.5 truncate text-[13.5px] text-[var(--color-ink-soft)]">
           {person.headline || `@${person.handle}`}
         </p>
-        <p className="mt-1.5 flex items-center gap-2.5 font-mono text-[11.5px] tracking-wide text-[var(--color-faint)]">
+        <p className="mt-1 flex items-center gap-2.5 font-mono text-[11.5px] tracking-wide text-[var(--color-faint)]">
           <span>{person.projects} 作品</span>
           <span>{compact(person.followers)} 关注者</span>
         </p>

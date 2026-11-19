@@ -6,6 +6,7 @@ import { Avatar, CoverArt } from "~/components/media";
 import { FollowButton, PostCard, ProjectCard } from "~/components/cards";
 import { compact } from "~/lib/format";
 import { countsForProfile, postsByAuthor, projectsByOwner } from "~/lib/queries.server";
+import { SectionTitle } from "~/components/page-head";
 
 const PROVIDER_LABEL: Record<string, string> = {
   github: "GitHub",
@@ -126,17 +127,17 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
   const shown = (featured.length ? featured : projects).slice(0, 6);
 
   return (
-    <div className="mx-auto max-w-[900px]">
-      {/* cover */}
-      <div className="overflow-hidden rounded-[24px] border border-[var(--color-line)]">
+    <div className="max-w-[1060px]">
+      {/* cover — flat, no frame, same 12px radius as a project cover */}
+      <div className="overflow-hidden rounded-[12px]">
         <CoverArt
           seed={`${user.handle}-cover`}
           src={user.cover_url}
-          aspect="3 / 1"
+          aspect="4 / 1"
         />
       </div>
 
-      <div className="px-2 sm:px-6">
+      <div className="px-1 sm:px-2">
         <div className="-mt-14 flex items-start gap-4">
           <Avatar
             name={user.display_name}
@@ -144,9 +145,9 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
             size={96}
             ring
           />
-          <div className="flex-1 pt-[62px]">
+          <div className="flex-1 pt-[58px]">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="display text-[clamp(24px,2.8vw,32px)]">
+              <h1 className="text-[34px] font-semibold leading-tight tracking-[-0.02em]">
                 {user.display_name}
               </h1>
               {user.kind === "team" && (
@@ -227,7 +228,9 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
 
         {user.about && (
           <section className="mt-8">
-            <h2 className="eyebrow mb-2">关于</h2>
+            <h2 className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+              关于
+            </h2>
             <div className="max-w-[660px] whitespace-pre-wrap text-[14.5px] leading-[1.85] text-[var(--color-ink-2)]">
               {user.about}
             </div>
@@ -239,7 +242,9 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
 
         {skills.length > 0 && (
           <section className="mt-7">
-            <h2 className="eyebrow mb-2.5">方向</h2>
+            <h2 className="mb-2.5 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+              方向
+            </h2>
             <div className="flex flex-wrap gap-1.5">
               {skills.map((s) => (
                 <Link
@@ -257,20 +262,23 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
 
       {/* projects */}
       <section className="mt-10">
-        <div className="mb-4 flex items-end justify-between">
-          <h2 className="section-title">作品</h2>
-          {projects.length > 6 && (
-            <Link
-              to={`/@${user.handle}/projects`}
-              className="text-[12.5px] text-[var(--color-ink-soft)] hover:underline"
-            >
-              全部 {projects.length} 个 →
-            </Link>
-          )}
-        </div>
+        <SectionTitle
+          action={
+            projects.length > 6 ? (
+              <Link
+                to={`/@${user.handle}/projects`}
+                className="text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+              >
+                全部 {projects.length} 个 →
+              </Link>
+            ) : undefined
+          }
+        >
+          作品
+        </SectionTitle>
         {shown.length === 0 ? (
-          <div className="card px-6 py-12 text-center">
-            <p className="text-[13.5px] text-[var(--color-muted)]">
+          <div className="border-t border-[var(--color-line-soft)] py-12 text-center">
+            <p className="text-[13.5px] text-[var(--color-ink-soft)]">
               这个人还没有公开作品。
             </p>
             {isSelf && (
@@ -280,7 +288,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
             )}
           </div>
         ) : (
-          <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-x-6 gap-y-8 pt-1 sm:grid-cols-2 lg:grid-cols-3">
             {shown.map((p) => (
               <ProjectCard key={p.id} project={p} />
             ))}
@@ -291,8 +299,8 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
       {/* posts */}
       {posts.length > 0 && (
         <section className="mt-12">
-          <h2 className="section-title mb-4">动态</h2>
-          <div className="space-y-3">
+          <SectionTitle>动态</SectionTitle>
+          <div className="border-t border-[var(--color-line-soft)]">
             {posts.slice(0, 6).map((p) => (
               <PostCard key={p.id} post={p} />
             ))}
@@ -301,8 +309,10 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
       )}
 
       {/* source legend — the product's trust model, stated plainly */}
-      <section className="mt-12 rounded-[var(--radius-panel)] bg-[var(--color-sunken)] p-5">
-        <h2 className="eyebrow mb-2.5">这个页面上的信息从哪里来</h2>
+      <section className="mt-12 border-t border-[var(--color-line-soft)] pt-6">
+        <h2 className="mb-2.5 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+          这个页面上的信息从哪里来
+        </h2>
         <dl className="grid gap-2 text-[12.5px] leading-relaxed text-[var(--color-muted)] sm:grid-cols-2">
           <div>
             <dt className="font-medium text-[var(--color-ink)]">本人自述</dt>
