@@ -284,3 +284,22 @@ export async function countsForProfile(
   );
   return rows[0] ?? { followers: 0, following: 0, posts: 0, projects: 0 };
 }
+
+/** Skills clustered across public work — the feed's "trending" rail. */
+export async function topSkills(
+  context: AppLoadContext,
+  limit = 4,
+): Promise<Array<{ skill_name: string; n: number }>> {
+  return many<{ skill_name: string; n: number }>(
+    context,
+    `SELECT ps.skill_name, COUNT(*) AS n
+       FROM project_skills ps
+       JOIN projects pr ON pr.id = ps.project_id
+       JOIN users u     ON u.id = pr.owner_id
+      WHERE pr.visibility = 'public' AND u.status = 'active'
+      GROUP BY ps.skill_name
+      ORDER BY n DESC, ps.skill_name
+      LIMIT ?1`,
+    limit,
+  );
+}

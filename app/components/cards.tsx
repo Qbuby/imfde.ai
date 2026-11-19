@@ -75,12 +75,12 @@ export function PersonCard({ person }: { person: PersonRow }) {
   return (
     <Link
       to={`/@${person.handle}`}
-      className="card card-link flex items-center gap-3.5 p-3.5"
+      className="group flex items-center gap-3 rounded-[10px] px-2 py-2 transition hover:bg-[var(--color-paper)]"
     >
       <Avatar name={person.display_name} src={person.avatar_url} size={46} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="truncate text-[15px] font-semibold">
+          <p className="truncate text-[14.5px] font-semibold group-hover:underline">
             {person.display_name}
           </p>
           {person.kind === "team" && (
@@ -117,7 +117,7 @@ export function PostCard({
     : post.likes;
 
   return (
-    <article className="card p-4 sm:p-5">
+    <article className="border-b border-[var(--color-line-soft)] px-1 py-4 last:border-b-0">
       <header className="flex items-center gap-2.5">
         <Link to={`/@${post.handle}`}>
           <Avatar
@@ -142,8 +142,8 @@ export function PostCard({
         </span>
       </header>
 
-      <Link to={`/posts/${post.id}`} className="mt-3 block">
-        <p className="whitespace-pre-wrap text-[16px] leading-[1.6] text-[var(--color-ink-2)]">
+      <Link to={`/posts/${post.id}`} className="mt-2 block">
+        <p className="whitespace-pre-wrap text-[15px] leading-[1.55] text-[var(--color-ink)]">
           {post.body}
         </p>
       </Link>
@@ -170,7 +170,7 @@ export function PostCard({
               value={liked ? "unlike" : "like"}
             />
             <button
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition hover:bg-[var(--color-sunken)] ${
+              className={`flex items-center gap-1.5 flex items-center gap-1.5 rounded-full transition hover:text-[var(--color-ink)] ${
                 liked ? "text-[var(--color-ink)]" : ""
               }`}
               aria-pressed={liked}
@@ -182,7 +182,7 @@ export function PostCard({
 
           <Link
             to={`/posts/${post.id}`}
-            className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition hover:bg-[var(--color-sunken)]"
+            className="flex items-center gap-1.5 flex items-center gap-1.5 rounded-full transition hover:text-[var(--color-ink)]"
           >
             <CommentIcon />
             {post.comments > 0 ? compact(post.comments) : "评论"}
