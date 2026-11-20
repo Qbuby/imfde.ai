@@ -5,6 +5,8 @@ export default [
   layout("routes/shell.tsx", [
     index("routes/home.tsx"),
 
+    route("feed", "routes/feed.tsx"),
+
     route("discover", "routes/discover.tsx"),
     route("discover/projects", "routes/discover-projects.tsx"),
 
@@ -28,6 +30,8 @@ export default [
     route("actions/like", "routes/actions-like.tsx"),
     route("actions/follow", "routes/actions-follow.tsx"),
     route("actions/comment", "routes/actions-comment.tsx"),
+    route("actions/bookmark", "routes/actions-bookmark.tsx"),
+    route("actions/repost", "routes/actions-repost.tsx"),
   ]),
 
   // auth lives outside the shell: full-bleed, no nav chrome

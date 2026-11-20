@@ -5,6 +5,7 @@ import { many, one } from "~/lib/db.server";
 import { Avatar } from "~/components/media";
 import { HeartIcon } from "~/components/cards";
 import { absoluteDate, compact, relativeTime } from "~/lib/format";
+import { PostBody } from "~/components/post-body";
 
 const KIND_LABEL: Record<string, string> = {
   show: "Show Work",
@@ -28,6 +29,14 @@ interface PostDetail {
   likes: number;
   visibility: string;
   author_visibility: string;
+  repost_of_id: string | null;
+  r_body: string | null;
+  r_handle: string | null;
+  r_display_name: string | null;
+  r_avatar_url: string | null;
+  r_created_at: number | null;
+  r_project_slug: string | null;
+  r_project_title: string | null;
 }
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
@@ -40,11 +49,20 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
             p.visibility AS author_visibility,
             pr.slug AS project_slug, pr.title AS project_title,
             (SELECT COUNT(*) FROM reactions r
-              WHERE r.target_type='post' AND r.target_id = po.id AND r.type='like') AS likes
+              WHERE r.target_type='post' AND r.target_id = po.id AND r.type='like') AS likes,
+            po.repost_of_id,
+            op.body AS r_body, op.created_at AS r_created_at,
+            ou.handle AS r_handle, opf.display_name AS r_display_name,
+            opf.avatar_url AS r_avatar_url,
+            rpr.slug AS r_project_slug, rpr.title AS r_project_title
        FROM posts po
        JOIN users u ON u.id = po.author_id
        JOIN profiles p ON p.user_id = po.author_id
        LEFT JOIN projects pr ON pr.id = po.project_id
+       LEFT JOIN posts op    ON op.id = po.repost_of_id AND op.deleted_at IS NULL
+       LEFT JOIN users ou    ON ou.id = op.author_id
+       LEFT JOIN profiles opf ON opf.user_id = op.author_id
+       LEFT JOIN projects rpr ON rpr.id = op.project_id
       WHERE po.id = ?1 AND po.deleted_at IS NULL`,
     params.id,
   );
@@ -97,7 +115,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 
 export const meta: Route.MetaFunction = ({ data }) => {
   if (!data?.post) return [{ title: "动态不存在 — iMFDE" }];
-  const body = data.post.body.slice(0, 150);
+  const body = (data.post.body.trim() || data.post.r_body || "").slice(0, 150);
   return [
     { title: `${data.post.display_name}：${data.post.body.slice(0, 40)} — iMFDE` },
     { name: "description", content: body },
@@ -144,9 +162,41 @@ export default function Post({ loaderData }: Route.ComponentProps) {
         </span>
       </div>
 
-      <div className="mt-5 whitespace-pre-wrap text-[17px] leading-[1.8] text-[var(--color-ink)]">
-        {post.body}
-      </div>
+      {post.body.trim() !== "" && (
+        <PostBody
+          body={post.body}
+          className="mt-5 text-[17px] leading-[1.8] text-[var(--color-ink)]"
+        />
+      )}
+
+      {post.repost_of_id && post.r_body !== null && (
+        <div className="mt-4 rounded-[12px] border border-[var(--color-line)] p-4">
+          <div className="flex items-center gap-2">
+            <Avatar name={post.r_display_name ?? "?"} src={post.r_avatar_url} size={24} />
+            <Link
+              to={`/@${post.r_handle}`}
+              className="text-[13.5px] font-semibold hover:opacity-70"
+            >
+              {post.r_display_name}
+            </Link>
+            <span className="font-mono text-[11px] text-[var(--color-faint)]">
+              @{post.r_handle} · {relativeTime(post.r_created_at ?? post.created_at)}
+            </span>
+          </div>
+          <PostBody
+            body={post.r_body}
+            className="mt-2 text-[14.5px] leading-[1.65] text-[var(--color-ink-soft)]"
+          />
+          {post.r_project_slug && (
+            <Link
+              to={`/projects/${post.r_project_slug}`}
+              className="mt-2 block text-[12.5px] text-[var(--color-faint)] hover:text-[var(--color-ink)]"
+            >
+              作品：{post.r_project_title}
+            </Link>
+          )}
+        </div>
+      )}
 
       {post.project_slug && (
         <Link

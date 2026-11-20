@@ -4,6 +4,7 @@ import { requireMe } from "~/lib/session.server";
 import { one, stmt, batch } from "~/lib/db.server";
 import { cleanUrl, clamp } from "~/lib/validate";
 import { slugify } from "~/lib/format";
+import { insertPost } from "~/lib/queries.server";
 import { PageHead } from "~/components/page-head";
 
 const KINDS = [
@@ -106,6 +107,20 @@ export async function action({ request, context }: Route.ActionArgs) {
   ];
 
   await batch(context, stmts);
+
+  // Publishing work is the one moment the author is already writing copy, so
+  // offering a matching feed post here is cheaper than asking them again.
+  if (form.get("share_to_feed") === "on") {
+    await insertPost(context, {
+      authorId: me.id,
+      kind: "show",
+      body: `${title}
+${summary}`,
+      projectId: id,
+      tags: skills.slice(0, 5),
+    });
+  }
+
   throw redirect(`/projects/${slug}`);
 }
 
@@ -262,6 +277,21 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
             没有封面图也可以发布，会自动生成一张配色封面。
           </p>
         </fieldset>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-[var(--radius-panel)] border border-[var(--color-line)] bg-[var(--color-sunken)] p-4">
+          <input
+            type="checkbox"
+            name="share_to_feed"
+            defaultChecked
+            className="mt-0.5 h-[16px] w-[16px] shrink-0 accent-[var(--color-ink-soft)]"
+          />
+          <span>
+            <span className="block text-[13px] font-medium">同时发布一条动态到广场</span>
+            <span className="mt-0.5 block text-[12px] text-[var(--color-ink-soft)]">
+              用标题和简介自动生成，带上技能标签，可以之后在广场上改。
+            </span>
+          </span>
+        </label>
 
         <div className="flex items-center justify-end gap-2 pt-2">
           <Link to="/" className="btn btn-ghost">

@@ -16,6 +16,7 @@ import type { Me } from "~/lib/session.server";
 
 export const RAIL_ITEMS = [
   { key: "home", label: "首页", to: "/", end: true },
+  { key: "square", label: "广场", to: "/feed", end: true },
   { key: "discover", label: "发现 FDE", to: "/discover", end: true },
   { key: "work", label: "作品", to: "/discover/projects", end: true },
   { key: "messages", label: "消息", to: "/notifications", end: false },

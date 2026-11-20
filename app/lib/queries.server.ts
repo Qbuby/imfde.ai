@@ -1,5 +1,5 @@
 import type { AppLoadContext } from "react-router";
-import { many } from "./db.server";
+import { batch, many, stmt } from "./db.server";
 import { relativeTime } from "./format";
 
 export interface ProjectCardRow {
@@ -328,3 +328,266 @@ export async function topSkills(
     limit,
   );
 }
+
+/* ── 广场：信息流查询 ───────────────────────────────────────────────── */
+
+export interface RepostSource {
+  id: string;
+  kind: string;
+  body: string;
+  time_label: string;
+  handle: string;
+  display_name: string;
+  avatar_url: string | null;
+  project_slug: string | null;
+  project_title: string | null;
+}
+
+export interface FeedPostRow {
+  id: string;
+  kind: string;
+  body: string;
+  created_at: number;
+  time_label: string;
+  author_id: string;
+  handle: string;
+  display_name: string;
+  avatar_url: string | null;
+  project_id: string | null;
+  project_slug: string | null;
+  project_title: string | null;
+  project_summary: string | null;
+  likes: number;
+  comments: number;
+  reposts: number;
+  liked: number;
+  bookmarked: number;
+  tags: string[];
+  /** Non-null when this row is a repost; the original is inlined for display. */
+  repost: RepostSource | null;
+}
+
+/**
+ * One statement per page: counters come from correlated subqueries and the
+ * reposted original is joined in, so a 30-row page costs the same number of
+ * round trips as a 3-row one. Tags are fetched afterwards for the whole page
+ * in a single `IN (...)` query.
+ */
+const FEED_SELECT = `
+  SELECT po.id, po.kind, po.body, po.created_at, po.author_id,
+         po.project_id, po.repost_of_id,
+         u.handle, p.display_name, p.avatar_url,
+         pr.slug AS project_slug, pr.title AS project_title, pr.summary AS project_summary,
+         (SELECT COUNT(*) FROM reactions r
+           WHERE r.target_type = 'post' AND r.target_id = po.id AND r.type = 'like') AS likes,
+         (SELECT COUNT(*) FROM comments c
+           WHERE c.post_id = po.id AND c.deleted_at IS NULL) AS comments,
+         (SELECT COUNT(*) FROM posts rp
+           WHERE rp.repost_of_id = po.id AND rp.deleted_at IS NULL) AS reposts,
+         (SELECT COUNT(*) FROM reactions r2
+           WHERE r2.target_type = 'post' AND r2.target_id = po.id
+             AND r2.type = 'like' AND r2.user_id = ?1) AS liked,
+         (SELECT COUNT(*) FROM bookmarks b
+           WHERE b.user_id = ?1 AND b.target_type = 'post' AND b.target_id = po.id) AS bookmarked,
+         op.id AS r_id, op.kind AS r_kind, op.body AS r_body,
+         op.created_at AS r_created_at,
+         ou.handle AS r_handle, opf.display_name AS r_display_name,
+         opf.avatar_url AS r_avatar_url, opf.visibility AS r_visibility,
+         rpr.slug AS r_project_slug, rpr.title AS r_project_title
+    FROM posts po
+    JOIN users u     ON u.id = po.author_id
+    JOIN profiles p  ON p.user_id = po.author_id
+    LEFT JOIN projects pr ON pr.id = po.project_id
+    LEFT JOIN posts op    ON op.id = po.repost_of_id AND op.deleted_at IS NULL
+    LEFT JOIN users ou    ON ou.id = op.author_id
+    LEFT JOIN profiles opf ON opf.user_id = op.author_id
+    LEFT JOIN projects rpr ON rpr.id = op.project_id
+   WHERE po.visibility = 'public' AND po.deleted_at IS NULL AND u.status = 'active'
+     AND (p.visibility = 'public' OR po.author_id = ?1)
+`;
+
+type RawFeedRow = Omit<FeedPostRow, "time_label" | "tags" | "repost"> & {
+  r_id: string | null;
+  r_kind: string | null;
+  r_body: string | null;
+  r_created_at: number | null;
+  r_handle: string | null;
+  r_display_name: string | null;
+  r_avatar_url: string | null;
+  r_visibility: string | null;
+  r_project_slug: string | null;
+  r_project_title: string | null;
+};
+
+export async function feedPosts(
+  context: AppLoadContext,
+  opts: {
+    viewerId: string | null;
+    scope?: "all" | "following";
+    kind?: string;
+    tag?: string;
+    limit?: number;
+  },
+): Promise<FeedPostRow[]> {
+  const params: unknown[] = [opts.viewerId ?? "·none·"];
+  const clauses: string[] = [];
+  let i = 2;
+
+  if (opts.kind && opts.kind !== "all") {
+    params.push(opts.kind);
+    clauses.push(`po.kind = ?${i++}`);
+  }
+  if (opts.tag) {
+    params.push(opts.tag);
+    clauses.push(`po.id IN (SELECT post_id FROM post_tags WHERE tag = ?${i++})`);
+  }
+  if (opts.scope === "following") {
+    // ?1 is the viewer, so this only narrows when someone is signed in
+    clauses.push(
+      `(po.author_id = ?1 OR po.author_id IN (
+          SELECT followed_id FROM follows WHERE follower_id = ?1))`,
+    );
+  }
+
+  params.push(opts.limit ?? 30);
+  const where = clauses.length ? ` AND ${clauses.join(" AND ")}` : "";
+
+  const rows = await many<RawFeedRow>(
+    context,
+    `${FEED_SELECT}${where} ORDER BY po.created_at DESC LIMIT ?${i}`,
+    ...params,
+  );
+
+  const tags = await tagsForPosts(context, rows.map((r) => r.id));
+  return rows.map((r) => ({
+    ...r,
+    time_label: relativeTime(r.created_at),
+    tags: tags.get(r.id) ?? [],
+    // a reposted original disappears if its author went private
+    repost:
+      r.r_id && r.r_body !== null && r.r_visibility !== "private"
+        ? {
+            id: r.r_id,
+            kind: r.r_kind ?? "thought",
+            body: r.r_body,
+            time_label: relativeTime(r.r_created_at ?? r.created_at),
+            handle: r.r_handle ?? "",
+            display_name: r.r_display_name ?? "",
+            avatar_url: r.r_avatar_url,
+            project_slug: r.r_project_slug,
+            project_title: r.r_project_title,
+          }
+        : null,
+  }));
+}
+
+/** All tags for a set of posts, in one query — never per row. */
+export async function tagsForPosts(
+  context: AppLoadContext,
+  postIds: string[],
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (!postIds.length) return out;
+
+  const placeholders = postIds.map((_, n) => `?${n + 1}`).join(",");
+  const rows = await many<{ post_id: string; tag: string }>(
+    context,
+    `SELECT post_id, tag FROM post_tags WHERE post_id IN (${placeholders})
+      ORDER BY tag`,
+    ...postIds,
+  );
+  for (const r of rows) {
+    const list = out.get(r.post_id) ?? [];
+    list.push(r.tag);
+    out.set(r.post_id, list);
+  }
+  return out;
+}
+
+export interface HotTag {
+  tag: string;
+  n: number;
+}
+
+/** Tags ranked by how many public posts carry them. */
+export async function hotTags(
+  context: AppLoadContext,
+  limit = 8,
+): Promise<HotTag[]> {
+  return many<HotTag>(
+    context,
+    `SELECT pt.tag, COUNT(*) AS n
+       FROM post_tags pt
+       JOIN posts po   ON po.id = pt.post_id
+       JOIN users u    ON u.id = po.author_id
+       JOIN profiles p ON p.user_id = po.author_id
+      WHERE po.visibility = 'public' AND po.deleted_at IS NULL
+        AND u.status = 'active' AND p.visibility = 'public'
+      GROUP BY pt.tag
+      ORDER BY n DESC, pt.tag
+      LIMIT ?1`,
+    limit,
+  );
+}
+
+ /** The logged-in author's own work, for the composer's project picker. */
+export async function projectsForComposer(
+  context: AppLoadContext,
+  ownerId: string,
+  limit = 20,
+): Promise<Array<{ id: string; title: string }>> {
+  return many<{ id: string; title: string }>(
+    context,
+    `SELECT id, title FROM projects
+      WHERE owner_id = ?1 AND visibility <> 'private'
+      ORDER BY created_at DESC LIMIT ?2`,
+    ownerId,
+    limit,
+  );
+}
+
+/**
+ * Write a post and its tags together. Tags are derived from the body by the
+ * caller (see lib/tags.ts) so the same parser feeds the links in the browser.
+ */
+export async function insertPost(
+  context: AppLoadContext,
+  input: {
+    authorId: string;
+    kind: string;
+    body: string;
+    projectId?: string | null;
+    repostOfId?: string | null;
+    tags?: string[];
+  },
+): Promise<string> {
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  const statements = [
+    stmt(
+      context,
+      `INSERT INTO posts
+         (id, author_id, kind, body, project_id, repost_of_id, visibility,
+          created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'public', ?7, ?7)`,
+      id,
+      input.authorId,
+      input.kind,
+      input.body,
+      input.projectId ?? null,
+      input.repostOfId ?? null,
+      now,
+    ),
+    ...(input.tags ?? []).map((tag) =>
+      stmt(
+        context,
+        `INSERT OR IGNORE INTO post_tags (post_id, tag) VALUES (?1, ?2)`,
+        id,
+        tag,
+      ),
+    ),
+  ];
+  await batch(context, statements);
+  return id;
+}
+

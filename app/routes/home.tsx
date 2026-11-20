@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { getMe } from "~/lib/session.server";
 import {
   featuredPeople,
-  followingPosts,
   latestPosts,
   latestProjects,
   recommendedPeople,
@@ -15,10 +14,6 @@ import { Avatar, CoverArt } from "~/components/media";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
-  const tab =
-    new URL(request.url).searchParams.get("tab") === "latest"
-      ? "latest"
-      : "following";
 
   const projects = await latestProjects(context, me?.id ?? null, 8);
   const people = await featuredPeople(context, 6);
@@ -26,23 +21,18 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   if (!me) {
     return {
       me: null,
-      tab,
       projects,
       people,
-      posts: await latestPosts(context, null, 6),
+      posts: await latestPosts(context, null, 5),
       recommended: [],
     };
   }
 
   return {
     me,
-    tab,
     projects,
     people,
-    posts:
-      tab === "latest"
-        ? await latestPosts(context, me.id, 20)
-        : await followingPosts(context, me.id, 20),
+    posts: await latestPosts(context, me.id, 5),
     recommended: await recommendedPeople(context, me.id, 4),
     skills: await topSkills(context, 4),
     stats: await countsForProfile(context, me.id),
@@ -50,7 +40,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { me, tab, projects, people, posts, recommended, skills, stats } = loaderData;
+  const { me, projects, people, posts, recommended, skills, stats } = loaderData;
 
   if (!me) return <Landing projects={projects} people={people} posts={posts} />;
 
@@ -105,25 +95,31 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         </Link>
 
         <div className="mt-8">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[20px] font-semibold tracking-[-0.01em]">动态</h2>
-            <div className="flex items-center gap-1">
-              <TabLink to="/?tab=following" active={tab === "following"}>
-                关注
-              </TabLink>
-              <TabLink to="/?tab=latest" active={tab === "latest"}>
-                最新
-              </TabLink>
-            </div>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-[20px] font-semibold tracking-[-0.01em]">最新现场动态</h2>
+            <Link
+              to="/feed"
+              className="text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+            >
+              进入广场 →
+            </Link>
           </div>
 
           {posts.length === 0 ? (
-            <EmptyFeed tab={tab} />
+            <EmptyFeed />
           ) : (
-            <div className="divide-y divide-[var(--color-line-soft)]">
-              {posts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
+            <div className="border-t border-[var(--color-line-soft)]">
+              <div className="divide-y divide-[var(--color-line-soft)]">
+                {posts.map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+              </div>
+              <Link
+                to="/feed"
+                className="mt-2 flex items-center justify-center rounded-[10px] border border-[var(--color-line-soft)] py-2.5 text-[13px] text-[var(--color-ink-soft)] transition hover:border-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+              >
+                进入广场，看全部动态
+              </Link>
             </div>
           )}
         </div>
@@ -203,44 +199,17 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   );
 }
 
-function TabLink({
-  to,
-  active,
-  children,
-}: {
-  to: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      to={to}
-      preventScrollReset
-      className={`rounded-full px-3.5 py-1.5 text-[14px] font-medium transition ${
-        active
-          ? "bg-[var(--color-ink-2)] text-white"
-          : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
-      }`}
-    >
-      {children}
-    </Link>
-  );
-}
 
-function EmptyFeed({ tab }: { tab: string }) {
+function EmptyFeed() {
   return (
-    <div className="py-16 text-center">
-      <p className="text-[16px] font-semibold">
-        {tab === "following" ? "关注还没开始" : "全站还没有动态"}
-      </p>
+    <div className="border-t border-[var(--color-line-soft)] py-16 text-center">
+      <p className="text-[16px] font-semibold">广场还没有动态</p>
       <p className="mx-auto mt-1.5 max-w-[380px] text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">
-        {tab === "following"
-          ? "去发现页找几位正在做事的 FDE，关注之后他们的更新会出现在这里。"
-          : "第一个发帖的人会出现在这里。"}
+        第一个发帖的人会出现在这里。也可以先去广场看看别人在做什么。
       </p>
       <div className="mt-5 flex justify-center gap-2">
-        <Link to="/discover" className="btn btn-ghost btn-sm">
-          去发现 FDE
+        <Link to="/feed" className="btn btn-ghost btn-sm">
+          去广场
         </Link>
         <Link to="/new/post" className="btn btn-primary btn-sm">
           我发第一条
@@ -425,19 +394,25 @@ function Landing({
       {posts.length > 0 && (
         <section className="mt-16">
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="section-title">最近在说什么</h2>
+            <h2 className="section-title">最新现场动态</h2>
             <Link
-              to="/discover"
+              to="/feed"
               className="hidden text-[14px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] sm:block"
             >
-              去发现页 →
+              进入广场 →
             </Link>
           </div>
           <div className="border-t border-[var(--color-line-soft)] lg:grid lg:grid-cols-2 lg:gap-x-10">
-            {posts.slice(0, 4).map((post) => (
+            {posts.slice(0, 5).map((post) => (
               <PostCard key={post.id} post={post} showActions={false} />
             ))}
           </div>
+          <Link
+            to="/feed"
+            className="mt-3 flex items-center justify-center rounded-[10px] border border-[var(--color-line-soft)] py-2.5 text-[13px] text-[var(--color-ink-soft)] transition hover:border-[var(--color-ink-soft)] hover:text-[var(--color-ink)] sm:hidden"
+          >
+            进入广场，看全部动态
+          </Link>
         </section>
       )}
 

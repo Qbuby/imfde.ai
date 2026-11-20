@@ -38,6 +38,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 }
 
 const GUEST_NAV = [
+  { to: "/feed", label: "广场", end: true },
   { to: "/discover", label: "发现 FDE", end: true },
   { to: "/discover/projects", label: "作品", end: true },
 ];
