@@ -306,7 +306,10 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
             </span>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[12.5px] font-medium">封面图 URL</span>
+            <span className="mb-1.5 flex gap-2 text-[12.5px] font-medium">
+              封面图 URL
+              {errors.cover_url && <span className="text-[#c0392b]">{errors.cover_url}</span>}
+            </span>
             <input
               name="cover_url"
               defaultValue={project.cover_url ?? ""}
@@ -315,15 +318,24 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
             />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[12.5px] font-medium">在线 Demo</span>
+            <span className="mb-1.5 flex gap-2 text-[12.5px] font-medium">
+              在线 Demo
+              {errors.demo_url && <span className="text-[#c0392b]">{errors.demo_url}</span>}
+            </span>
             <input name="demo_url" defaultValue={project.demo_url ?? ""} className="field" />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[12.5px] font-medium">文档</span>
+            <span className="mb-1.5 flex gap-2 text-[12.5px] font-medium">
+              文档
+              {errors.docs_url && <span className="text-[#c0392b]">{errors.docs_url}</span>}
+            </span>
             <input name="docs_url" defaultValue={project.docs_url ?? ""} className="field" />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[12.5px] font-medium">代码仓库</span>
+            <span className="mb-1.5 flex gap-2 text-[12.5px] font-medium">
+              代码仓库
+              {errors.repo_url && <span className="text-[#c0392b]">{errors.repo_url}</span>}
+            </span>
             <input name="repo_url" defaultValue={project.repo_url ?? ""} className="field" />
           </label>
         </div>
