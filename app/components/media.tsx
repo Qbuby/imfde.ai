@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { avatarTint, coverPalette, initials } from "~/lib/format";
+import { avatarTint, coverPalette, coverPhoto, initials } from "~/lib/format";
 
 export function Avatar({
   name,
@@ -41,23 +41,27 @@ export function Avatar({
 }
 
 /**
- * Cover art. Uploads arrive later; until then a piece of work still has to
- * look deliberate. Each cover is a flat duotone drawn from a fixed pastel
- * set, keyed by the slug so it never changes between visits.
+ * Cover art for work that has no image of its own. Ten openly licensed
+ * photographs stand in, desaturated and tinted with a per-slug palette so a
+ * project without a screenshot still looks like part of the set — and keeps
+ * looking the same across visits.
  *
- * No title is baked in: the title is always set in type next to the card,
- * and duplicating it inside the image reads as a placeholder.
+ * No title is baked in: the title is always set in type next to the card.
  */
 export function CoverArt({
   seed,
   src,
   aspect = "16 / 9",
   className = "",
+  photo = true,
 }: {
   seed: string;
   src?: string | null;
   aspect?: string;
   className?: string;
+  /** Work gets photography; a person's banner stays an abstract field, so a
+      profile never reads as somebody's holiday snap. */
+  photo?: boolean;
 }) {
   const p = useMemo(() => coverPalette(seed), [seed]);
 
@@ -77,21 +81,39 @@ export function CoverArt({
     );
   }
 
+  if (!photo) {
+    return (
+      <div
+        className={`cover-art ${className}`}
+        style={
+          {
+            aspectRatio: aspect,
+            "--ta": p.ta,
+            "--tb": p.tb,
+            "--mark": p.mark,
+          } as React.CSSProperties
+        }
+        aria-hidden="true"
+      >
+        <span className="cover-arc" />
+        <span className="cover-rule" />
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`cover-art ${className}`}
+      className={`cover-photo ${className}`}
       style={
         {
           aspectRatio: aspect,
           "--ta": p.ta,
           "--tb": p.tb,
-          "--mark": p.mark,
         } as React.CSSProperties
       }
       aria-hidden="true"
     >
-      <span className="cover-arc" />
-      <span className="cover-rule" />
+      <img src={coverPhoto(seed)} alt="" loading="lazy" decoding="async" />
     </div>
   );
 }

@@ -31,7 +31,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  const projects = await projectsByOwner(context, user.id);
+  const projects = await projectsByOwner(context, user.id, me?.id ?? null);
   return { user, projects, isSelf: me?.id === user.id };
 }
 

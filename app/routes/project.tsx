@@ -16,9 +16,10 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
-  const [me, project] = await Promise.all([
-    getMe(context, request),
-    one<{
+  // `me` first: the like state below is viewer-dependent, so it cannot be
+  // fetched in the same Promise.all as the project row.
+  const me = await getMe(context, request);
+  const project = await one<{
       id: string;
       owner_id: string;
       slug: string;
@@ -43,22 +44,32 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
       headline: string | null;
       likes: number;
       followers: number;
+      liked: number;
+      owner_visibility: string;
     }>(
       context,
       `SELECT pr.*, u.handle, p.display_name, p.avatar_url, p.headline,
+              p.visibility AS owner_visibility,
               (SELECT COUNT(*) FROM reactions r
                 WHERE r.target_type='project' AND r.target_id = pr.id) AS likes,
-              (SELECT COUNT(*) FROM follows f WHERE f.followed_id = pr.owner_id) AS followers
+              (SELECT COUNT(*) FROM follows f WHERE f.followed_id = pr.owner_id) AS followers,
+              (SELECT COUNT(*) FROM reactions r3
+                WHERE r3.target_type='project' AND r3.target_id = pr.id
+                  AND r3.type='like' AND r3.user_id = ?2) AS liked
          FROM projects pr
          JOIN users u ON u.id = pr.owner_id
          JOIN profiles p ON p.user_id = pr.owner_id
         WHERE pr.slug = ?1`,
-      params.slug,
-    ),
-  ]);
+    params.slug,
+    me?.id ?? "·none·",
+  );
 
   if (!project) throw new Response("Not Found", { status: 404 });
+  // item-level privacy, then the owner's profile-level privacy
   if (project.visibility === "private" && project.owner_id !== me?.id) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  if (project.owner_visibility === "private" && project.owner_id !== me?.id) {
     throw new Response("Not Found", { status: 404 });
   }
 
@@ -114,8 +125,9 @@ export default function Project({ loaderData }: Route.ComponentProps) {
   const isOwner = me?.id === project.owner_id;
   const liked = fetcher.formData
     ? fetcher.formData.get("intent") === "like"
-    : false;
-  const likes = project.likes + (fetcher.formData ? (liked ? 1 : 0) : 0);
+    : Boolean(project.liked);
+  const likes =
+    project.likes + (liked && !project.liked ? 1 : !liked && project.liked ? -1 : 0);
 
   return (
     <article className="max-w-[1060px]">
@@ -151,8 +163,8 @@ export default function Project({ loaderData }: Route.ComponentProps) {
 
         <div className="ml-auto flex items-center gap-2">
           {isOwner ? (
-            <Link to="/settings/profile" className="btn btn-ghost btn-sm">
-              管理作品
+            <Link to={`/projects/${project.slug}/edit`} className="btn btn-ghost btn-sm">
+              编辑作品
             </Link>
           ) : me ? (
             <FollowButton targetId={project.owner_id} following={following} />
@@ -163,6 +175,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
             <input type="hidden" name="target_type" value="project" />
             <input type="hidden" name="target_id" value={project.id} />
             <button
+              aria-pressed={liked}
               className={`btn btn-ghost btn-sm ${liked ? "!text-[var(--color-ink-soft)]" : ""}`}
             >
               <HeartIcon filled={liked} />

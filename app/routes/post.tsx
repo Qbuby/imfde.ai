@@ -26,6 +26,8 @@ interface PostDetail {
   project_slug: string | null;
   project_title: string | null;
   likes: number;
+  visibility: string;
+  author_visibility: string;
 }
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
@@ -35,6 +37,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     context,
     `SELECT po.id, po.kind, po.body, po.created_at, po.author_id,
             u.handle, p.display_name, p.avatar_url, p.headline,
+            p.visibility AS author_visibility,
             pr.slug AS project_slug, pr.title AS project_title,
             (SELECT COUNT(*) FROM reactions r
               WHERE r.target_type='post' AND r.target_id = po.id AND r.type='like') AS likes
@@ -47,6 +50,12 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
   );
 
   if (!post) throw new Response("Not Found", { status: 404 });
+  if (post.visibility === "private" && post.author_id !== me?.id) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  if (post.author_visibility === "private" && post.author_id !== me?.id) {
+    throw new Response("Not Found", { status: 404 });
+  }
 
   const comments = await many<{
     id: string;
@@ -107,21 +116,33 @@ export default function Post({ loaderData }: Route.ComponentProps) {
 
   return (
     <article className="max-w-[760px]">
-      <Link
-        to={`/@${post.handle}`}
-        className="flex items-center gap-3 transition hover:opacity-80"
-      >
-        <Avatar name={post.display_name} src={post.avatar_url} size={44} />
-        <div>
-          <p className="text-[15px] font-medium">{post.display_name}</p>
-          <p className="font-mono text-[11.5px] tracking-wide text-[var(--color-faint)]">
-            @{post.handle} · {post.time_label}
-          </p>
-        </div>
-        <span className="chip chip-teal ml-auto !h-[26px]">
-          {KIND_LABEL[post.kind] ?? post.kind}
+      <div className="flex items-center gap-3">
+        <Link
+          to={`/@${post.handle}`}
+          className="flex min-w-0 items-center gap-3 transition hover:opacity-80"
+        >
+          <Avatar name={post.display_name} src={post.avatar_url} size={44} />
+          <div>
+            <p className="text-[15px] font-medium">{post.display_name}</p>
+            <p className="font-mono text-[11.5px] tracking-wide text-[var(--color-faint)]">
+              @{post.handle} · {post.time_label}
+            </p>
+          </div>
+        </Link>
+        <span className="ml-auto flex shrink-0 items-center gap-1.5">
+          <span className="chip chip-teal !h-[26px]">
+            {KIND_LABEL[post.kind] ?? post.kind}
+          </span>
+          {me?.id === post.author_id && (
+            <Link
+              to={`/posts/${post.id}/edit`}
+              className="chip !h-[26px] hover:!bg-[var(--color-sunken-deep)]"
+            >
+              编辑
+            </Link>
+          )}
         </span>
-      </Link>
+      </div>
 
       <div className="mt-5 whitespace-pre-wrap text-[17px] leading-[1.8] text-[var(--color-ink)]">
         {post.body}

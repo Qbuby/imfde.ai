@@ -80,7 +80,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
         WHERE user_id = ?1 ORDER BY position`,
       user.id,
     ),
-    projectsByOwner(context, user.id),
+    projectsByOwner(context, user.id, me?.id ?? null),
     postsByAuthor(context, user.id, me?.id ?? null, 12),
     me
       ? one<{ n: number }>(
@@ -134,6 +134,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
           seed={`${user.handle}-cover`}
           src={user.cover_url}
           aspect="4 / 1"
+          photo={false}
         />
       </div>
 

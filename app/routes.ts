@@ -8,7 +8,9 @@ export default [
     route("discover", "routes/discover.tsx"),
     route("discover/projects", "routes/discover-projects.tsx"),
 
+    route("projects/:slug/edit", "routes/project-edit.tsx"),
     route("projects/:slug", "routes/project.tsx"),
+    route("posts/:id/edit", "routes/post-edit.tsx"),
     route("posts/:id", "routes/post.tsx"),
 
     route("notifications", "routes/notifications.tsx"),

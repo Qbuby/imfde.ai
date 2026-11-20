@@ -1,6 +1,7 @@
 import type { Route } from "./+types/discover-projects";
 import { Link, useSearchParams } from "react-router";
 import { searchProjects } from "~/lib/queries.server";
+import { getMe } from "~/lib/session.server";
 import { ProjectCard } from "~/components/cards";
 import { PageHead } from "~/components/page-head";
 
@@ -20,7 +21,14 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const kind = url.searchParams.get("kind") || "all";
   const sort = url.searchParams.get("sort") || undefined;
 
-  const projects = await searchProjects(context, { q, kind, sort, limit: 30 });
+  const me = await getMe(context, request);
+  const projects = await searchProjects(context, {
+    q,
+    kind,
+    sort,
+    limit: 30,
+    viewerId: me?.id ?? null,
+  });
   return { projects, q: q ?? "", kind, sort: sort ?? "" };
 }
 

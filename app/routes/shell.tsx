@@ -1,11 +1,40 @@
 import type { Route } from "./+types/shell";
 import { Link, NavLink, Outlet } from "react-router";
 import { getMe } from "~/lib/session.server";
+import { one } from "~/lib/db.server";
 import { AppShell } from "~/components/app-shell";
 
+/**
+ * Four things make a profile useful to a stranger: a headline, a face, one
+ * piece of work, and one place to find more. The rail shows how many are done
+ * instead of a fixed number.
+ */
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
-  return { me };
+  if (!me) return { me: null, setupDone: 0 };
+
+  const row = await one<{
+    headline: number;
+    avatar_url: number;
+    projects: number;
+    links: number;
+  }>(
+    context,
+    `SELECT
+       (SELECT COUNT(*) FROM profiles
+         WHERE user_id = ?1 AND headline IS NOT NULL AND length(headline) > 0) AS headline,
+       (SELECT COUNT(*) FROM profiles
+         WHERE user_id = ?1 AND avatar_url IS NOT NULL AND length(avatar_url) > 0) AS avatar_url,
+       (SELECT COUNT(*) FROM projects WHERE owner_id = ?1 AND visibility = 'public') AS projects,
+       (SELECT COUNT(*) FROM external_accounts WHERE user_id = ?1) AS links`,
+    me.id,
+  );
+
+  const setupDone = row
+    ? Number(row.headline > 0) + Number(row.avatar_url > 0) + Number(row.projects > 0) + Number(row.links > 0)
+    : 0;
+
+  return { me, setupDone };
 }
 
 const GUEST_NAV = [
@@ -17,7 +46,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
   const me = loaderData?.me ?? null;
 
   // Signed in: Contra's app view (rail + panel). Signed out: marketing chrome.
-  if (me) return <AppShell me={me} />;
+  if (me) return <AppShell me={me} setupDone={loaderData.setupDone} />;
 
   return (
     <div className="min-h-dvh bg-[var(--color-canvas)]">

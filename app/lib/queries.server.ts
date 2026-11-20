@@ -46,7 +46,13 @@ export interface PersonRow {
   followers: number;
 }
 
-const PROJECT_SELECT = `
+/**
+ * Content visibility has two levels: the item's own `visibility`, and the
+ * owner's profile visibility. A profile set to 私密 means "主页、作品和动态
+ * 都不对其他人可见", so every public surface has to honour it — the owner
+ * is the only exception.
+ */
+const projectSelect = (viewerSlot: number) => `
   SELECT pr.id, pr.slug, pr.kind, pr.title, pr.summary, pr.cover_url,
          pr.featured, pr.created_at,
          u.handle, p.display_name, p.avatar_url,
@@ -56,15 +62,18 @@ const PROJECT_SELECT = `
     JOIN users u   ON u.id = pr.owner_id
     JOIN profiles p ON p.user_id = pr.owner_id
    WHERE pr.visibility = 'public' AND u.status = 'active'
+     AND (p.visibility = 'public' OR pr.owner_id = ?${viewerSlot})
 `;
 
 export async function latestProjects(
   context: AppLoadContext,
+  viewerId: string | null,
   limit = 9,
 ): Promise<ProjectCardRow[]> {
   return many<ProjectCardRow>(
     context,
-    `${PROJECT_SELECT} ORDER BY pr.featured DESC, pr.created_at DESC LIMIT ?1`,
+    `${projectSelect(1)} ORDER BY pr.featured DESC, pr.created_at DESC LIMIT ?2`,
+    viewerId ?? "·none·",
     limit,
   );
 }
@@ -72,11 +81,14 @@ export async function latestProjects(
 export async function projectsByOwner(
   context: AppLoadContext,
   ownerId: string,
+  viewerId: string | null = null,
 ): Promise<ProjectCardRow[]> {
   return many<ProjectCardRow>(
     context,
-    `${PROJECT_SELECT} AND pr.owner_id = ?1 ORDER BY pr.featured DESC, pr.created_at DESC`,
+    `${projectSelect(2)} AND pr.owner_id = ?1
+      ORDER BY pr.featured DESC, pr.created_at DESC`,
     ownerId,
+    viewerId ?? "·none·",
   );
 }
 
@@ -96,6 +108,7 @@ const POST_SELECT = `
     JOIN profiles p ON p.user_id = po.author_id
     LEFT JOIN projects pr ON pr.id = po.project_id
    WHERE po.visibility = 'public' AND po.deleted_at IS NULL AND u.status = 'active'
+     AND (p.visibility = 'public' OR po.author_id = ?2)
 `;
 
 export async function latestPosts(
@@ -233,7 +246,13 @@ export async function searchPeople(
 
 export async function searchProjects(
   context: AppLoadContext,
-  opts: { q?: string; kind?: string; sort?: string; limit?: number },
+  opts: {
+    q?: string;
+    kind?: string;
+    sort?: string;
+    limit?: number;
+    viewerId?: string | null;
+  },
 ): Promise<ProjectCardRow[]> {
   const clauses: string[] = [];
   const params: unknown[] = [];
@@ -250,13 +269,17 @@ export async function searchProjects(
     i++;
   }
 
+  const viewerSlot = i;
+  params.push(opts.viewerId ?? "·none·");
+  i++;
+
   const where = clauses.length ? ` AND ${clauses.join(" AND ")}` : "";
   const order =
     opts.sort === "likes" ? "likes DESC, pr.created_at DESC" : "pr.created_at DESC";
 
   return many<ProjectCardRow>(
     context,
-    `${PROJECT_SELECT}${where} ORDER BY ${order} LIMIT ?${i}`,
+    `${projectSelect(viewerSlot)}${where} ORDER BY ${order} LIMIT ?${i}`,
     ...params,
     opts.limit ?? 24,
   );
@@ -296,7 +319,9 @@ export async function topSkills(
        FROM project_skills ps
        JOIN projects pr ON pr.id = ps.project_id
        JOIN users u     ON u.id = pr.owner_id
+       JOIN profiles p  ON p.user_id = pr.owner_id
       WHERE pr.visibility = 'public' AND u.status = 'active'
+        AND p.visibility = 'public'
       GROUP BY ps.skill_name
       ORDER BY n DESC, ps.skill_name
       LIMIT ?1`,

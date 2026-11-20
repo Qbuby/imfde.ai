@@ -31,7 +31,7 @@ export const RAIL_GROUPS = [
   },
 ] as const;
 
-export function AppShell({ me }: { me: Me }) {
+export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
   return (
     <div className="min-h-dvh bg-[#fbfcfd]">
       {/* ── mobile top bar ─────────────────────────────────────────── */}
@@ -92,9 +92,9 @@ export function AppShell({ me }: { me: Me }) {
               <span className="grid h-[18px] w-[18px] place-items-center text-[var(--color-ink-soft)]">
                 <GearIcon />
               </span>
-              完成设置
+              {setupDone === 4 ? "主页已完整" : "完成设置"}
               <span className="ml-auto font-mono text-[13px] text-[var(--color-faint)]">
-                1/4
+                {setupDone}/4
               </span>
             </Link>
           </nav>
@@ -170,6 +170,23 @@ export function AppShell({ me }: { me: Me }) {
                   {item.label}
                 </NavLink>
               ))}
+              <NavLink
+                to="/settings/profile"
+                className={({ isActive }) =>
+                  `shrink-0 rounded-full px-3 py-1.5 text-[14px] font-medium ${
+                    isActive
+                      ? "bg-[var(--color-ink-2)] text-white"
+                      : "text-[var(--color-ink-soft)]"
+                  }`
+                }
+              >
+                设置
+              </NavLink>
+              <Form method="post" action="/logout" className="shrink-0">
+                <button className="rounded-full px-3 py-1.5 text-[14px] font-medium text-[var(--color-ink-soft)]">
+                  退出
+                </button>
+              </Form>
             </div>
             <Outlet />
           </div>

@@ -16,7 +16,9 @@ export const meta: Route.MetaFunction = ({ location }) => {
     { property: "og:site_name", content: "iMFDE" },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
-    { tagName: "link", rel: "canonical", href: origin },
+    { tagName: "link", rel: "canonical", href: `https://imfde.ai${origin}` },
+    { property: "og:image", content: "https://imfde.ai/og.jpg" },
+    { name: "twitter:image", content: "https://imfde.ai/og.jpg" },
   ];
 };
 
@@ -46,22 +48,22 @@ export default function App() {
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const is404 = typeof error === "object" && error !== null && "status" in error && (error as { status?: number }).status === 404;
   return (
-    <div className="min-h-dvh bg-[var(--canvas)]">
+    <div className="min-h-dvh bg-[var(--color-canvas)]">
       <div className="mx-auto max-w-[640px] px-6 py-24 text-center">
-        <p className="font-mono text-[13px] tracking-[0.14em] text-[var(--muted)] uppercase">
+        <p className="font-mono text-[13px] tracking-[0.14em] text-[var(--color-muted)] uppercase">
           {is404 ? "404" : "Error"}
         </p>
-        <h1 className="mt-4 text-[clamp(28px,4vw,40px)] font-semibold tracking-[-0.02em] text-[var(--ink)]">
+        <h1 className="mt-4 text-[clamp(28px,4vw,40px)] font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
           {is404 ? "这个页面不存在" : "出了一点问题"}
         </h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-[var(--muted)]">
+        <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
           {is404
             ? "链接可能已经失效，或者这个 FDE 已经改了 handle。"
             : "我们已经记录，稍后再试一次。"}
         </p>
         <Link
           to="/discover"
-          className="mt-8 inline-flex h-11 items-center rounded-full bg-[var(--ink)] px-6 text-[14px] font-medium text-white transition hover:opacity-85"
+          className="mt-8 inline-flex h-11 items-center rounded-full bg-[var(--color-ink)] px-6 text-[14px] font-medium text-white transition hover:opacity-85"
         >
           去发现 FDE
         </Link>

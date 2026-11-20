@@ -20,7 +20,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       ? "latest"
       : "following";
 
-  const projects = await latestProjects(context, 8);
+  const projects = await latestProjects(context, me?.id ?? null, 8);
   const people = await featuredPeople(context, 6);
 
   if (!me) {
@@ -268,7 +268,7 @@ function Landing({
         <div className="grid items-start gap-[21px] lg:grid-cols-[437px_minmax(0,1fr)]">
           <div className="relative hidden h-[432px] lg:block" aria-hidden="true">
             <div className="absolute inset-0 overflow-hidden rounded-[20px]">
-              <CoverArt seed="imfde-hero" aspect="1 / 1" className="h-full" />
+              <CoverArt seed="imfde-hero" aspect="1 / 1" className="h-full" photo={false} />
             </div>
             <p className="absolute left-6 top-5 font-mono text-[11px] tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">
               imfde.ai / @你的名字

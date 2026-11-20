@@ -329,7 +329,8 @@
     flex: none;
   }
 
-  /* Cover art: flat duotone plus one geometric mark, keyed by slug. */
+  /* Abstract field: flat duotone plus one geometric mark, keyed by slug.
+     Used where a photograph would be a lie — a person's own banner. */
   .cover-art {
     position: relative;
     overflow: hidden;
@@ -365,6 +366,48 @@
     height: 2px;
     background: var(--mark);
     opacity: 0.42;
+  }
+
+  /* Cover art: a photograph, tinted per slug so a grid of them reads as a
+     set. The fine diagonal lattice is what keeps it in the same family as
+     the rest of the surface. */
+  .cover-photo {
+    position: relative;
+    overflow: hidden;
+    /* neutral until the photo arrives: a pastel block at low fill reads as
+       a missing image, a paper-grey block reads as a deliberate placeholder */
+    background: var(--color-sunken);
+    isolation: isolate;
+  }
+  .cover-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(18%) saturate(92%) contrast(103%);
+  }
+  .cover-photo::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-image: linear-gradient(150deg, var(--ta) 0%, var(--tb) 100%);
+    opacity: 0.24;
+    mix-blend-mode: multiply;
+  }
+  .cover-photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    opacity: 0.26;
+    background-image: repeating-linear-gradient(
+      -35deg,
+      transparent 0 6px,
+      rgba(255, 255, 255, 0.55) 6px 7px
+    );
+    mix-blend-mode: soft-light;
   }
 }
 

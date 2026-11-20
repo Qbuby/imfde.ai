@@ -139,6 +139,7 @@ export default function SettingsProfile({
           seed={`${me.handle}-cover`}
           src={p.cover_url}
           aspect="16 / 5"
+          photo={false}
         />
         <div className="-mt-9 flex items-end gap-3 px-4 pb-4">
           <Avatar name={p.display_name} src={p.avatar_url} size={64} ring />
