@@ -38,12 +38,45 @@ export function checkDisplayName(v: string): string | null {
   return null;
 }
 
-export function cleanUrl(v: string): string | null {
-  const s = v.trim();
-  if (!s) return null;
-  if (!/^(https?:)?\/\/[^\s]+$/.test(s) && !/^[\w.-]+\.[a-z]{2,}[/\-._~:?#@!$&'()*+,;=%]*$/i.test(s))
-    return "链接格式不对";
-  return s.startsWith("http") ? s : `https://${s.replace(/^\/\//, "")}`;
+/**
+ * URL fields separate "empty" from "wrong" instead of collapsing both into
+ * `null`, because the old version returned its error *message* as the value
+ * and several callers wrote that string straight into the database.
+ *
+ * Only http(s) survives — a `javascript:` URL in an avatar field would become
+ * a stored XSS the moment someone renders it as a link.
+ */
+export interface CleanUrlResult {
+  value: string | null;
+  error: string | null;
+}
+
+export function cleanUrl(raw: string): CleanUrlResult {
+  const s = raw.trim();
+  if (!s) return { value: null, error: null };
+  if (s.length > 2048) return { value: null, error: "链接太长了" };
+
+  // scheme-less input ("github.com/me") is assumed to be https
+  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(s)
+    ? s
+    : `https://${s.replace(/^\/\//, "")}`;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    return { value: null, error: "链接格式不对" };
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return { value: null, error: "只支持 http / https 链接" };
+  }
+  // a bare word parses as a host ("abc" → https://abc), which is not a link
+  if (!parsed.hostname.includes(".")) {
+    return { value: null, error: "链接格式不对" };
+  }
+
+  return { value: parsed.toString(), error: null };
 }
 
 export function clamp(v: string, max: number): string {

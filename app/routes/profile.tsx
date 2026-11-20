@@ -3,9 +3,11 @@ import { Link } from "react-router";
 import { getMe, normalizeHandle } from "~/lib/session.server";
 import { many, one } from "~/lib/db.server";
 import { Avatar, CoverArt } from "~/components/media";
-import { FollowButton, PostCard, ProjectCard } from "~/components/cards";
+import { FeedCard, FollowButton, ProjectCard } from "~/components/cards";
+import { CopyLinkButton } from "~/components/copy-link";
+import { BRAND_ICONS } from "~/components/brand-icons";
 import { compact } from "~/lib/format";
-import { countsForProfile, postsByAuthor, projectsByOwner } from "~/lib/queries.server";
+import { countsForProfile, feedPosts, projectsByOwner } from "~/lib/queries.server";
 import { SectionTitle } from "~/components/page-head";
 
 const PROVIDER_LABEL: Record<string, string> = {
@@ -17,14 +19,6 @@ const PROVIDER_LABEL: Record<string, string> = {
   blog: "博客",
 };
 
-const PROVIDER_ICON: Record<string, string> = {
-  github: "GH",
-  linkedin: "in",
-  huggingface: "HF",
-  website: "↗",
-  x: "X",
-  blog: "✎",
-};
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
   const handle = normalizeHandle(params.handle);
@@ -62,7 +56,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  const [counts, skills, links, projects, posts, following] = await Promise.all([
+  const [counts, skills, links, projects, feed, following] = await Promise.all([
     countsForProfile(context, user.id),
     many<{ skill_name: string }>(
       context,
@@ -81,7 +75,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
       user.id,
     ),
     projectsByOwner(context, user.id, me?.id ?? null),
-    postsByAuthor(context, user.id, me?.id ?? null, 12),
+    feedPosts(context, { viewerId: me?.id ?? null, authorId: user.id, limit: 12 }),
     me
       ? one<{ n: number }>(
           context,
@@ -99,7 +93,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     skills: skills.map((s) => s.skill_name),
     links,
     projects,
-    posts,
+    posts: feed.rows,
     isSelf: me?.id === user.id,
     following: Boolean(following?.n),
   };
@@ -121,7 +115,7 @@ export const meta: Route.MetaFunction = ({ data }) => {
 };
 
 export default function Profile({ loaderData }: Route.ComponentProps) {
-  const { user, counts, skills, links, projects, posts, isSelf, following } =
+  const { me, user, counts, skills, links, projects, posts, isSelf, following } =
     loaderData;
   const featured = projects.filter((p) => p.featured).slice(0, 3);
   const shown = (featured.length ? featured : projects).slice(0, 6);
@@ -172,8 +166,13 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
               </Link>
             </>
           ) : (
-            <FollowButton targetId={user.id} following={following} />
+            <FollowButton targetId={user.id} following={following} signedIn={Boolean(me)} />
           )}
+          <CopyLinkButton
+            path={`/@${user.handle}`}
+            label="复制主页链接"
+            className="btn btn-ghost btn-sm"
+          />
           {(user.location || user.timezone) && (
             <span className="text-[12.5px] text-[var(--color-muted)]">
               {[user.location, user.timezone].filter(Boolean).join(" · ")}
@@ -215,8 +214,11 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                 rel="noopener noreferrer nofollow"
                 className="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-[12.5px] transition hover:border-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
               >
-                <span className="font-mono text-[10.5px] font-semibold text-[var(--color-muted)]">
-                  {PROVIDER_ICON[l.provider] ?? "↗"}
+                <span className="text-[var(--color-ink-soft)]">
+                  {(() => {
+                    const Icon = BRAND_ICONS[l.provider];
+                    return Icon ? <Icon size={14} /> : <span aria-hidden>↗</span>;
+                  })()}
                 </span>
                 {PROVIDER_LABEL[l.provider] ?? l.provider}
                 <span className="font-mono text-[9.5px] tracking-[0.08em] text-[var(--color-faint)] uppercase">
@@ -303,7 +305,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
           <SectionTitle>动态</SectionTitle>
           <div className="border-t border-[var(--color-line-soft)]">
             {posts.slice(0, 6).map((p) => (
-              <PostCard key={p.id} post={p} />
+              <FeedCard key={p.id} post={p} viewerId={me?.id ?? null} />
             ))}
           </div>
         </section>

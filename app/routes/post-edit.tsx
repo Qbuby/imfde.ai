@@ -1,8 +1,11 @@
 import type { Route } from "./+types/post-edit";
 import { Form, Link, redirect } from "react-router";
 import { requireMe } from "~/lib/session.server";
-import { many, one, run } from "~/lib/db.server";
+import { batch, many, one, run, stmt } from "~/lib/db.server";
+import { projectsForComposer } from "~/lib/queries.server";
+import { extractTags } from "~/lib/tags";
 import { PageHead } from "~/components/page-head";
+import { ConfirmDialog } from "~/components/confirm-dialog";
 
 const KINDS = [
   { v: "show", t: "Show Work", d: "展示一个作品或阶段成果" },
@@ -74,16 +77,33 @@ export async function action({ request, context, params }: Route.ActionArgs) {
     return Response.json({ error: "内容不能为空，且不超过 4000 字" }, { status: 400 });
   }
 
-  await run(
-    context,
-    `UPDATE posts SET kind = ?2, body = ?3, project_id = ?4, updated_at = ?5
-      WHERE id = ?1`,
-    post.id,
-    KINDS.some((k) => k.v === kind) ? kind : "show",
-    body,
-    projectId || null,
-    Date.now(),
-  );
+  // only your own, non-private work can be attached
+  let attachable: string | null = null;
+  if (projectId) {
+    const owned = await projectsForComposer(context, me.id, 50);
+    attachable = owned.some((x) => x.id === projectId) ? projectId : null;
+  }
+
+  const tags = extractTags(body);
+
+  // the post row and its tag rows must move together, or a tag edit leaves
+  // stale topics behind in the whole feed
+  await batch(context, [
+    stmt(
+      context,
+      `UPDATE posts SET kind = ?2, body = ?3, project_id = ?4, updated_at = ?5
+        WHERE id = ?1`,
+      post.id,
+      KINDS.some((k) => k.v === kind) ? kind : "show",
+      body,
+      attachable,
+      Date.now(),
+    ),
+    stmt(context, `DELETE FROM post_tags WHERE post_id = ?1`, post.id),
+    ...tags.map((tag) =>
+      stmt(context, `INSERT OR IGNORE INTO post_tags (post_id, tag) VALUES (?1, ?2)`, post.id, tag),
+    ),
+  ]);
 
   throw redirect(`/posts/${post.id}`);
 }
@@ -163,13 +183,17 @@ export default function PostEdit({ loaderData }: Route.ComponentProps) {
             删除后不会出现在任何列表里。
           </span>
           <div className="flex items-center gap-2">
-            <button
-              form="delete-form"
-              className="btn btn-ghost btn-sm !text-[#c0392b]"
-              type="submit"
-            >
-              删除动态
-            </button>
+            <ConfirmDialog
+              action={`/posts/${post.id}/edit`}
+              hidden={{ intent: "delete" }}
+              title="删除这条动态？"
+              description="删除后它不会再出现在广场、首页或个人主页。已有的评论和赞会保留但不可见。"
+              trigger={
+                <button type="button" className="btn btn-ghost btn-sm !text-[#c0392b]">
+                  删除动态
+                </button>
+              }
+            />
             <Link to={`/posts/${post.id}`} className="btn btn-ghost btn-sm">
               取消
             </Link>
@@ -178,16 +202,6 @@ export default function PostEdit({ loaderData }: Route.ComponentProps) {
         </div>
       </Form>
 
-      <Form
-        id="delete-form"
-        method="post"
-        className="hidden"
-        onSubmit={(e) => {
-          if (!confirm("确定删除这条动态？删除后不会出现在任何列表里。")) e.preventDefault();
-        }}
-      >
-        <input type="hidden" name="intent" value="delete" />
-      </Form>
     </div>
   );
 }

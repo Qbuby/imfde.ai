@@ -9,12 +9,26 @@ export async function action({ request, context }: Route.ActionArgs) {
   const targetId = String(form.get("target_id") ?? "");
   const intent = String(form.get("intent") ?? "like");
 
-  if (
-    !["post", "project"].includes(targetType) ||
-    !targetId
-  ) {
+  if (!["post", "project"].includes(targetType) || !targetId) {
     return Response.json({ ok: false }, { status: 400 });
   }
+
+  // only something a viewer could actually see can be liked
+  const exists =
+    targetType === "post"
+      ? await one<{ n: number }>(
+          context,
+          `SELECT COUNT(*) AS n FROM posts
+            WHERE id = ?1 AND deleted_at IS NULL AND visibility = 'public'`,
+          targetId,
+        )
+      : await one<{ n: number }>(
+          context,
+          `SELECT COUNT(*) AS n FROM projects
+            WHERE id = ?1 AND visibility <> 'private'`,
+          targetId,
+        );
+  if (!exists?.n) return Response.json({ ok: false }, { status: 404 });
 
   if (intent === "unlike") {
     await run(
@@ -52,11 +66,17 @@ export async function action({ request, context }: Route.ActionArgs) {
           targetId,
         );
 
+  // one notification per (person, target): unlike → like must not stack rows
   if (owner && owner.author_id !== me.id) {
     await run(
       context,
       `INSERT INTO notifications (id, recipient_id, actor_id, type, target_type, target_id, created_at)
-       VALUES (?1, ?2, ?3, 'like', ?4, ?5, ?6)`,
+       SELECT ?1, ?2, ?3, 'like', ?4, ?5, ?6
+        WHERE NOT EXISTS (
+          SELECT 1 FROM notifications
+           WHERE recipient_id = ?2 AND actor_id = ?3 AND type = 'like'
+             AND target_type = ?4 AND target_id = ?5
+        )`,
       crypto.randomUUID(),
       owner.author_id,
       me.id,

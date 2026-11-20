@@ -7,6 +7,14 @@ import { slugify } from "~/lib/format";
 import { insertPost } from "~/lib/queries.server";
 import { PageHead } from "~/components/page-head";
 
+const ACCESS_MODES = [
+  { v: "", t: "不标注" },
+  { v: "在线体验", t: "在线体验" },
+  { v: "开源代码", t: "开源代码" },
+  { v: "私有部署", t: "私有部署" },
+  { v: "仅 Demo 展示", t: "仅 Demo 展示" },
+];
+
 const KINDS = [
   { v: "project", t: "项目" },
   { v: "agent", t: "Agent" },
@@ -53,6 +61,10 @@ export async function action({ request, context }: Route.ActionArgs) {
   const demo = cleanUrl(String(form.get("demo_url") ?? ""));
   const docs = cleanUrl(String(form.get("docs_url") ?? ""));
   const repo = cleanUrl(String(form.get("repo_url") ?? ""));
+  const accessMode = ACCESS_MODES.some((m) => m.v && m.v === String(form.get("access_mode")))
+    ? String(form.get("access_mode"))
+    : null;
+  const featured = form.get("featured") === "on" ? 1 : 0;
   const skills = String(form.get("skills") ?? "")
     .split(/[,，、]/)
     .map((s) => s.trim())
@@ -62,6 +74,10 @@ export async function action({ request, context }: Route.ActionArgs) {
   const errors: Record<string, string> = {};
   if (!title) errors.title = "请填写标题";
   if (!summary) errors.summary = "请填写一句话简介";
+  if (cover.error) errors.cover_url = cover.error;
+  if (demo.error) errors.demo_url = demo.error;
+  if (docs.error) errors.docs_url = docs.error;
+  if (repo.error) errors.repo_url = repo.error;
   if (Object.keys(errors).length) {
     return data({ errors }, { status: 400 });
   }
@@ -76,8 +92,8 @@ export async function action({ request, context }: Route.ActionArgs) {
       `INSERT INTO projects
          (id, owner_id, slug, kind, title, summary, description, cover_url,
           demo_url, docs_url, repo_url, role, stage, limitations,
-          visibility, featured, created_at, updated_at)
-       VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,'public',0,?15,?15)`,
+          visibility, featured, access_mode, created_at, updated_at)
+       VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,'public',?15,?16,?17,?17)`,
       id,
       me.id,
       slug,
@@ -85,13 +101,15 @@ export async function action({ request, context }: Route.ActionArgs) {
       title,
       summary,
       description || null,
-      cover,
-      demo,
-      docs,
-      repo,
+      cover.value,
+      demo.value,
+      docs.value,
+      repo.value,
       role || null,
       stage || null,
       limitations || null,
+      featured,
+      accessMode,
       now,
     ),
     ...skills.map((s, i) =>
@@ -251,25 +269,65 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
           </label>
         </div>
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-[12.5px] font-medium">
+              访问方式 <span className="font-normal text-[var(--color-faint)]">可选</span>
+            </span>
+            <select name="access_mode" className="field cursor-pointer">
+              {ACCESS_MODES.map((m) => (
+                <option key={m.v || "none"} value={m.v}>
+                  {m.t}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 self-end rounded-[10px] border border-[var(--color-line)] p-3">
+            <input
+              type="checkbox"
+              name="featured"
+              className="mt-0.5 h-[16px] w-[16px] shrink-0 accent-[var(--color-ink-soft)]"
+            />
+            <span>
+              <span className="block text-[13px] font-medium">设为个人主页精选</span>
+              <span className="mt-0.5 block text-[12px] text-[var(--color-ink-soft)]">
+                最多展示 3 个，超出的按时间先后
+              </span>
+            </span>
+          </label>
+        </div>
+
         <fieldset className="rounded-[var(--radius-panel)] border border-[var(--color-line)] bg-[var(--color-sunken)] p-4">
           <legend className="px-1 text-[11.5px] tracking-[0.1em] text-[var(--color-muted)] uppercase">
             链接与图片
           </legend>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="mb-1.5 block text-[12px] text-[var(--color-ink-soft)]">封面图片 URL</span>
+              <span className="mb-1.5 flex gap-2 text-[12px] text-[var(--color-ink-soft)]">
+                封面图片 URL
+                {errors.cover_url && <span className="text-[#c0392b]">{errors.cover_url}</span>}
+              </span>
               <input name="cover_url" placeholder="https://…" className="field !h-[42px]" />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[12px] text-[var(--color-ink-soft)]">在线 Demo</span>
+              <span className="mb-1.5 flex gap-2 text-[12px] text-[var(--color-ink-soft)]">
+                在线 Demo
+                {errors.demo_url && <span className="text-[#c0392b]">{errors.demo_url}</span>}
+              </span>
               <input name="demo_url" placeholder="https://…" className="field !h-[42px]" />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[12px] text-[var(--color-ink-soft)]">文档</span>
+              <span className="mb-1.5 flex gap-2 text-[12px] text-[var(--color-ink-soft)]">
+                文档
+                {errors.docs_url && <span className="text-[#c0392b]">{errors.docs_url}</span>}
+              </span>
               <input name="docs_url" placeholder="https://…" className="field !h-[42px]" />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[12px] text-[var(--color-ink-soft)]">代码仓库</span>
+              <span className="mb-1.5 flex gap-2 text-[12px] text-[var(--color-ink-soft)]">
+                代码仓库
+                {errors.repo_url && <span className="text-[#c0392b]">{errors.repo_url}</span>}
+              </span>
               <input name="repo_url" placeholder="https://github.com/…" className="field !h-[42px]" />
             </label>
           </div>

@@ -1,7 +1,9 @@
 import type { Route } from "./+types/new-post";
 import { Form, Link, redirect } from "react-router";
 import { requireMe } from "~/lib/session.server";
-import { many, run } from "~/lib/db.server";
+import { many } from "~/lib/db.server";
+import { insertPost, projectsForComposer } from "~/lib/queries.server";
+import { extractTags } from "~/lib/tags";
 import { PageHead } from "~/components/page-head";
 
 const KINDS = [
@@ -34,20 +36,20 @@ export async function action({ request, context }: Route.ActionArgs) {
     return Response.json({ error: "内容不能为空，且不超过 4000 字" }, { status: 400 });
   }
 
-  const now = Date.now();
-  const id = crypto.randomUUID();
+  // only your own, non-private work can be attached
+  let attachable: string | null = null;
+  if (projectId) {
+    const owned = await projectsForComposer(context, me.id, 50);
+    attachable = owned.some((x) => x.id === projectId) ? projectId : null;
+  }
 
-  await run(
-    context,
-    `INSERT INTO posts (id, author_id, kind, body, project_id, visibility, created_at, updated_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, 'public', ?6, ?6)`,
-    id,
-    me.id,
-    KINDS.some((k) => k.v === kind) ? kind : "show",
+  const id = await insertPost(context, {
+    authorId: me.id,
+    kind: KINDS.some((k) => k.v === kind) ? kind : "show",
     body,
-    projectId || null,
-    now,
-  );
+    projectId: attachable,
+    tags: extractTags(body),
+  });
 
   throw redirect(`/posts/${id}`);
 }

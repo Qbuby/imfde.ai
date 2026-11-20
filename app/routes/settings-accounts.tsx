@@ -50,14 +50,18 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   const provider = String(form.get("provider") ?? "");
-  const url = cleanUrl(String(form.get("profile_url") ?? ""));
+  const cleaned = cleanUrl(String(form.get("profile_url") ?? ""));
 
   if (!PROVIDERS.some((p) => p.v === provider)) {
     return data({ error: "请选择平台" }, { status: 400 });
   }
-  if (!url) {
-    return data({ error: "请填写正确的链接" }, { status: 400 });
+  if (cleaned.error) {
+    return data({ error: cleaned.error }, { status: 400 });
   }
+  if (!cleaned.value) {
+    return data({ error: "请填写链接" }, { status: 400 });
+  }
+  const url = cleaned.value;
 
   const count = await many<{ n: number }>(
     context,

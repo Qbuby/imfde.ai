@@ -1,5 +1,8 @@
 import type { Route } from "./+types/feed";
-import { Form, Link, redirect, useSearchParams } from "react-router";
+import { Link, useFetcher, useSearchParams } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Flame, History, Bookmark as BookmarkIcon } from "lucide-react";
 import { getMe, requireMe } from "~/lib/session.server";
 import {
   feedPosts,
@@ -9,7 +12,6 @@ import {
 } from "~/lib/queries.server";
 import { PageHead } from "~/components/page-head";
 import { FeedCard } from "~/components/cards";
-import { Avatar } from "~/components/media";
 import { extractTags } from "~/lib/tags";
 
 const KINDS = [
@@ -20,28 +22,52 @@ const KINDS = [
   { v: "discussion", t: "Discussion" },
 ];
 
+const PAGE_SIZE = 30;
+
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
   const url = new URL(request.url);
 
-  const tab = url.searchParams.get("tab") === "following" && me ? "following" : "all";
+  const rawTab = url.searchParams.get("tab");
+  const tab: "all" | "following" | "bookmarks" =
+    me && rawTab === "following"
+      ? "following"
+      : me && rawTab === "bookmarks"
+        ? "bookmarks"
+        : "all";
+
   const kindParam = url.searchParams.get("kind") ?? "all";
   const kind = KINDS.some((k) => k.v === kindParam) ? kindParam : "all";
   const tag = url.searchParams.get("tag")?.trim() || "";
+  const sort = url.searchParams.get("sort") === "active" ? "active" : "latest";
+  const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
 
-  const [posts, tags, myProjects] = await Promise.all([
+  const [feed, tags, myProjects] = await Promise.all([
     feedPosts(context, {
       viewerId: me?.id ?? null,
       scope: tab,
       kind,
       tag,
-      limit: 30,
+      sort,
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
     }),
     hotTags(context, 8),
     me ? projectsForComposer(context, me.id) : Promise.resolve([]),
   ]);
 
-  return { me, tab, kind, tag, posts, hotTags: tags, myProjects };
+  return {
+    me,
+    tab,
+    kind,
+    tag,
+    sort,
+    page,
+    posts: feed.rows,
+    hasMore: feed.hasMore,
+    hotTags: tags,
+    myProjects,
+  };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -53,17 +79,17 @@ export async function action({ request, context }: Route.ActionArgs) {
   const projectId = String(form.get("project_id") ?? "");
 
   if (!body || body.length > 4000) {
-    return Response.json({ ok: false }, { status: 400 });
+    return Response.json({ ok: false, error: "内容不能为空，且不超过 4000 字" }, { status: 400 });
   }
 
   // only your own, non-private work can be attached
   let attachable: string | null = null;
   if (projectId) {
-    const ok = await projectsForComposer(context, me.id, 50);
-    attachable = ok.some((p) => p.id === projectId) ? projectId : null;
+    const owned = await projectsForComposer(context, me.id, 50);
+    attachable = owned.some((p) => p.id === projectId) ? projectId : null;
   }
 
-  await insertPost(context, {
+  const id = await insertPost(context, {
     authorId: me.id,
     kind: ["show", "build", "thought", "discussion"].includes(kind) ? kind : "show",
     body,
@@ -71,18 +97,22 @@ export async function action({ request, context }: Route.ActionArgs) {
     tags: extractTags(body),
   });
 
-  throw redirect("/feed");
+  return Response.json({ ok: true, id });
 }
 
 export default function Feed({ loaderData }: Route.ComponentProps) {
-  const { me, tab, kind, tag, posts, hotTags: tags, myProjects } = loaderData;
+  const { me, tab, kind, tag, sort, page, posts, hasMore, hotTags: tags, myProjects } =
+    loaderData;
   const [params] = useSearchParams();
+  const viewerId = me?.id ?? null;
 
-  const withParam = (key: string, value: string) => {
+  const href = (overrides: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    // changing a filter always drops the other tab's scope
+    for (const [k, v] of Object.entries(overrides)) {
+      if (v === null || v === "") next.delete(k);
+      else next.set(k, v);
+    }
+    if (!("page" in overrides)) next.delete("page");
     const s = next.toString();
     return `/feed${s ? `?${s}` : ""}`;
   };
@@ -96,82 +126,29 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           description="正在发生的事、刚跑通的东西、还卡着的问题。按 #话题 归类，任何人都能读。"
         />
 
-        {/* tabs */}
-        <div className="mt-5 flex items-center gap-1">
-          <TabLink to="/feed" active={tab === "all"}>
+        <div className="mt-5 flex flex-wrap items-center gap-1">
+          <TabLink to={href({ tab: null })} active={tab === "all"}>
             全站最新
           </TabLink>
           {me && (
-            <TabLink to="/feed?tab=following" active={tab === "following"}>
-              关注
-            </TabLink>
+            <>
+              <TabLink to={href({ tab: "following" })} active={tab === "following"}>
+                关注
+              </TabLink>
+              <TabLink to={href({ tab: "bookmarks" })} active={tab === "bookmarks"}>
+                收藏
+              </TabLink>
+            </>
           )}
         </div>
 
-        {/* composer */}
-        {me ? (
-          <Form
-            method="post"
-            className="mt-5 rounded-[12px] border border-[var(--color-line)] bg-white"
-          >
-            <div className="flex items-start gap-3 px-4 pt-3.5">
-              <Avatar name={me.display_name} src={me.avatar_url} size={34} />
-              <textarea
-                name="body"
-                required
-                maxLength={4000}
-                rows={2}
-                placeholder="分享你现在在做的事。用 #话题 归类，别人才能顺着标签找到你。"
-                className="min-h-[52px] w-full resize-y border-0 bg-transparent pt-1 text-[15px] leading-[1.55] outline-none placeholder:text-[var(--color-faint)]"
-              />
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[var(--color-line-soft)] px-4 py-2.5">
-              <select
-                name="kind"
-                aria-label="动态类型"
-                className="field !h-[32px] !w-auto !px-2 !text-[12.5px]"
-              >
-                {KINDS.filter((k) => k.v !== "all").map((k) => (
-                  <option key={k.v} value={k.v}>
-                    {k.t}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="project_id"
-                aria-label="关联作品"
-                className="field !h-[32px] !w-auto !max-w-[190px] !px-2 !text-[12.5px]"
-              >
-                <option value="">不关联作品</option>
-                {myProjects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                  </option>
-                ))}
-              </select>
-              <span className="hidden text-[11.5px] text-[var(--color-faint)] sm:inline">
-                #标签会自动识别
-              </span>
-              <button className="btn btn-primary btn-sm !h-[32px] ml-auto">发布</button>
-            </div>
-          </Form>
-        ) : (
-          <div className="mt-5 flex items-center justify-between gap-4 rounded-[12px] border border-[var(--color-line-soft)] bg-[var(--color-paper)] px-4 py-3">
-            <p className="text-[13.5px] text-[var(--color-ink-soft)]">
-              登录后可以发帖、点赞和转发。
-            </p>
-            <Link to="/login?next=%2Ffeed" className="btn btn-primary btn-sm">
-              登录
-            </Link>
-          </div>
-        )}
+        {me ? <Composer myProjects={myProjects} /> : null}
 
-        {/* filters */}
         <div className="mt-5 flex flex-wrap items-center gap-1.5">
           {KINDS.map((k) => (
             <Link
               key={k.v}
-              to={withParam("kind", k.v === "all" ? "" : k.v)}
+              to={href({ kind: k.v === "all" ? null : k.v })}
               preventScrollReset
               className={`chip transition ${
                 kind === k.v
@@ -187,7 +164,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
               话题：
               <span className="chip chip-teal">#{tag}</span>
               <Link
-                to={withParam("tag", "")}
+                to={href({ tag: null })}
                 preventScrollReset
                 className="text-[var(--color-faint)] hover:text-[var(--color-ink)]"
               >
@@ -195,24 +172,47 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
               </Link>
             </span>
           )}
+          <span className="ml-auto flex items-center gap-1">
+            <SortLink to={href({ sort: null })} active={sort === "latest"}>
+              <History size={14} strokeWidth={1.65} aria-hidden />
+              最新
+            </SortLink>
+            <SortLink to={href({ sort: "active" })} active={sort === "active"}>
+              <Flame size={14} strokeWidth={1.65} aria-hidden />
+              近期互动多
+            </SortLink>
+          </span>
         </div>
 
-        {/* list */}
         <div className="mt-6 border-t border-[var(--color-line-soft)]">
           {posts.length === 0 ? (
             <div className="py-16 text-center">
               <p className="text-[16px] font-semibold">
-                {tag ? `还没有 #${tag} 的动态` : "广场还很安静"}
+                {tab === "bookmarks"
+                  ? "还没有收藏的动态"
+                  : tab === "following"
+                    ? "关注的人还没有更新"
+                    : tag
+                      ? `还没有 #${tag} 的动态`
+                      : "广场还很安静"}
               </p>
               <p className="mt-1.5 text-[13.5px] text-[var(--color-ink-soft)]">
-                {tab === "following"
-                  ? "去发现页关注几位正在做事的人，他们的更新会出现在这里。"
-                  : "第一条公开动态会出现在这里。"}
+                {tab === "bookmarks"
+                  ? "在广场里点书签图标，动态就会收到这里。"
+                  : tab === "following"
+                    ? "去发现页关注几位正在做事的人，他们的更新会出现在这里。"
+                    : "第一条公开动态会出现在这里。"}
               </p>
               <div className="mt-5 flex justify-center gap-2">
-                <Link to="/discover" className="btn btn-ghost btn-sm">
-                  去发现 FDE
-                </Link>
+                {tab === "bookmarks" || tab === "following" ? (
+                  <Link to={href({ tab: null })} className="btn btn-ghost btn-sm">
+                    去看全站最新
+                  </Link>
+                ) : (
+                  <Link to="/discover" className="btn btn-ghost btn-sm">
+                    去发现 FDE
+                  </Link>
+                )}
                 {me && (
                   <Link to="/feed" className="btn btn-primary btn-sm">
                     发第一条
@@ -223,14 +223,35 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           ) : (
             <div className="divide-y divide-[var(--color-line-soft)]">
               {posts.map((post) => (
-                <FeedCard key={post.id} post={post} signedIn={Boolean(me)} />
+                <FeedCard key={post.id} post={post} viewerId={viewerId} />
               ))}
             </div>
           )}
         </div>
+
+        {(page > 1 || hasMore) && (
+          <nav className="mt-6 flex items-center justify-between gap-3">
+            {page > 1 ? (
+              <Link to={href({ page: String(page - 1) })} className="btn btn-ghost btn-sm">
+                ← 上一页
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="font-mono text-[11.5px] text-[var(--color-faint)] tabular-nums">
+              第 {page} 页
+            </span>
+            {hasMore ? (
+              <Link to={href({ page: String(page + 1) })} className="btn btn-ghost btn-sm">
+                下一页 →
+              </Link>
+            ) : (
+              <span />
+            )}
+          </nav>
+        )}
       </div>
 
-      {/* hot tags rail */}
       <aside className="hidden xl:block">
         <div className="sticky top-6 space-y-6">
           <div>
@@ -251,7 +272,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
                     className="flex items-baseline gap-2 py-1 text-[14px] transition hover:opacity-70"
                   >
                     <span className="font-medium">#{t.tag}</span>
-                    <span className="ml-auto font-mono text-[11px] text-[var(--color-faint)]">
+                    <span className="ml-auto font-mono text-[11px] text-[var(--color-faint)] tabular-nums">
                       {t.n}
                     </span>
                   </Link>
@@ -260,10 +281,20 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
             )}
           </div>
 
-          {kind !== "all" && (
+          {me && (
+            <Link
+              to={href({ tab: "bookmarks" })}
+              className="flex items-center gap-2 text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+            >
+              <BookmarkIcon size={14} strokeWidth={1.65} aria-hidden />
+              我的收藏
+            </Link>
+          )}
+
+          {(kind !== "all" || tag || sort !== "latest") && (
             <Link
               to="/feed"
-              className="text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+              className="block text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
             >
               清除筛选，看全部 →
             </Link>
@@ -271,6 +302,92 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
         </div>
       </aside>
     </div>
+  );
+}
+
+/**
+ * Composer. Uses a fetcher so the submit does not navigate away, and clears
+ * itself once the write lands — the feed below revalidates in place.
+ */
+function Composer({ myProjects }: { myProjects: Array<{ id: string; title: string }> }) {
+  const fetcher = useFetcher();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [length, setLength] = useState(0);
+  const pending = fetcher.state !== "idle";
+  const sent = useRef<string | null>(null);
+
+  useEffect(() => {
+    const data = fetcher.data as { ok?: boolean; id?: string } | undefined;
+    if (!data?.ok || !data.id || sent.current === data.id) return;
+    sent.current = data.id;
+    formRef.current?.reset();
+    setLength(0);
+    toast.success("动态已发布");
+  }, [fetcher.data]);
+
+  return (
+    <fetcher.Form
+      ref={formRef}
+      method="post"
+      className="mt-5 rounded-[12px] border border-[var(--color-line)] bg-white focus-within:border-[var(--color-ink-soft)]"
+    >
+      <div className="flex items-start gap-3 px-4 pt-3.5">
+        <textarea
+          name="body"
+          required
+          maxLength={4000}
+          rows={2}
+          onChange={(e) => setLength(e.currentTarget.value.length)}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }
+          }}
+          placeholder="分享你现在在做的事。用 #话题 归类，别人才能顺着标签找到你。"
+          className="min-h-[52px] w-full resize-y border-0 bg-transparent pt-1 text-[15px] leading-[1.55] outline-none placeholder:text-[var(--color-faint)]"
+        />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[var(--color-line-soft)] px-4 py-2.5">
+        <select
+          name="kind"
+          aria-label="动态类型"
+          className="field !h-[32px] !w-auto !px-2 !text-[12.5px]"
+        >
+          {KINDS.filter((k) => k.v !== "all").map((k) => (
+            <option key={k.v} value={k.v}>
+              {k.t}
+            </option>
+          ))}
+        </select>
+        <select
+          name="project_id"
+          aria-label="关联作品"
+          className="field !h-[32px] !w-auto !max-w-[190px] !px-2 !text-[12.5px]"
+        >
+          <option value="">不关联作品</option>
+          {myProjects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.title}
+            </option>
+          ))}
+        </select>
+        <span className="hidden text-[11.5px] text-[var(--color-faint)] sm:inline">
+          #标签自动识别 · ⌘/Ctrl + Enter 发布
+        </span>
+        {length > 3500 && (
+          <span className="font-mono text-[11.5px] text-[var(--color-watermelon)] tabular-nums">
+            {length}/4000
+          </span>
+        )}
+        <button
+          disabled={pending}
+          className="btn btn-primary btn-sm !h-[32px] ml-auto disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {pending ? "发布中…" : "发布"}
+        </button>
+      </div>
+    </fetcher.Form>
   );
 }
 
@@ -291,6 +408,30 @@ function TabLink({
         active
           ? "bg-[var(--color-ink-2)] text-white"
           : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+      }`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function SortLink({
+  to,
+  active,
+  children,
+}: {
+  to: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      preventScrollReset
+      className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[12.5px] transition ${
+        active
+          ? "bg-[var(--color-paper)] text-[var(--color-ink)]"
+          : "text-[var(--color-faint)] hover:text-[var(--color-ink)]"
       }`}
     >
       {children}

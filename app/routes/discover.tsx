@@ -1,6 +1,8 @@
 import type { Route } from "./+types/discover";
 import { Link, useSearchParams } from "react-router";
+import { Search } from "lucide-react";
 import { searchPeople } from "~/lib/queries.server";
+import { getMe } from "~/lib/session.server";
 import { PersonCard } from "~/components/cards";
 import { PageHead } from "~/components/page-head";
 
@@ -23,19 +25,28 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const skill = url.searchParams.get("skill") || undefined;
   const sort = url.searchParams.get("sort") || undefined;
 
+  const me = await getMe(context, request);
   const people = await searchPeople(context, {
     q,
     kind,
     skill,
     sort,
     limit: 30,
+    viewerId: me?.id ?? null,
   });
 
-  return { people, q: q ?? "", kind: kind ?? "", skill: skill ?? "", sort: sort ?? "" };
+  return {
+    people,
+    viewerId: me?.id ?? null,
+    q: q ?? "",
+    kind: kind ?? "",
+    skill: skill ?? "",
+    sort: sort ?? "",
+  };
 }
 
 export default function Discover({ loaderData }: Route.ComponentProps) {
-  const { people, q, kind, skill, sort } = loaderData;
+  const { people, viewerId, q, kind, skill, sort } = loaderData;
   const [params] = useSearchParams();
 
   const withParam = (key: string, value: string) => {
@@ -64,10 +75,7 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
             aria-label="搜索 FDE"
           />
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-faint)]">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.7" />
-              <path d="M16 16l4.5 4.5" stroke="currentColor" strokeWidth="1.7" />
-            </svg>
+            <Search size={16} strokeWidth={1.65} aria-hidden />
           </span>
         </div>
         {kind && <input type="hidden" name="kind" value={kind} />}
@@ -135,7 +143,7 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
         ) : (
           <div className="divide-y divide-[var(--color-line-soft)]">
             {people.map((p) => (
-              <PersonCard key={p.id} person={p} />
+              <PersonCard key={p.id} person={p} viewerId={viewerId} />
             ))}
           </div>
         )}

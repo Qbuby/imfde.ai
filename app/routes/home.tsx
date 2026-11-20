@@ -1,41 +1,42 @@
 import type { Route } from "./+types/home";
 import { Link } from "react-router";
+import { Search } from "lucide-react";
 import { getMe } from "~/lib/session.server";
 import {
+  feedPosts,
   featuredPeople,
-  latestPosts,
   latestProjects,
   recommendedPeople,
   topSkills,
   countsForProfile,
 } from "~/lib/queries.server";
-import { PersonCard, PostCard, ProjectCard } from "~/components/cards";
+import { FeedCard, PersonCard, ProjectCard } from "~/components/cards";
 import { Avatar, CoverArt } from "~/components/media";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
+  const viewerId = me?.id ?? null;
 
-  const projects = await latestProjects(context, me?.id ?? null, 8);
-  const people = await featuredPeople(context, 6);
-
-  if (!me) {
-    return {
-      me: null,
-      projects,
-      people,
-      posts: await latestPosts(context, null, 5),
-      recommended: [],
-    };
-  }
+  // all independent — run them together instead of six sequential awaits
+  const [projects, people, feed, recommended, skills, stats] = await Promise.all([
+    latestProjects(context, viewerId, 8),
+    featuredPeople(context, viewerId, 6),
+    feedPosts(context, { viewerId, limit: 5 }),
+    me ? recommendedPeople(context, me.id, 4) : Promise.resolve([]),
+    me ? topSkills(context, 4) : Promise.resolve([]),
+    me
+      ? countsForProfile(context, me.id)
+      : Promise.resolve({ projects: 0, posts: 0, followers: 0, following: 0 }),
+  ]);
 
   return {
     me,
     projects,
     people,
-    posts: await latestPosts(context, me.id, 5),
-    recommended: await recommendedPeople(context, me.id, 4),
-    skills: await topSkills(context, 4),
-    stats: await countsForProfile(context, me.id),
+    posts: feed.rows,
+    recommended,
+    skills,
+    stats,
   };
 }
 
@@ -111,7 +112,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             <div className="border-t border-[var(--color-line-soft)]">
               <div className="divide-y divide-[var(--color-line-soft)]">
                 {posts.map((post) => (
-                  <PostCard key={post.id} post={post} />
+                  <FeedCard key={post.id} post={post} viewerId={me?.id ?? null} />
                 ))}
               </div>
               <Link
@@ -188,7 +189,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               </p>
               <div className="space-y-1">
                 {recommended.map((p) => (
-                  <PersonCard key={p.id} person={p} />
+                  <PersonCard key={p.id} person={p} viewerId={me?.id ?? null} />
                 ))}
               </div>
             </div>
@@ -226,7 +227,7 @@ function Landing({
 }: {
   projects: Awaited<ReturnType<typeof latestProjects>>;
   people: Awaited<ReturnType<typeof featuredPeople>>;
-  posts: Awaited<ReturnType<typeof latestPosts>>;
+  posts: Awaited<ReturnType<typeof feedPosts>>["rows"];
 }) {
   const heroProjects = projects.slice(0, 3);
 
@@ -297,10 +298,7 @@ function Landing({
         <form method="get" action="/discover" className="mx-auto max-w-[680px]">
           <div className="search-shell">
             <span className="text-[var(--color-faint)]" aria-hidden>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.7" />
-                <path d="M16 16l4.5 4.5" stroke="currentColor" strokeWidth="1.7" />
-              </svg>
+              <Search size={18} strokeWidth={1.65} />
             </span>
             <input
               name="q"
@@ -404,7 +402,7 @@ function Landing({
           </div>
           <div className="border-t border-[var(--color-line-soft)] lg:grid lg:grid-cols-2 lg:gap-x-10">
             {posts.slice(0, 5).map((post) => (
-              <PostCard key={post.id} post={post} showActions={false} />
+              <FeedCard key={post.id} post={post} showFollow={false} />
             ))}
           </div>
           <Link

@@ -1,6 +1,29 @@
 import { Link, NavLink, Outlet, Form } from "react-router";
+import {
+  Bell,
+  Home,
+  Layers,
+  LogOut,
+  MessageSquareText,
+  Plus,
+  SlidersHorizontal,
+  User,
+  Users,
+} from "lucide-react";
 import { Avatar } from "./media";
 import type { Me } from "~/lib/session.server";
+
+/** One icon per rail destination, drawn at the same weight as the type. */
+const RAIL_ICONS = {
+  home: Home,
+  square: MessageSquareText,
+  discover: Users,
+  work: Layers,
+  messages: Bell,
+  settings: SlidersHorizontal,
+  profile: User,
+  logout: LogOut,
+} as const;
 
 /**
  * Signed-in shell, rebuilt from a live measurement of Contra's workspace view
@@ -15,22 +38,13 @@ import type { Me } from "~/lib/session.server";
  */
 
 export const RAIL_ITEMS = [
-  { key: "home", label: "首页", to: "/", end: true },
-  { key: "square", label: "广场", to: "/feed", end: true },
-  { key: "discover", label: "发现 FDE", to: "/discover", end: true },
-  { key: "work", label: "作品", to: "/discover/projects", end: true },
-  { key: "messages", label: "消息", to: "/notifications", end: false },
+  { icon: "home", label: "首页", to: "/", end: true },
+  { icon: "square", label: "广场", to: "/feed", end: true },
+  { icon: "discover", label: "发现 FDE", to: "/discover", end: true },
+  { icon: "work", label: "作品", to: "/discover/projects", end: true },
+  { icon: "messages", label: "消息", to: "/notifications", end: false },
 ] as const;
 
-export const RAIL_GROUPS = [
-  {
-    label: "发现",
-    items: [
-      { key: "people", label: "FDE", to: "/discover", end: true },
-      { key: "topics", label: "方向", to: "/discover/projects", end: false },
-    ],
-  },
-] as const;
 
 export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
   return (
@@ -61,7 +75,7 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
                 className="grid h-8 w-8 place-items-center rounded-[4px] text-[var(--color-ink-soft)] transition hover:bg-white"
                 aria-label="通知"
               >
-                <BellIcon />
+                <Bell size={17} strokeWidth={1.65} aria-hidden />
               </Link>
               <Link
                 to={`/@${me.handle}`}
@@ -78,20 +92,20 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
             to="/new/post"
             className="mt-6 flex h-10 w-full items-center justify-center gap-2 rounded-[24px] bg-[var(--color-ink-2)] text-[14px] font-semibold text-white transition hover:bg-[#2f3746]"
           >
-            <PlusIcon />
+            <Plus size={16} strokeWidth={1.8} aria-hidden />
             写点什么
           </Link>
 
           <nav className="mt-4 space-y-1">
             {RAIL_ITEMS.map((item) => (
-              <RailLink {...item} />
+              <RailLink key={item.to} {...item} />
             ))}
             <Link
               to="/settings/profile"
               className="flex h-10 items-center gap-3 rounded-[8px] px-3 text-[15px] text-[var(--color-ink)] transition hover:bg-white"
             >
               <span className="grid h-[18px] w-[18px] place-items-center text-[var(--color-ink-soft)]">
-                <GearIcon />
+                <SlidersHorizontal size={17} strokeWidth={1.65} aria-hidden />
               </span>
               {setupDone === 4 ? "主页已完整" : "完成设置"}
               <span className="ml-auto font-mono text-[13px] text-[var(--color-faint)]">
@@ -100,20 +114,6 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
             </Link>
           </nav>
 
-          {RAIL_GROUPS.map((group) => (
-            <div key={group.label} className="mt-6">
-              <p className="mb-1 flex items-center gap-2 px-3 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
-                {group.label}
-                <span className="h-px flex-1 bg-[var(--color-line)]" />
-              </p>
-              <div className="space-y-1">
-                {group.items.map((item) => (
-                  <RailLink {...item} />
-                ))}
-              </div>
-            </div>
-          ))}
-
           <div className="mt-6">
             <p className="mb-1 px-3 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
               我的
@@ -121,6 +121,7 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
             <div className="space-y-1">
               <RailLink
                 key="profile"
+                icon="profile"
                 label="我的主页"
                 to={`/@${me.handle}`}
                 end={false}
@@ -128,7 +129,7 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
               <Form method="post" action="/logout">
                 <button className="flex h-10 w-full items-center gap-3 rounded-[8px] px-3 text-left text-[15px] text-[var(--color-ink)] transition hover:bg-white">
                   <span className="grid h-[18px] w-[18px] place-items-center text-[var(--color-ink-soft)]">
-                    <LogoutIcon />
+                    <LogOut size={17} strokeWidth={1.65} aria-hidden />
                   </span>
                   退出
                 </button>
@@ -157,7 +158,7 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
             <div className="mb-6 flex gap-1 overflow-x-auto md:hidden">
               {RAIL_ITEMS.map((item) => (
                 <NavLink
-                  key={item.key}
+                  key={item.to}
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
@@ -198,14 +199,17 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
 }
 
 function RailLink({
+  icon,
   label,
   to,
   end = false,
 }: {
+  icon?: keyof typeof RAIL_ICONS;
   label: string;
   to: string;
   end?: boolean;
 }) {
+  const Icon = RAIL_ICONS[icon ?? "home"];
   return (
     <NavLink
       to={to}
@@ -220,8 +224,12 @@ function RailLink({
     >
       {({ isActive }) => (
         <>
-          <span className="grid h-[18px] w-[18px] place-items-center text-[var(--color-ink-soft)]">
-            {isActive ? <DotIcon /> : <RingIcon />}
+          <span
+            className={`grid h-[18px] w-[18px] place-items-center ${
+              isActive ? "text-[var(--color-ink)]" : "text-[var(--color-ink-soft)]"
+            }`}
+          >
+            <Icon size={17} strokeWidth={1.65} aria-hidden />
           </span>
           {label}
         </>
@@ -232,59 +240,3 @@ function RailLink({
 
 /* ── icons: 18px, 1.6 stroke, quiet like the measured rail ───────────── */
 
-function RingIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="7.2" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
-  );
-}
-function DotIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="7.2" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="12" cy="12" r="2.4" fill="currentColor" />
-    </svg>
-  );
-}
-function BellIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M6 9.5a6 6 0 0112 0v3.2l1.6 3.1c.3.6-.1 1.2-.8 1.2H5.2c-.7 0-1.1-.6-.8-1.2L6 12.7V9.5z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M9.6 19.4a2.5 2.5 0 004.8 0" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
-  );
-}
-function GearIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="3.1" stroke="currentColor" strokeWidth="1.6" />
-      <path
-        d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-    </svg>
-  );
-}
-function LogoutIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M15 8V5a1 1 0 00-1-1H6a1 1 0 00-1 1v14a1 1 0 001 1h8a1 1 0 001-1v-3"
-        stroke="currentColor" strokeWidth="1.6" />
-      <path d="M11 12h9m0 0l-3-3m3 3l-3 3" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
-  );
-}
-function PlusIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.9" />
-    </svg>
-  );
-}

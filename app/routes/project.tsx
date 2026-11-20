@@ -3,7 +3,9 @@ import { Link, useFetcher } from "react-router";
 import { getMe } from "~/lib/session.server";
 import { many, one } from "~/lib/db.server";
 import { Avatar, CoverArt } from "~/components/media";
-import { FollowButton, HeartIcon } from "~/components/cards";
+import { FollowButton } from "~/components/cards";
+import { CopyLinkButton } from "~/components/copy-link";
+import { Heart } from "lucide-react";
 import { absoluteDate, compact } from "~/lib/format";
 
 const KIND_LABEL: Record<string, string> = {
@@ -46,10 +48,11 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
       followers: number;
       liked: number;
       owner_visibility: string;
+      hide_follows: number;
     }>(
       context,
       `SELECT pr.*, u.handle, p.display_name, p.avatar_url, p.headline,
-              p.visibility AS owner_visibility,
+              p.visibility AS owner_visibility, p.hide_follows,
               (SELECT COUNT(*) FROM reactions r
                 WHERE r.target_type='project' AND r.target_id = pr.id) AS likes,
               (SELECT COUNT(*) FROM follows f WHERE f.followed_id = pr.owner_id) AS followers,
@@ -59,7 +62,8 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
          FROM projects pr
          JOIN users u ON u.id = pr.owner_id
          JOIN profiles p ON p.user_id = pr.owner_id
-        WHERE pr.slug = ?1`,
+        WHERE pr.slug = ?1
+          AND u.status = 'active'`,
     params.slug,
     me?.id ?? "·none·",
   );
@@ -156,7 +160,8 @@ export default function Project({ loaderData }: Route.ComponentProps) {
           <div>
             <p className="text-[14px] font-medium">{project.display_name}</p>
             <p className="font-mono text-[11px] tracking-wide text-[var(--color-faint)]">
-              @{project.handle} · {compact(project.followers)} 关注者
+              @{project.handle}
+              {project.hide_follows ? null : ` · ${compact(project.followers)} 关注者`}
             </p>
           </div>
         </Link>
@@ -166,22 +171,46 @@ export default function Project({ loaderData }: Route.ComponentProps) {
             <Link to={`/projects/${project.slug}/edit`} className="btn btn-ghost btn-sm">
               编辑作品
             </Link>
-          ) : me ? (
-            <FollowButton targetId={project.owner_id} following={following} />
-          ) : null}
+          ) : (
+            <FollowButton
+              targetId={project.owner_id}
+              following={following}
+              signedIn={Boolean(me)}
+            />
+          )}
 
-          <fetcher.Form method="post" action="/actions/like">
-            <input type="hidden" name="intent" value={liked ? "unlike" : "like"} />
-            <input type="hidden" name="target_type" value="project" />
-            <input type="hidden" name="target_id" value={project.id} />
-            <button
-              aria-pressed={liked}
-              className={`btn btn-ghost btn-sm ${liked ? "!text-[var(--color-ink-soft)]" : ""}`}
+          <CopyLinkButton path={`/projects/${project.slug}`} />
+
+          {me ? (
+            <fetcher.Form method="post" action="/actions/like">
+              <input type="hidden" name="intent" value={liked ? "unlike" : "like"} />
+              <input type="hidden" name="target_type" value="project" />
+              <input type="hidden" name="target_id" value={project.id} />
+              <button
+                aria-pressed={liked}
+                aria-label={liked ? "取消赞" : "赞"}
+                className={`btn btn-ghost btn-sm ${liked ? "!text-[var(--color-watermelon)]" : ""}`}
+              >
+                <Heart
+                  size={15}
+                  strokeWidth={1.65}
+                  fill={liked ? "currentColor" : "none"}
+                  className={liked ? "like-pop" : ""}
+                  aria-hidden
+                />
+                <span className="tabular-nums">{likes > 0 ? compact(likes) : "赞"}</span>
+              </button>
+            </fetcher.Form>
+          ) : (
+            <Link
+              to="/login?next=%2Fdiscover%2Fprojects"
+              className="btn btn-ghost btn-sm"
+              aria-label="登录后点赞"
             >
-              <HeartIcon filled={liked} />
-              {likes > 0 ? compact(likes) : "赞"}
-            </button>
-          </fetcher.Form>
+              <Heart size={15} strokeWidth={1.65} aria-hidden />
+              <span className="tabular-nums">{likes > 0 ? compact(likes) : "赞"}</span>
+            </Link>
+          )}
         </div>
       </div>
 

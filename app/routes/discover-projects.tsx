@@ -1,5 +1,6 @@
 import type { Route } from "./+types/discover-projects";
 import { Link, useSearchParams } from "react-router";
+import { Search } from "lucide-react";
 import { searchProjects } from "~/lib/queries.server";
 import { getMe } from "~/lib/session.server";
 import { ProjectCard } from "~/components/cards";
@@ -62,10 +63,7 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
             aria-label="搜索作品"
           />
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-faint)]">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.7" />
-              <path d="M16 16l4.5 4.5" stroke="currentColor" strokeWidth="1.7" />
-            </svg>
+            <Search size={16} strokeWidth={1.65} aria-hidden />
           </span>
         </div>
         <input type="hidden" name="kind" value={kind} />

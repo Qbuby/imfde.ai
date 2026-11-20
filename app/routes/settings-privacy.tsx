@@ -1,5 +1,8 @@
 import type { Route } from "./+types/settings-privacy";
-import { Form, Link, redirect } from "react-router";
+import { data, Form, Link, redirect } from "react-router";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { ConfirmDialog } from "~/components/confirm-dialog";
 import { requireMe } from "~/lib/session.server";
 import { one, run } from "~/lib/db.server";
 import { PageHead } from "~/components/page-head";
@@ -11,7 +14,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     `SELECT visibility, hide_follows FROM profiles WHERE user_id = ?1`,
     me.id,
   );
-  return { me, profile: p };
+  const url = new URL(request.url);
+  return { me, profile: p, saved: url.searchParams.get("saved") === "1" };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -20,6 +24,12 @@ export async function action({ request, context }: Route.ActionArgs) {
   const intent = String(form.get("intent") ?? "save");
 
   if (intent === "delete-account") {
+    // the client already asks the user to type their handle; re-check here so
+    // a replayed form cannot delete an account without that step
+    const typed = String(form.get("confirm_handle") ?? "").trim().toLowerCase();
+    if (typed !== `@${me.handle}`) {
+      return data({ error: "确认文本不匹配，账号未删除" }, { status: 400 });
+    }
     // hard delete: cascade removes profile, projects, posts, follows, reactions
     await run(context, `DELETE FROM users WHERE id = ?1`, me.id);
     const { clearSessionCookie } = await import("~/lib/auth.server");
@@ -42,7 +52,12 @@ export async function action({ request, context }: Route.ActionArgs) {
 export default function SettingsPrivacy({
   loaderData,
 }: Route.ComponentProps) {
-  const { profile } = loaderData;
+  const { me, profile, saved } = loaderData;
+
+  // a redirect back with ?saved=1 is the only confirmation the browser sees
+  useEffect(() => {
+    if (saved) toast.success("隐私设置已保存");
+  }, [saved]);
 
   return (
     <div className="max-w-[760px]">
@@ -56,6 +71,12 @@ export default function SettingsPrivacy({
           </Link>
         }
       />
+
+      {saved && (
+        <p className="mt-5 rounded-[10px] border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2.5 text-[12.5px] text-[var(--color-ink-soft)]">
+          隐私设置已保存。
+        </p>
+      )}
 
       <Form method="post" className="mt-7 space-y-3">
         <div className="divide-y divide-[var(--color-line-soft)] border-y border-[var(--color-line-soft)]">
@@ -103,12 +124,30 @@ export default function SettingsPrivacy({
           会永久删除你的主页、作品、动态、评论和关注关系。这个操作不可撤销，
           也没有回收站。
         </p>
-        <Form method="post" className="mt-3.5">
-          <input type="hidden" name="intent" value="delete-account" />
-          <button className="btn btn-sm border border-[#e0c0bc] bg-white text-[#8c3b2f] hover:bg-[#fdf0ee]">
-            删除我的账号
-          </button>
-        </Form>
+        <div className="mt-3.5">
+          <ConfirmDialog
+            action="/settings/privacy"
+            hidden={{ intent: "delete-account", confirm_handle: `@${me.handle}` }}
+            title="永久删除账号"
+            description={
+              <>
+                会删除你的主页、作品、动态、评论和全部关注关系，且没有回收站。
+                留下的引用会显示「原动态已删除或不可见」。
+              </>
+            }
+            confirmLabel="确认删除账号"
+            requireText={`@${me.handle}`}
+            requireHint={`输入 @${me.handle} 以启用删除`}
+            trigger={
+              <button
+                type="button"
+                className="btn btn-sm border border-[#e0c0bc] bg-white text-[#8c3b2f] hover:bg-[#fdf0ee]"
+              >
+                删除我的账号
+              </button>
+            }
+          />
+        </div>
       </section>
     </div>
   );

@@ -3,7 +3,9 @@ import { Form, Link, useFetcher } from "react-router";
 import { getMe } from "~/lib/session.server";
 import { many, one } from "~/lib/db.server";
 import { Avatar } from "~/components/media";
-import { HeartIcon } from "~/components/cards";
+import { FollowButton } from "~/components/cards";
+import { CopyLinkButton } from "~/components/copy-link";
+import { Heart } from "lucide-react";
 import { absoluteDate, compact, relativeTime } from "~/lib/format";
 import { PostBody } from "~/components/post-body";
 
@@ -37,6 +39,8 @@ interface PostDetail {
   r_created_at: number | null;
   r_project_slug: string | null;
   r_project_title: string | null;
+  r_time_label: string;
+  author_following: number;
 }
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
@@ -54,7 +58,9 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
             op.body AS r_body, op.created_at AS r_created_at,
             ou.handle AS r_handle, opf.display_name AS r_display_name,
             opf.avatar_url AS r_avatar_url,
-            rpr.slug AS r_project_slug, rpr.title AS r_project_title
+            rpr.slug AS r_project_slug, rpr.title AS r_project_title,
+            (SELECT COUNT(*) FROM follows f
+               WHERE f.follower_id = ?2 AND f.followed_id = po.author_id) AS author_following
        FROM posts po
        JOIN users u ON u.id = po.author_id
        JOIN profiles p ON p.user_id = po.author_id
@@ -65,6 +71,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
        LEFT JOIN projects rpr ON rpr.id = op.project_id
       WHERE po.id = ?1 AND po.deleted_at IS NULL`,
     params.id,
+    me?.id ?? "·none·",
   );
 
   if (!post) throw new Response("Not Found", { status: 404 });
@@ -107,7 +114,14 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 
   return {
     me,
-    post: { ...post, time_label: relativeTime(post.created_at) },
+    post: {
+      ...post,
+      time_label: relativeTime(post.created_at),
+      // computed here so hydration never sees a different clock than SSR
+      r_time_label: post.r_created_at
+        ? relativeTime(post.r_created_at)
+        : relativeTime(post.created_at),
+    },
     comments: comments.map((c) => ({ ...c, time_label: relativeTime(c.created_at) })),
     liked: Boolean(liked?.n),
   };
@@ -128,9 +142,14 @@ export const meta: Route.MetaFunction = ({ data }) => {
 export default function Post({ loaderData }: Route.ComponentProps) {
   const { me, post, comments, liked } = loaderData;
   const likeFetcher = useFetcher();
-  const isLiked = likeFetcher.formData
-    ? likeFetcher.formData.get("intent") === "like"
-    : liked;
+  const likeIntent = likeFetcher.formData?.get("intent");
+  const isLiked = likeIntent ? likeIntent === "like" : liked;
+  const likeCount =
+    likeIntent === "like" && !liked
+      ? post.likes + 1
+      : likeIntent === "unlike" && liked
+        ? post.likes - 1
+        : post.likes;
 
   return (
     <article className="max-w-[760px]">
@@ -148,6 +167,20 @@ export default function Post({ loaderData }: Route.ComponentProps) {
           </div>
         </Link>
         <span className="ml-auto flex shrink-0 items-center gap-1.5">
+          {me?.id !== post.author_id && (
+            <FollowButton
+              targetId={post.author_id}
+              following={Boolean(post.author_following)}
+              signedIn={Boolean(me)}
+              size="sm"
+              tone="quiet"
+            />
+          )}
+          <CopyLinkButton
+            path={`/posts/${post.id}`}
+            label=""
+            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-full text-[var(--color-faint)] transition hover:text-[var(--color-ink)]"
+          />
           <span className="chip chip-teal !h-[26px]">
             {KIND_LABEL[post.kind] ?? post.kind}
           </span>
@@ -180,7 +213,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
               {post.r_display_name}
             </Link>
             <span className="font-mono text-[11px] text-[var(--color-faint)]">
-              @{post.r_handle} · {relativeTime(post.r_created_at ?? post.created_at)}
+              @{post.r_handle} · {post.r_time_label}
             </span>
           </div>
           <PostBody
@@ -198,6 +231,12 @@ export default function Post({ loaderData }: Route.ComponentProps) {
         </div>
       )}
 
+      {post.repost_of_id && post.r_body === null && (
+        <div className="mt-4 rounded-[12px] border border-dashed border-[var(--color-line)] px-4 py-3 text-[13px] text-[var(--color-faint)]">
+          原动态已删除或不可见
+        </div>
+      )}
+
       {post.project_slug && (
         <Link
           to={`/projects/${post.project_slug}`}
@@ -210,19 +249,38 @@ export default function Post({ loaderData }: Route.ComponentProps) {
       )}
 
       <div className="mt-6 flex items-center gap-1 border-y border-[var(--color-line-soft)] py-2.5">
-        <likeFetcher.Form method="post" action="/actions/like">
-          <input type="hidden" name="target_type" value="post" />
-          <input type="hidden" name="target_id" value={post.id} />
-          <input type="hidden" name="intent" value={isLiked ? "unlike" : "like"} />
-          <button
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[13px] transition hover:bg-[var(--color-sunken)] ${
-              isLiked ? "text-[var(--color-ink-soft)]" : "text-[var(--color-muted)]"
-            }`}
+        {me ? (
+          <likeFetcher.Form method="post" action="/actions/like">
+            <input type="hidden" name="target_type" value="post" />
+            <input type="hidden" name="target_id" value={post.id} />
+            <input type="hidden" name="intent" value={isLiked ? "unlike" : "like"} />
+            <button
+              aria-pressed={isLiked}
+              aria-label={isLiked ? "取消赞" : "赞"}
+              className={`flex min-h-[32px] items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[13px] transition hover:bg-[var(--color-sunken)] ${
+                isLiked ? "text-[var(--color-watermelon)]" : "text-[var(--color-muted)]"
+              }`}
+            >
+              <Heart
+                size={15}
+                strokeWidth={1.65}
+                fill={isLiked ? "currentColor" : "none"}
+                className={isLiked ? "like-pop" : ""}
+                aria-hidden
+              />
+              <span className="tabular-nums">{likeCount > 0 ? compact(likeCount) : "赞"}</span>
+            </button>
+          </likeFetcher.Form>
+        ) : (
+          <Link
+            to={`/login?next=${encodeURIComponent(`/posts/${post.id}`)}`}
+            aria-label="登录后点赞"
+            className="flex min-h-[32px] items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[13px] text-[var(--color-muted)] transition hover:bg-[var(--color-sunken)]"
           >
-            <HeartIcon filled={isLiked} />
-            {post.likes > 0 ? compact(post.likes) : "赞"}
-          </button>
-        </likeFetcher.Form>
+            <Heart size={15} strokeWidth={1.65} aria-hidden />
+            <span className="tabular-nums">{post.likes > 0 ? compact(post.likes) : "赞"}</span>
+          </Link>
+        )}
         <span className="text-[13px] text-[var(--color-muted)]">
           {comments.length} 条评论
         </span>

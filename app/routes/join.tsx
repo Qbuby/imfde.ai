@@ -249,7 +249,7 @@ export function AuthShell({
             style={{
               backgroundImage:
                 "radial-gradient(80% 90% at 10% 0%, #f0e9ff 0%, transparent 60%), radial-gradient(70% 80% at 95% 10%, #e3f2f3 0%, transparent 62%), radial-gradient(90% 90% at 50% 110%, #fdf4d8 0%, transparent 66%)",
-              background: "var(--color-surface)",
+              backgroundColor: "var(--color-surface)",
             }}
           >
             <p className="display text-[clamp(22px,2.4vw,30px)] leading-[1.25]">

@@ -3,6 +3,7 @@ import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-rou
 import "@fontsource-variable/inter";
 import "@fontsource-variable/instrument-sans";
 import "./app.css";
+import { Toaster } from "sonner";
 
 export const meta: Route.MetaFunction = ({ location }) => {
   const origin = location.pathname;
@@ -34,6 +35,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <Toaster
+          position="bottom-right"
+          theme="light"
+          toastOptions={{
+            style: {
+              background: "#ffffff",
+              color: "#14171f",
+              border: "1px solid #e3e5ea",
+              borderRadius: "10px",
+              fontSize: "13px",
+              boxShadow: "0 10px 20px rgba(0,0,0,0.05)",
+            },
+          }}
+        />
         <ScrollRestoration />
         <Scripts />
       </body>

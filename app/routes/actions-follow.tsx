@@ -31,10 +31,15 @@ export async function action({ request, context }: Route.ActionArgs) {
     Date.now(),
   );
 
+  // follow → unfollow → follow should not leave three identical rows
   await run(
     context,
-    `INSERT OR IGNORE INTO notifications (id, recipient_id, actor_id, type, target_type, target_id, created_at)
-     VALUES (?1, ?2, ?3, 'follow', 'user', ?3, ?4)`,
+    `INSERT INTO notifications (id, recipient_id, actor_id, type, target_type, target_id, created_at)
+     SELECT ?1, ?2, ?3, 'follow', 'user', ?3, ?4
+      WHERE NOT EXISTS (
+        SELECT 1 FROM notifications
+         WHERE recipient_id = ?2 AND actor_id = ?3 AND type = 'follow'
+      )`,
     crypto.randomUUID(),
     targetId,
     me.id,

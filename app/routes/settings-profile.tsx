@@ -45,8 +45,16 @@ export async function action({ request, context }: Route.ActionArgs) {
   const form = await request.formData();
 
   const displayName = clamp(String(form.get("display_name") ?? ""), 60);
-  if (!displayName) {
-    return data({ error: "显示名称不能为空" }, { status: 400 });
+  const avatar = cleanUrl(String(form.get("avatar_url") ?? ""));
+  const cover = cleanUrl(String(form.get("cover_url") ?? ""));
+
+  const errors: Record<string, string> = {};
+  if (!displayName) errors.display_name = "显示名称不能为空";
+  if (avatar.error) errors.avatar_url = avatar.error;
+  if (cover.error) errors.cover_url = cover.error;
+
+  if (Object.keys(errors).length) {
+    return data({ errors }, { status: 400 });
   }
 
   const now = Date.now();
@@ -64,8 +72,8 @@ export async function action({ request, context }: Route.ActionArgs) {
       clamp(String(form.get("about") ?? ""), 4000) || null,
       clamp(String(form.get("location") ?? ""), 80) || null,
       clamp(String(form.get("timezone") ?? ""), 60) || null,
-      cleanUrl(String(form.get("avatar_url") ?? "")),
-      cleanUrl(String(form.get("cover_url") ?? "")),
+      avatar.value,
+      cover.value,
       form.get("visibility") === "private" ? "private" : "public",
       now,
     ),
@@ -233,7 +241,11 @@ export default function SettingsProfile({
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="头像 URL" hint="留空则用名称首字">
+          <Field
+            label="头像 URL"
+            hint="留空则用名称首字"
+            error={actionData?.errors?.avatar_url}
+          >
             <input
               name="avatar_url"
               defaultValue={p.avatar_url ?? ""}
@@ -241,7 +253,11 @@ export default function SettingsProfile({
               className="field"
             />
           </Field>
-          <Field label="封面 URL" hint="留空则生成配色封面">
+          <Field
+            label="封面 URL"
+            hint="留空则生成配色封面"
+            error={actionData?.errors?.cover_url}
+          >
             <input
               name="cover_url"
               defaultValue={p.cover_url ?? ""}
@@ -251,8 +267,8 @@ export default function SettingsProfile({
           </Field>
         </div>
 
-        {actionData?.error && (
-          <p className="text-[12.5px] text-[#c0392b]">{actionData.error}</p>
+        {actionData?.errors?.display_name && (
+          <p className="text-[12.5px] text-[#c0392b]">{actionData.errors.display_name}</p>
         )}
 
         <div className="flex items-center justify-between pt-2">
@@ -272,10 +288,12 @@ export default function SettingsProfile({
 function Field({
   label,
   hint,
+  error,
   children,
 }: {
   label: string;
   hint?: string;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -283,6 +301,7 @@ function Field({
       <span className="mb-1.5 flex flex-wrap items-baseline gap-2">
         <span className="text-[12.5px] font-medium">{label}</span>
         {hint && <span className="text-[11.5px] text-[var(--color-faint)]">{hint}</span>}
+        {error && <span className="text-[11.5px] text-[#c0392b]">{error}</span>}
       </span>
       {children}
     </label>

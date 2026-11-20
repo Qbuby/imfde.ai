@@ -126,6 +126,9 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-5 text-[14px] text-[var(--color-muted)]">
+            <Link to="/feed" className="hover:text-[var(--color-ink)]">
+              广场
+            </Link>
             <Link to="/discover" className="hover:text-[var(--color-ink)]">
               发现
             </Link>

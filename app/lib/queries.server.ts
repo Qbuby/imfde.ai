@@ -17,23 +17,6 @@ export interface ProjectCardRow {
   likes: number;
 }
 
-export interface PostCardRow {
-  id: string;
-  kind: string;
-  body: string;
-  created_at: number;
-  handle: string;
-  display_name: string;
-  avatar_url: string | null;
-  likes: number;
-  comments: number;
-  /** Formatted once on the server so SSR and hydration agree. */
-  time_label: string;
-  project_slug: string | null;
-  project_title: string | null;
-  liked: number;
-}
-
 export interface PersonRow {
   id: string;
   handle: string;
@@ -44,13 +27,14 @@ export interface PersonRow {
   location: string | null;
   projects: number;
   followers: number;
+  hide_follows: number;
+  following: number;
 }
 
 /**
  * Content visibility has two levels: the item's own `visibility`, and the
  * owner's profile visibility. A profile set to 私密 means "主页、作品和动态
- * 都不对其他人可见", so every public surface has to honour it — the owner
- * is the only exception.
+ * 都不对其他人可见", so every public surface honours it — the owner excepted.
  */
 const projectSelect = (viewerSlot: number) => `
   SELECT pr.id, pr.slug, pr.kind, pr.title, pr.summary, pr.cover_url,
@@ -92,89 +76,349 @@ export async function projectsByOwner(
   );
 }
 
-const POST_SELECT = `
-  SELECT po.id, po.kind, po.body, po.created_at,
+/* ── 广场：信息流查询 ───────────────────────────────────────────────── */
+
+export interface RepostSource {
+  id: string;
+  kind: string;
+  body: string;
+  time_label: string;
+  handle: string;
+  display_name: string;
+  avatar_url: string | null;
+  project_slug: string | null;
+  project_title: string | null;
+  project_cover_url: string | null;
+}
+
+export interface FeedPostRow {
+  id: string;
+  kind: string;
+  body: string;
+  created_at: number;
+  time_label: string;
+  author_id: string;
+  handle: string;
+  display_name: string;
+  avatar_url: string | null;
+  project_id: string | null;
+  project_slug: string | null;
+  project_title: string | null;
+  project_summary: string | null;
+  project_cover_url: string | null;
+  likes: number;
+  comments: number;
+  reposts: number;
+  liked: number;
+  bookmarked: number;
+  /** 1 when the viewer already follows this post's author. */
+  author_following: number;
+  repost_of_id: string | null;
+  tags: string[];
+  /** Non-null when the original is still readable; null means it is gone. */
+  repost: RepostSource | null;
+}
+
+/**
+ * One statement per page. Counters are correlated subqueries and the
+ * reposted original is joined in, so a 30-row page costs the same number of
+ * round trips as a 3-row one. Tags are fetched afterwards for the whole page.
+ *
+ * The joins carry their own visibility conditions so a private or banned
+ * original degrades to a null `repost` (rendered as a placeholder) instead of
+ * leaking its body.
+ */
+const FEED_SELECT = (viewerSlot: number) => `
+  SELECT po.id, po.kind, po.body, po.created_at, po.author_id,
+         po.project_id, po.repost_of_id,
          u.handle, p.display_name, p.avatar_url,
          pr.slug AS project_slug, pr.title AS project_title,
+         pr.summary AS project_summary, pr.cover_url AS project_cover_url,
          (SELECT COUNT(*) FROM reactions r
            WHERE r.target_type = 'post' AND r.target_id = po.id AND r.type = 'like') AS likes,
          (SELECT COUNT(*) FROM comments c
            WHERE c.post_id = po.id AND c.deleted_at IS NULL) AS comments,
+         (SELECT COUNT(*) FROM posts rp
+           WHERE rp.repost_of_id = po.id AND rp.deleted_at IS NULL) AS reposts,
          (SELECT COUNT(*) FROM reactions r2
            WHERE r2.target_type = 'post' AND r2.target_id = po.id
-             AND r2.type = 'like' AND r2.user_id = ?2) AS liked
+             AND r2.type = 'like' AND r2.user_id = ?${viewerSlot}) AS liked,
+         (SELECT COUNT(*) FROM bookmarks b
+           WHERE b.user_id = ?${viewerSlot} AND b.target_type = 'post'
+             AND b.target_id = po.id) AS bookmarked,
+         (SELECT COUNT(*) FROM follows f
+           WHERE f.follower_id = ?${viewerSlot} AND f.followed_id = po.author_id) AS author_following,
+         op.id AS r_id, op.kind AS r_kind, op.body AS r_body,
+         op.created_at AS r_created_at,
+         ou.handle AS r_handle, opf.display_name AS r_display_name,
+         opf.avatar_url AS r_avatar_url,
+         rpr.slug AS r_project_slug, rpr.title AS r_project_title,
+         rpr.cover_url AS r_project_cover_url
     FROM posts po
-    JOIN users u    ON u.id = po.author_id
-    JOIN profiles p ON p.user_id = po.author_id
-    LEFT JOIN projects pr ON pr.id = po.project_id
+    JOIN users u     ON u.id = po.author_id
+    JOIN profiles p  ON p.user_id = po.author_id
+    LEFT JOIN projects pr
+           ON pr.id = po.project_id
+          AND (pr.visibility <> 'private' OR pr.owner_id = ?${viewerSlot})
+    LEFT JOIN posts op
+           ON op.id = po.repost_of_id
+          AND op.deleted_at IS NULL
+          AND op.visibility = 'public'
+    LEFT JOIN users ou
+           ON ou.id = op.author_id AND ou.status = 'active'
+    LEFT JOIN profiles opf
+           ON opf.user_id = op.author_id
+          AND (opf.visibility <> 'private' OR op.author_id = ?${viewerSlot})
+    LEFT JOIN projects rpr
+           ON rpr.id = op.project_id
+          AND (rpr.visibility <> 'private' OR rpr.owner_id = ?${viewerSlot})
    WHERE po.visibility = 'public' AND po.deleted_at IS NULL AND u.status = 'active'
-     AND (p.visibility = 'public' OR po.author_id = ?2)
+     AND (p.visibility = 'public' OR po.author_id = ?${viewerSlot})
 `;
 
-export async function latestPosts(
-  context: AppLoadContext,
-  viewerId: string | null,
-  limit = 20,
-): Promise<PostCardRow[]> {
-  const rows = await many<PostCardRow>(
-    context,
-    `${POST_SELECT} ORDER BY po.created_at DESC LIMIT ?1`,
-    limit,
-    viewerId ?? "·none·",
-  );
-  return rows.map((r) => ({ ...r, time_label: relativeTime(r.created_at) }));
+type RawFeedRow = Omit<FeedPostRow, "time_label" | "tags" | "repost"> & {
+  r_id: string | null;
+  r_kind: string | null;
+  r_body: string | null;
+  r_created_at: number | null;
+  r_handle: string | null;
+  r_display_name: string | null;
+  r_avatar_url: string | null;
+  r_project_slug: string | null;
+  r_project_title: string | null;
+  r_project_cover_url: string | null;
+};
+
+export interface FeedPage {
+  rows: FeedPostRow[];
+  hasMore: boolean;
 }
 
-export async function followingPosts(
+export async function feedPosts(
   context: AppLoadContext,
-  viewerId: string,
-  limit = 20,
-): Promise<PostCardRow[]> {
-  const rows = await many<PostCardRow>(
+  opts: {
+    viewerId: string | null;
+    scope?: "all" | "following" | "bookmarks";
+    kind?: string;
+    /** Matched case-insensitively, so #RAG and #rag are the same topic. */
+    tag?: string;
+    authorId?: string;
+    sort?: "latest" | "active";
+    limit?: number;
+    offset?: number;
+  },
+): Promise<FeedPage> {
+  // the viewer is always ?1: visibility guards, liked, bookmarked and
+  // author_following all read it
+  const params: unknown[] = [opts.viewerId ?? "·none·"];
+  const clauses: string[] = [];
+  let i = 2;
+
+  if (opts.kind && opts.kind !== "all") {
+    params.push(opts.kind);
+    clauses.push(`po.kind = ?${i++}`);
+  }
+  if (opts.tag) {
+    params.push(opts.tag);
+    clauses.push(
+      `po.id IN (SELECT post_id FROM post_tags WHERE tag = ?${i++} COLLATE NOCASE)`,
+    );
+  }
+  if (opts.authorId) {
+    params.push(opts.authorId);
+    clauses.push(`po.author_id = ?${i++}`);
+  }
+  if (opts.scope === "following") {
+    clauses.push(
+      `(po.author_id = ?1 OR po.author_id IN (
+          SELECT followed_id FROM follows WHERE follower_id = ?1))`,
+    );
+  }
+  if (opts.scope === "bookmarks") {
+    clauses.push(
+      `po.id IN (SELECT target_id FROM bookmarks
+                  WHERE user_id = ?1 AND target_type = 'post')`,
+    );
+  }
+
+  const limit = opts.limit ?? 30;
+  const offset = opts.offset ?? 0;
+  params.push(limit + 1, offset);
+  const where = clauses.length ? ` AND ${clauses.join(" AND ")}` : "";
+  const order =
+    opts.sort === "active"
+      ? "likes + comments + reposts DESC, po.created_at DESC"
+      : "po.created_at DESC";
+
+  const rows = await many<RawFeedRow>(
     context,
-    `${POST_SELECT}
-       AND (po.author_id = ?2 OR po.author_id IN (
-             SELECT followed_id FROM follows WHERE follower_id = ?2))
-      ORDER BY po.created_at DESC LIMIT ?1`,
-    limit,
-    viewerId,
+    `${FEED_SELECT(1)}${where} ORDER BY ${order} LIMIT ?${i} OFFSET ?${i + 1}`,
+    ...params,
   );
-  return rows.map((r) => ({ ...r, time_label: relativeTime(r.created_at) }));
+
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+
+  const tags = await tagsForPosts(context, page.map((r) => r.id));
+  return {
+    hasMore,
+    rows: page.map((r) => ({
+      ...r,
+      time_label: relativeTime(r.created_at),
+      tags: tags.get(r.id) ?? [],
+      // joined-in original; null means deleted, private or banned
+      repost:
+        r.r_id && r.r_body !== null && r.r_handle
+          ? {
+              id: r.r_id,
+              kind: r.r_kind ?? "thought",
+              body: r.r_body,
+              time_label: relativeTime(r.r_created_at ?? r.created_at),
+              handle: r.r_handle,
+              display_name: r.r_display_name ?? "",
+              avatar_url: r.r_avatar_url,
+              project_slug: r.r_project_slug,
+              project_title: r.r_project_title,
+              project_cover_url: r.r_project_cover_url,
+            }
+          : null,
+    })),
+  };
 }
 
-export async function postsByAuthor(
+/** All tags for a set of posts, in one query — never per row. */
+export async function tagsForPosts(
   context: AppLoadContext,
-  authorId: string,
-  viewerId: string | null,
-  limit = 20,
-): Promise<PostCardRow[]> {
-  const rows = await many<PostCardRow>(
+  postIds: string[],
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (!postIds.length) return out;
+
+  const placeholders = postIds.map((_, n) => `?${n + 1}`).join(",");
+  const rows = await many<{ post_id: string; tag: string }>(
     context,
-    `${POST_SELECT} AND po.author_id = ?3 ORDER BY po.created_at DESC LIMIT ?1`,
-    limit,
-    viewerId ?? "·none·",
-    authorId,
+    `SELECT post_id, tag FROM post_tags WHERE post_id IN (${placeholders})
+      ORDER BY tag`,
+    ...postIds,
   );
-  return rows.map((r) => ({ ...r, time_label: relativeTime(r.created_at) }));
+  for (const r of rows) {
+    const list = out.get(r.post_id) ?? [];
+    list.push(r.tag);
+    out.set(r.post_id, list);
+  }
+  return out;
 }
 
-const PERSON_SELECT = `
+export interface HotTag {
+  tag: string;
+  n: number;
+}
+
+/**
+ * Tags ranked by how many public posts carry them. Grouped with NOCASE so
+ * "RAG" and "rag" collapse into a single topic instead of splitting counts.
+ */
+export async function hotTags(
+  context: AppLoadContext,
+  limit = 8,
+): Promise<HotTag[]> {
+  return many<HotTag>(
+    context,
+    `SELECT min(pt.tag) AS tag, COUNT(DISTINCT pt.post_id) AS n
+       FROM post_tags pt
+       JOIN posts po   ON po.id = pt.post_id
+       JOIN users u    ON u.id = po.author_id
+       JOIN profiles p ON p.user_id = po.author_id
+      WHERE po.visibility = 'public' AND po.deleted_at IS NULL
+        AND u.status = 'active' AND p.visibility = 'public'
+      GROUP BY pt.tag COLLATE NOCASE
+      ORDER BY n DESC, tag
+      LIMIT ?1`,
+    limit,
+  );
+}
+
+/** The author's own work, for the composer's and editor's project picker. */
+export async function projectsForComposer(
+  context: AppLoadContext,
+  ownerId: string,
+  limit = 20,
+): Promise<Array<{ id: string; title: string }>> {
+  return many<{ id: string; title: string }>(
+    context,
+    `SELECT id, title FROM projects
+      WHERE owner_id = ?1 AND visibility <> 'private'
+      ORDER BY created_at DESC LIMIT ?2`,
+    ownerId,
+    limit,
+  );
+}
+
+/**
+ * Write a post and its tags together. Tags are derived from the body by the
+ * caller (see lib/tags.ts) so the same parser feeds the links in the browser.
+ */
+export async function insertPost(
+  context: AppLoadContext,
+  input: {
+    authorId: string;
+    kind: string;
+    body: string;
+    projectId?: string | null;
+    repostOfId?: string | null;
+    tags?: string[];
+  },
+): Promise<string> {
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  await batch(context, [
+    stmt(
+      context,
+      `INSERT INTO posts
+         (id, author_id, kind, body, project_id, repost_of_id, visibility,
+          created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'public', ?7, ?7)`,
+      id,
+      input.authorId,
+      input.kind,
+      input.body,
+      input.projectId ?? null,
+      input.repostOfId ?? null,
+      now,
+    ),
+    ...(input.tags ?? []).map((tag) =>
+      stmt(
+        context,
+        `INSERT OR IGNORE INTO post_tags (post_id, tag) VALUES (?1, ?2)`,
+        id,
+        tag,
+      ),
+    ),
+  ]);
+  return id;
+}
+
+const personSelect = (viewerSlot: number) => `
   SELECT u.id, u.handle, u.kind, p.display_name, p.avatar_url,
-         p.headline, p.location, p.updated_at,
+         p.headline, p.location, p.updated_at, p.hide_follows,
          (SELECT COUNT(*) FROM projects pr
            WHERE pr.owner_id = u.id AND pr.visibility = 'public') AS projects,
-         (SELECT COUNT(*) FROM follows f WHERE f.followed_id = u.id) AS followers
+         (SELECT COUNT(*) FROM follows f WHERE f.followed_id = u.id) AS followers,
+         (SELECT COUNT(*) FROM follows f2
+           WHERE f2.follower_id = ?${viewerSlot} AND f2.followed_id = u.id) AS following
     FROM users u JOIN profiles p ON p.user_id = u.id
    WHERE u.status = 'active' AND p.visibility = 'public'
 `;
 
 export async function featuredPeople(
   context: AppLoadContext,
+  viewerId: string | null,
   limit = 6,
 ): Promise<PersonRow[]> {
   return many<PersonRow>(
     context,
-    `${PERSON_SELECT} ORDER BY followers DESC, projects DESC, p.updated_at DESC LIMIT ?1`,
+    `${personSelect(1)} ORDER BY followers DESC, projects DESC, p.updated_at DESC LIMIT ?2`,
+    viewerId ?? "·none·",
     limit,
   );
 }
@@ -186,7 +430,7 @@ export async function recommendedPeople(
 ): Promise<PersonRow[]> {
   return many<PersonRow>(
     context,
-    `${PERSON_SELECT} AND u.id <> ?1
+    `${personSelect(1)} AND u.id <> ?1
        AND u.id NOT IN (SELECT followed_id FROM follows WHERE follower_id = ?1)
       ORDER BY followers DESC, projects DESC LIMIT ?2`,
     viewerId,
@@ -202,11 +446,13 @@ export async function searchPeople(
     skill?: string;
     sort?: string;
     limit?: number;
+    viewerId?: string | null;
   },
 ): Promise<PersonRow[]> {
+  // the select needs the viewer first, so filters start at ?2
+  const params: unknown[] = [opts.viewerId ?? "·none·"];
   const clauses: string[] = [];
-  const params: unknown[] = [];
-  let i = 1;
+  let i = 2;
 
   if (opts.q) {
     params.push(`%${opts.q}%`);
@@ -217,15 +463,13 @@ export async function searchPeople(
   }
   if (opts.kind === "individual" || opts.kind === "team") {
     params.push(opts.kind);
-    clauses.push(`u.kind = ?${i}`);
-    i++;
+    clauses.push(`u.kind = ?${i++}`);
   }
   if (opts.skill) {
     params.push(opts.skill);
     clauses.push(
-      `u.id IN (SELECT user_id FROM profile_skills WHERE skill_name = ?${i})`,
+      `u.id IN (SELECT user_id FROM profile_skills WHERE skill_name = ?${i++})`,
     );
-    i++;
   }
 
   const where = clauses.length ? ` AND ${clauses.join(" AND ")}` : "";
@@ -236,11 +480,11 @@ export async function searchPeople(
         ? "projects DESC, followers DESC"
         : "followers DESC, projects DESC";
 
+  params.push(opts.limit ?? 24);
   return many<PersonRow>(
     context,
-    `${PERSON_SELECT}${where} ORDER BY ${order} LIMIT ?${i}`,
+    `${personSelect(1)}${where} ORDER BY ${order} LIMIT ?${i}`,
     ...params,
-    opts.limit ?? 24,
   );
 }
 
@@ -328,266 +572,3 @@ export async function topSkills(
     limit,
   );
 }
-
-/* ── 广场：信息流查询 ───────────────────────────────────────────────── */
-
-export interface RepostSource {
-  id: string;
-  kind: string;
-  body: string;
-  time_label: string;
-  handle: string;
-  display_name: string;
-  avatar_url: string | null;
-  project_slug: string | null;
-  project_title: string | null;
-}
-
-export interface FeedPostRow {
-  id: string;
-  kind: string;
-  body: string;
-  created_at: number;
-  time_label: string;
-  author_id: string;
-  handle: string;
-  display_name: string;
-  avatar_url: string | null;
-  project_id: string | null;
-  project_slug: string | null;
-  project_title: string | null;
-  project_summary: string | null;
-  likes: number;
-  comments: number;
-  reposts: number;
-  liked: number;
-  bookmarked: number;
-  tags: string[];
-  /** Non-null when this row is a repost; the original is inlined for display. */
-  repost: RepostSource | null;
-}
-
-/**
- * One statement per page: counters come from correlated subqueries and the
- * reposted original is joined in, so a 30-row page costs the same number of
- * round trips as a 3-row one. Tags are fetched afterwards for the whole page
- * in a single `IN (...)` query.
- */
-const FEED_SELECT = `
-  SELECT po.id, po.kind, po.body, po.created_at, po.author_id,
-         po.project_id, po.repost_of_id,
-         u.handle, p.display_name, p.avatar_url,
-         pr.slug AS project_slug, pr.title AS project_title, pr.summary AS project_summary,
-         (SELECT COUNT(*) FROM reactions r
-           WHERE r.target_type = 'post' AND r.target_id = po.id AND r.type = 'like') AS likes,
-         (SELECT COUNT(*) FROM comments c
-           WHERE c.post_id = po.id AND c.deleted_at IS NULL) AS comments,
-         (SELECT COUNT(*) FROM posts rp
-           WHERE rp.repost_of_id = po.id AND rp.deleted_at IS NULL) AS reposts,
-         (SELECT COUNT(*) FROM reactions r2
-           WHERE r2.target_type = 'post' AND r2.target_id = po.id
-             AND r2.type = 'like' AND r2.user_id = ?1) AS liked,
-         (SELECT COUNT(*) FROM bookmarks b
-           WHERE b.user_id = ?1 AND b.target_type = 'post' AND b.target_id = po.id) AS bookmarked,
-         op.id AS r_id, op.kind AS r_kind, op.body AS r_body,
-         op.created_at AS r_created_at,
-         ou.handle AS r_handle, opf.display_name AS r_display_name,
-         opf.avatar_url AS r_avatar_url, opf.visibility AS r_visibility,
-         rpr.slug AS r_project_slug, rpr.title AS r_project_title
-    FROM posts po
-    JOIN users u     ON u.id = po.author_id
-    JOIN profiles p  ON p.user_id = po.author_id
-    LEFT JOIN projects pr ON pr.id = po.project_id
-    LEFT JOIN posts op    ON op.id = po.repost_of_id AND op.deleted_at IS NULL
-    LEFT JOIN users ou    ON ou.id = op.author_id
-    LEFT JOIN profiles opf ON opf.user_id = op.author_id
-    LEFT JOIN projects rpr ON rpr.id = op.project_id
-   WHERE po.visibility = 'public' AND po.deleted_at IS NULL AND u.status = 'active'
-     AND (p.visibility = 'public' OR po.author_id = ?1)
-`;
-
-type RawFeedRow = Omit<FeedPostRow, "time_label" | "tags" | "repost"> & {
-  r_id: string | null;
-  r_kind: string | null;
-  r_body: string | null;
-  r_created_at: number | null;
-  r_handle: string | null;
-  r_display_name: string | null;
-  r_avatar_url: string | null;
-  r_visibility: string | null;
-  r_project_slug: string | null;
-  r_project_title: string | null;
-};
-
-export async function feedPosts(
-  context: AppLoadContext,
-  opts: {
-    viewerId: string | null;
-    scope?: "all" | "following";
-    kind?: string;
-    tag?: string;
-    limit?: number;
-  },
-): Promise<FeedPostRow[]> {
-  const params: unknown[] = [opts.viewerId ?? "·none·"];
-  const clauses: string[] = [];
-  let i = 2;
-
-  if (opts.kind && opts.kind !== "all") {
-    params.push(opts.kind);
-    clauses.push(`po.kind = ?${i++}`);
-  }
-  if (opts.tag) {
-    params.push(opts.tag);
-    clauses.push(`po.id IN (SELECT post_id FROM post_tags WHERE tag = ?${i++})`);
-  }
-  if (opts.scope === "following") {
-    // ?1 is the viewer, so this only narrows when someone is signed in
-    clauses.push(
-      `(po.author_id = ?1 OR po.author_id IN (
-          SELECT followed_id FROM follows WHERE follower_id = ?1))`,
-    );
-  }
-
-  params.push(opts.limit ?? 30);
-  const where = clauses.length ? ` AND ${clauses.join(" AND ")}` : "";
-
-  const rows = await many<RawFeedRow>(
-    context,
-    `${FEED_SELECT}${where} ORDER BY po.created_at DESC LIMIT ?${i}`,
-    ...params,
-  );
-
-  const tags = await tagsForPosts(context, rows.map((r) => r.id));
-  return rows.map((r) => ({
-    ...r,
-    time_label: relativeTime(r.created_at),
-    tags: tags.get(r.id) ?? [],
-    // a reposted original disappears if its author went private
-    repost:
-      r.r_id && r.r_body !== null && r.r_visibility !== "private"
-        ? {
-            id: r.r_id,
-            kind: r.r_kind ?? "thought",
-            body: r.r_body,
-            time_label: relativeTime(r.r_created_at ?? r.created_at),
-            handle: r.r_handle ?? "",
-            display_name: r.r_display_name ?? "",
-            avatar_url: r.r_avatar_url,
-            project_slug: r.r_project_slug,
-            project_title: r.r_project_title,
-          }
-        : null,
-  }));
-}
-
-/** All tags for a set of posts, in one query — never per row. */
-export async function tagsForPosts(
-  context: AppLoadContext,
-  postIds: string[],
-): Promise<Map<string, string[]>> {
-  const out = new Map<string, string[]>();
-  if (!postIds.length) return out;
-
-  const placeholders = postIds.map((_, n) => `?${n + 1}`).join(",");
-  const rows = await many<{ post_id: string; tag: string }>(
-    context,
-    `SELECT post_id, tag FROM post_tags WHERE post_id IN (${placeholders})
-      ORDER BY tag`,
-    ...postIds,
-  );
-  for (const r of rows) {
-    const list = out.get(r.post_id) ?? [];
-    list.push(r.tag);
-    out.set(r.post_id, list);
-  }
-  return out;
-}
-
-export interface HotTag {
-  tag: string;
-  n: number;
-}
-
-/** Tags ranked by how many public posts carry them. */
-export async function hotTags(
-  context: AppLoadContext,
-  limit = 8,
-): Promise<HotTag[]> {
-  return many<HotTag>(
-    context,
-    `SELECT pt.tag, COUNT(*) AS n
-       FROM post_tags pt
-       JOIN posts po   ON po.id = pt.post_id
-       JOIN users u    ON u.id = po.author_id
-       JOIN profiles p ON p.user_id = po.author_id
-      WHERE po.visibility = 'public' AND po.deleted_at IS NULL
-        AND u.status = 'active' AND p.visibility = 'public'
-      GROUP BY pt.tag
-      ORDER BY n DESC, pt.tag
-      LIMIT ?1`,
-    limit,
-  );
-}
-
- /** The logged-in author's own work, for the composer's project picker. */
-export async function projectsForComposer(
-  context: AppLoadContext,
-  ownerId: string,
-  limit = 20,
-): Promise<Array<{ id: string; title: string }>> {
-  return many<{ id: string; title: string }>(
-    context,
-    `SELECT id, title FROM projects
-      WHERE owner_id = ?1 AND visibility <> 'private'
-      ORDER BY created_at DESC LIMIT ?2`,
-    ownerId,
-    limit,
-  );
-}
-
-/**
- * Write a post and its tags together. Tags are derived from the body by the
- * caller (see lib/tags.ts) so the same parser feeds the links in the browser.
- */
-export async function insertPost(
-  context: AppLoadContext,
-  input: {
-    authorId: string;
-    kind: string;
-    body: string;
-    projectId?: string | null;
-    repostOfId?: string | null;
-    tags?: string[];
-  },
-): Promise<string> {
-  const id = crypto.randomUUID();
-  const now = Date.now();
-  const statements = [
-    stmt(
-      context,
-      `INSERT INTO posts
-         (id, author_id, kind, body, project_id, repost_of_id, visibility,
-          created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'public', ?7, ?7)`,
-      id,
-      input.authorId,
-      input.kind,
-      input.body,
-      input.projectId ?? null,
-      input.repostOfId ?? null,
-      now,
-    ),
-    ...(input.tags ?? []).map((tag) =>
-      stmt(
-        context,
-        `INSERT OR IGNORE INTO post_tags (post_id, tag) VALUES (?1, ?2)`,
-        id,
-        tag,
-      ),
-    ),
-  ];
-  await batch(context, statements);
-  return id;
-}
-

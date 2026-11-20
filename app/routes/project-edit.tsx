@@ -4,6 +4,15 @@ import { requireMe } from "~/lib/session.server";
 import { batch, one, run, stmt } from "~/lib/db.server";
 import { cleanUrl, clamp } from "~/lib/validate";
 import { PageHead } from "~/components/page-head";
+import { ConfirmDialog } from "~/components/confirm-dialog";
+
+const ACCESS_MODES = [
+  { v: "", t: "不标注" },
+  { v: "在线体验", t: "在线体验" },
+  { v: "开源代码", t: "开源代码" },
+  { v: "私有部署", t: "私有部署" },
+  { v: "仅 Demo 展示", t: "仅 Demo 展示" },
+];
 
 const KINDS = [
   { v: "project", t: "项目" },
@@ -37,10 +46,13 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     stage: string | null;
     limitations: string | null;
     visibility: string;
+    access_mode: string | null;
+    featured: number;
   }>(
     context,
     `SELECT id, slug, kind, title, summary, description, cover_url, demo_url,
-            docs_url, repo_url, role, stage, limitations, visibility
+            docs_url, repo_url, role, stage, limitations, visibility,
+            access_mode, featured
        FROM projects WHERE slug = ?1 AND owner_id = ?2`,
     params.slug,
     me.id,
@@ -91,6 +103,10 @@ export async function action({ request, context, params }: Route.ActionArgs) {
   const docs = cleanUrl(String(form.get("docs_url") ?? ""));
   const repo = cleanUrl(String(form.get("repo_url") ?? ""));
   const visibility = String(form.get("visibility") ?? "public");
+  const accessMode = ACCESS_MODES.some((m) => m.v && m.v === String(form.get("access_mode")))
+    ? String(form.get("access_mode"))
+    : null;
+  const featured = form.get("featured") === "on" ? 1 : 0;
   const skills = String(form.get("skills") ?? "")
     .split(/[,，、]/)
     .map((s) => s.trim())
@@ -100,6 +116,10 @@ export async function action({ request, context, params }: Route.ActionArgs) {
   const errors: Record<string, string> = {};
   if (!title) errors.title = "请填写标题";
   if (!summary) errors.summary = "请填写一句话简介";
+  if (cover.error) errors.cover_url = cover.error;
+  if (demo.error) errors.demo_url = demo.error;
+  if (docs.error) errors.docs_url = docs.error;
+  if (repo.error) errors.repo_url = repo.error;
   if (Object.keys(errors).length) return data({ errors }, { status: 400 });
 
   await batch(context, [
@@ -109,7 +129,7 @@ export async function action({ request, context, params }: Route.ActionArgs) {
           SET kind = ?3, title = ?4, summary = ?5, description = ?6,
               cover_url = ?7, demo_url = ?8, docs_url = ?9, repo_url = ?10,
               role = ?11, stage = ?12, limitations = ?13, visibility = ?14,
-              updated_at = ?15
+              access_mode = ?15, featured = ?16, updated_at = ?17
         WHERE id = ?1 AND owner_id = ?2`,
       project.id,
       me.id,
@@ -117,14 +137,16 @@ export async function action({ request, context, params }: Route.ActionArgs) {
       title,
       summary,
       description || null,
-      cover,
-      demo,
-      docs,
-      repo,
+      cover.value,
+      demo.value,
+      docs.value,
+      repo.value,
       role || null,
       stage || null,
       limitations || null,
       VISIBILITY.some((v) => v.v === visibility) ? visibility : "public",
+      accessMode,
+      featured,
       Date.now(),
     ),
     stmt(context, `DELETE FROM project_skills WHERE project_id = ?1`, project.id),
@@ -254,6 +276,36 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
+            <span className="mb-1.5 block text-[12.5px] font-medium">
+              访问方式 <span className="font-normal text-[var(--color-faint)]">可选</span>
+            </span>
+            <select
+              name="access_mode"
+              defaultValue={project.access_mode ?? ""}
+              className="field cursor-pointer"
+            >
+              {ACCESS_MODES.map((m) => (
+                <option key={m.v || "none"} value={m.v}>
+                  {m.t}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 self-end rounded-[10px] border border-[var(--color-line)] p-3">
+            <input
+              type="checkbox"
+              name="featured"
+              defaultChecked={Boolean(project.featured)}
+              className="mt-0.5 h-[16px] w-[16px] shrink-0 accent-[var(--color-ink-soft)]"
+            />
+            <span>
+              <span className="block text-[13px] font-medium">设为个人主页精选</span>
+              <span className="mt-0.5 block text-[12px] text-[var(--color-ink-soft)]">
+                最多展示 3 个，超出的按时间先后
+              </span>
+            </span>
+          </label>
+          <label className="block">
             <span className="mb-1.5 block text-[12.5px] font-medium">封面图 URL</span>
             <input
               name="cover_url"
@@ -305,13 +357,17 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
             删除后无法恢复，引用它的动态会保留文字。
           </span>
           <div className="flex items-center gap-2">
-            <button
-              form="delete-form"
-              className="btn btn-ghost btn-sm !text-[#c0392b]"
-              type="submit"
-            >
-              删除作品
-            </button>
+            <ConfirmDialog
+              action={`/projects/${project.slug}/edit`}
+              hidden={{ intent: "delete" }}
+              title="删除这个作品？"
+              description="作品页会立即失效，引用它的动态会保留文字但不再能打开作品。删除后无法恢复。"
+              trigger={
+                <button type="button" className="btn btn-ghost btn-sm !text-[#c0392b]">
+                  删除作品
+                </button>
+              }
+            />
             <Link to={`/projects/${project.slug}`} className="btn btn-ghost btn-sm">
               取消
             </Link>
@@ -320,16 +376,6 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
         </div>
       </Form>
 
-      <Form
-        id="delete-form"
-        method="post"
-        className="hidden"
-        onSubmit={(e) => {
-          if (!confirm("确定删除这个作品？删除后无法恢复。")) e.preventDefault();
-        }}
-      >
-        <input type="hidden" name="intent" value="delete" />
-      </Form>
     </div>
   );
 }
