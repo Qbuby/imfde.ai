@@ -1,5 +1,7 @@
 import type { Route } from "./+types/profile";
+import { useState } from "react";
 import { Link } from "react-router";
+import { motion, AnimatePresence } from "motion/react";
 import { getMe, normalizeHandle } from "~/lib/session.server";
 import { many, one } from "~/lib/db.server";
 import { Avatar, CoverArt } from "~/components/media";
@@ -8,7 +10,6 @@ import { CopyLinkButton } from "~/components/copy-link";
 import { BRAND_ICONS } from "~/components/brand-icons";
 import { compact } from "~/lib/format";
 import { countsForProfile, feedPosts, projectsByOwner } from "~/lib/queries.server";
-import { SectionTitle } from "~/components/page-head";
 
 const PROVIDER_LABEL: Record<string, string> = {
   github: "GitHub",
@@ -117,235 +118,172 @@ export const meta: Route.MetaFunction = ({ data }) => {
 export default function Profile({ loaderData }: Route.ComponentProps) {
   const { me, user, counts, skills, links, projects, posts, isSelf, following } =
     loaderData;
+  const [tab, setTab] = useState<"work" | "posts" | "about">("work");
   const featured = projects.filter((p) => p.featured).slice(0, 3);
-  const shown = (featured.length ? featured : projects).slice(0, 6);
+  const shown = featured.length ? featured : projects;
+
+  const stats = [
+    { n: counts.projects, label: "作品" },
+    { n: counts.posts, label: "动态" },
+    ...(user.hide_follows
+      ? []
+      : [
+          { n: counts.followers, label: "关注者" },
+          { n: counts.following, label: "关注" },
+        ]),
+  ];
 
   return (
-    <div className="max-w-[1060px]">
-      {/* cover — flat, no frame, same 12px radius as a project cover */}
-      <div className="overflow-hidden rounded-[12px]">
-        <CoverArt
-          seed={`${user.handle}-cover`}
-          src={user.cover_url}
-          aspect="4 / 1"
-          photo={false}
-        />
-      </div>
-
-      <div className="px-1 sm:px-2">
-        <div className="-mt-14 flex items-start gap-4">
-          <Avatar
-            name={user.display_name}
-            src={user.avatar_url}
-            size={96}
-            ring
-          />
-          <div className="flex-1 pt-[58px]">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[34px] font-semibold leading-tight tracking-[-0.02em]">
-                {user.display_name}
-              </h1>
-              {user.kind === "team" && (
-                <span className="chip chip-outline">团队 / Studio</span>
+    <div className="mx-auto max-w-[1180px]">
+      <div className="grid gap-8 lg:grid-cols-[310px_minmax(0,1fr)]">
+        <aside className="min-w-0">
+          <div className="surface-panel lg:sticky lg:top-8 overflow-hidden">
+            <div className="relative h-[92px] overflow-hidden">
+              <CoverArt seed={`${user.handle}-cover`} src={user.cover_url} aspect="4 / 1" photo={false} />
+            </div>
+            <div className="-mt-11 px-5">
+              <Avatar name={user.display_name} src={user.avatar_url} size={88} ring />
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.03em]">
+                  {user.display_name}
+                </h1>
+                {user.kind === "team" && (
+                  <span className="chip chip-outline !h-[20px] !px-2 !text-[10px]">团队 / Studio</span>
+                )}
+              </div>
+              <p className="micro-mono mt-0.5">@{user.handle}</p>
+              {(user.location || user.timezone) && (
+                <p className="mt-2 text-[12.5px] text-[var(--color-muted)]">
+                  {[user.location, user.timezone].filter(Boolean).join(" · ")}
+                </p>
               )}
-            </div>
-            <p className="mt-0.5 font-mono text-[12px] tracking-wide text-[var(--color-faint)]">
-              @{user.handle}
-            </p>
-          </div>
-        </div>
+              {user.headline && (
+                <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">{user.headline}</p>
+              )}
 
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          {isSelf ? (
-            <>
-              <Link to="/settings/profile" className="btn btn-ghost btn-sm">
-                编辑主页
-              </Link>
-              <Link to="/new/project" className="btn btn-primary btn-sm">
-                上传作品
-              </Link>
-            </>
-          ) : (
-            <FollowButton targetId={user.id} following={following} signedIn={Boolean(me)} />
-          )}
-          <CopyLinkButton
-            path={`/@${user.handle}`}
-            label="复制主页链接"
-            className="btn btn-ghost btn-sm"
-          />
-          {(user.location || user.timezone) && (
-            <span className="text-[12.5px] text-[var(--color-muted)]">
-              {[user.location, user.timezone].filter(Boolean).join(" · ")}
-            </span>
-          )}
-        </div>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {isSelf ? (
+                  <>
+                    <Link to="/settings/profile" className="btn btn-ghost btn-sm">编辑主页</Link>
+                    <Link to="/new/project" className="btn btn-primary btn-sm">上传作品</Link>
+                  </>
+                ) : (
+                  <FollowButton targetId={user.id} following={following} signedIn={Boolean(me)} />
+                )}
+                <CopyLinkButton path={`/@${user.handle}`} label="复制主页链接" className="btn btn-ghost btn-sm" />
+              </div>
 
-        {user.headline && (
-          <p className="mt-4 max-w-[660px] text-[16px] leading-[1.7] text-[var(--color-ink-2)]">
-            {user.headline}
-          </p>
-        )}
+              <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[12px] border border-[var(--color-line)] bg-[var(--color-line-soft)]">
+                {stats.map((x) => (
+                  <div key={x.label} className="bg-white px-4 py-3">
+                    <p className="font-mono text-[19px] font-medium leading-none text-[var(--color-ink)] tabular-nums">{compact(x.n)}</p>
+                    <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">{x.label}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[10.5px] text-[var(--color-faint)]">原始计数，不合成任何评分</p>
 
-
-
-        {/* counts — raw numbers, no synthesis */}
-        <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-[var(--color-line-soft)] py-4">
-          <Stat n={counts.projects} label="作品" />
-          <Stat n={counts.posts} label="动态" />
-          {user.hide_follows ? null : (
-            <>
-              <Stat n={counts.followers} label="关注者" />
-              <Stat n={counts.following} label="关注" />
-            </>
-          )}
-          <span className="ml-auto text-[11.5px] text-[var(--color-faint)]">
-            以上均为原始计数，不合成任何评分
-          </span>
-        </div>
-
-        {/* external accounts — explicitly labelled by source type */}
-        {links.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-2">
-            {links.map((l) => (
-              <a
-                key={l.id}
-                href={l.profile_url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-[12.5px] transition hover:border-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
-              >
-                <span className="text-[var(--color-ink-soft)]">
-                  {(() => {
+              {links.length > 0 && (
+                <div className="mt-5 flex flex-wrap gap-1.5">
+                  {links.map((l) => {
                     const Icon = BRAND_ICONS[l.provider];
-                    return Icon ? <Icon size={14} /> : <span aria-hidden>↗</span>;
-                  })()}
-                </span>
-                {PROVIDER_LABEL[l.provider] ?? l.provider}
-                <span className="font-mono text-[9.5px] tracking-[0.08em] text-[var(--color-faint)] uppercase">
-                  {l.connection === "connected" ? "已连接" : "链接"}
-                </span>
-              </a>
-            ))}
+                    return (
+                      <a key={l.id} href={l.profile_url} target="_blank" rel="noopener noreferrer nofollow"
+                        className="flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-2.5 py-1.5 text-[11.5px] text-[var(--color-ink-soft)] transition hover:border-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">
+                        {Icon ? <Icon size={13} /> : <span aria-hidden>↗</span>}
+                        {PROVIDER_LABEL[l.provider] ?? l.provider}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+
+              {skills.length > 0 && (
+                <div className="mt-5">
+                  <p className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">方向</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {skills.map((s) => (
+                      <Link key={s} to={`/discover?skill=${encodeURIComponent(s)}`} className="chip transition hover:!bg-[var(--color-sunken-deep)]">{s}</Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <details className="group mt-5 border-t border-[var(--color-line-soft)] py-3">
+                <summary className="cursor-pointer font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">信息从哪里来 · 展开</summary>
+                <dl className="mt-3 grid gap-2 text-[11.5px] leading-relaxed text-[var(--color-muted)]">
+                  <div><dt className="font-medium text-[var(--color-ink)]">本人自述</dt><dd>简介、方向、作品说明。平台不核实。</dd></div>
+                  <div><dt className="font-medium text-[var(--color-ink)]">外部链接</dt><dd>跳到站外，内容由对方负责。</dd></div>
+                  <div><dt className="font-medium text-[var(--color-ink)]">平台行为</dt><dd>发帖、关注、点赞。真实发生过。</dd></div>
+                </dl>
+              </details>
+            </div>
           </div>
-        )}
+        </aside>
 
-        {user.about && (
-          <section className="mt-8">
-            <h2 className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
-              关于
-            </h2>
-            <div className="max-w-[660px] whitespace-pre-wrap text-[14.5px] leading-[1.85] text-[var(--color-ink-2)]">
-              {user.about}
-            </div>
-            <p className="mt-2 text-[11.5px] text-[var(--color-faint)]">
-              由本人填写。
-            </p>
-          </section>
-        )}
+        <div className="min-w-0">
+          <div className="flex items-center gap-6 border-b border-[var(--color-line)]">
+            {([["work", "作品集"], ["posts", "动态"], ["about", "关于"]] as const).map(([id, label]) => (
+              <button key={id} type="button" onClick={() => setTab(id)}
+                className={`relative pb-3 pt-1 text-[14px] font-medium transition ${
+                  tab === id ? "text-[var(--color-ink)]" : "text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+                }`}>
+                {label}
+                {tab === id && (
+                  <motion.span layoutId="profile-tab-underline"
+                    className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[var(--color-ink)]"
+                    transition={{ type: "spring", stiffness: 480, damping: 36 }} />
+                )}
+              </button>
+            ))}
+            <span className="ml-auto font-mono text-[11px] text-[var(--color-faint)] tabular-nums">
+              {projects.length} 作品 · {posts.length} 动态
+            </span>
+          </div>
 
-        {skills.length > 0 && (
-          <section className="mt-7">
-            <h2 className="mb-2.5 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
-              方向
-            </h2>
-            <div className="flex flex-wrap gap-1.5">
-              {skills.map((s) => (
-                <Link
-                  key={s}
-                  to={`/discover?skill=${encodeURIComponent(s)}`}
-                  className="chip transition hover:!bg-[var(--color-sunken-deep)]"
-                >
-                  {s}
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={tab}
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18 }} className="pt-6">
+              {tab === "work" && (
+                shown.length === 0 ? (
+                  <div className="surface-panel py-16 text-center">
+                    <p className="text-[14px] text-[var(--color-ink-soft)]">还没有公开作品。</p>
+                    {isSelf && <Link to="/new/project" className="btn btn-primary btn-sm mt-4">上传第一个</Link>}
+                  </div>
+                ) : (
+                  <div className="grid gap-x-6 gap-y-9 sm:grid-cols-2">
+                    {shown.map((p, i) => (
+                      <ProjectCard key={p.id} project={p} viewerId={me?.id ?? null} hero={i === 0 && p.featured === 1} />
+                    ))}
+                  </div>
+                )
+              )}
+              {tab === "posts" && (
+                posts.length === 0 ? (
+                  <div className="surface-panel py-16 text-center">
+                    <p className="text-[14px] text-[var(--color-ink-soft)]">还没有公开动态。</p>
+                  </div>
+                ) : (
+                  <div className="surface-panel divide-y divide-[var(--color-line-soft)] px-4">
+                    {posts.slice(0, 12).map((p) => <FeedCard key={p.id} post={p} viewerId={me?.id ?? null} showFollow={false} />)}
+                  </div>
+                )
+              )}
+              {tab === "about" && (
+                <div className="surface-panel p-6">
+                  {user.about ? (
+                    <p className="whitespace-pre-wrap text-[14.5px] leading-[1.9] text-[var(--color-ink-2)]">{user.about}</p>
+                  ) : (
+                    <p className="text-[14px] text-[var(--color-faint)]">{isSelf ? "还没有填写简介。" : "这位 FDE 还没有写简介。"}</p>
+                  )}
+                  <p className="mt-4 text-[11.5px] text-[var(--color-faint)]">由本人填写，平台不核实。</p>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
-
-      {/* projects */}
-      <section className="mt-10">
-        <SectionTitle
-          action={
-            projects.length > 6 ? (
-              <Link
-                to={`/@${user.handle}/projects`}
-                className="text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
-              >
-                全部 {projects.length} 个 →
-              </Link>
-            ) : undefined
-          }
-        >
-          作品
-        </SectionTitle>
-        {shown.length === 0 ? (
-          <div className="border-t border-[var(--color-line-soft)] py-12 text-center">
-            <p className="text-[13.5px] text-[var(--color-ink-soft)]">
-              这个人还没有公开作品。
-            </p>
-            {isSelf && (
-              <Link to="/new/project" className="btn btn-primary btn-sm mt-4">
-                上传第一个
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-x-6 gap-y-8 pt-1 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((p) => (
-              <ProjectCard key={p.id} project={p} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* posts */}
-      {posts.length > 0 && (
-        <section className="mt-12">
-          <SectionTitle>动态</SectionTitle>
-          <div className="border-t border-[var(--color-line-soft)]">
-            {posts.slice(0, 6).map((p) => (
-              <FeedCard key={p.id} post={p} viewerId={me?.id ?? null} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* source legend — the product's trust model, stated plainly */}
-      <section className="mt-12 border-t border-[var(--color-line-soft)] pt-6">
-        <h2 className="mb-2.5 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
-          这个页面上的信息从哪里来
-        </h2>
-        <dl className="grid gap-2 text-[12.5px] leading-relaxed text-[var(--color-muted)] sm:grid-cols-2">
-          <div>
-            <dt className="font-medium text-[var(--color-ink)]">本人自述</dt>
-            <dd>简介、方向、作品说明。平台不核实。</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-[var(--color-ink)]">外部链接</dt>
-            <dd>GitHub、LinkedIn 等，跳到站外，内容由对方负责。</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-[var(--color-ink)]">平台行为</dt>
-            <dd>发帖、关注、点赞。这些在这里真实发生过。</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-[var(--color-ink)]">没有的东西</dt>
-            <dd>没有信用分，没有等级，没有成交与收入记录。</dd>
-          </div>
-        </dl>
-      </section>
     </div>
-  );
-}
-
-function Stat({ n, label }: { n: number; label: string }) {
-  return (
-    <span className="flex items-baseline gap-1.5">
-      <span className="font-mono text-[17px] font-medium text-[var(--color-ink)]">
-        {compact(n)}
-      </span>
-      <span className="text-[12px] text-[var(--color-muted)]">{label}</span>
-    </span>
   );
 }

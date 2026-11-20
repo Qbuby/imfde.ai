@@ -1,5 +1,6 @@
 import type { Route } from "./+types/feed";
 import { Link, useFetcher, useSearchParams } from "react-router";
+import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Flame, History, Bookmark as BookmarkIcon } from "lucide-react";
@@ -126,16 +127,16 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           description="正在发生的事、刚跑通的东西、还卡着的问题。按 #话题 归类，任何人都能读。"
         />
 
-        <div className="mt-5 flex flex-wrap items-center gap-1">
-          <TabLink to={href({ tab: null })} active={tab === "all"}>
+        <div className="frost sticky top-0 z-20 -mx-2 mt-5 flex items-center gap-1 border-b border-[var(--color-line-soft)] px-2 py-2">
+          <TabLink id="all" to={href({ tab: null })} active={tab === "all"}>
             全站最新
           </TabLink>
           {me && (
             <>
-              <TabLink to={href({ tab: "following" })} active={tab === "following"}>
+              <TabLink id="following" to={href({ tab: "following" })} active={tab === "following"}>
                 关注
               </TabLink>
-              <TabLink to={href({ tab: "bookmarks" })} active={tab === "bookmarks"}>
+              <TabLink id="bookmarks" to={href({ tab: "bookmarks" })} active={tab === "bookmarks"}>
                 收藏
               </TabLink>
             </>
@@ -312,9 +313,13 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
 function Composer({ myProjects }: { myProjects: Array<{ id: string; title: string }> }) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [length, setLength] = useState(0);
+  const [focused, setFocused] = useState(false);
+  const [kind, setKind] = useState("show");
   const pending = fetcher.state !== "idle";
   const sent = useRef<string | null>(null);
+  const pct = Math.min(100, Math.round((length / 4000) * 100));
 
   useEffect(() => {
     const data = fetcher.data as { ok?: boolean; id?: string } | undefined;
@@ -322,6 +327,8 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
     sent.current = data.id;
     formRef.current?.reset();
     setLength(0);
+    setKind("show");
+    setFocused(false);
     toast.success("动态已发布");
   }, [fetcher.data]);
 
@@ -329,14 +336,17 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
     <fetcher.Form
       ref={formRef}
       method="post"
-      className="mt-5 rounded-[12px] border border-[var(--color-line)] bg-white focus-within:border-[var(--color-ink-soft)]"
+      className="surface-panel mt-5 overflow-hidden transition-shadow focus-within:shadow-[var(--shadow-lift)]"
     >
       <div className="flex items-start gap-3 px-4 pt-3.5">
         <textarea
+          ref={textareaRef}
           name="body"
           required
           maxLength={4000}
           rows={2}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onChange={(e) => setLength(e.currentTarget.value.length)}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -348,18 +358,33 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
           className="min-h-[52px] w-full resize-y border-0 bg-transparent pt-1 text-[15px] leading-[1.55] outline-none placeholder:text-[var(--color-faint)]"
         />
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[var(--color-line-soft)] px-4 py-2.5">
-        <select
-          name="kind"
-          aria-label="动态类型"
-          className="field !h-[32px] !w-auto !px-2 !text-[12.5px]"
-        >
+      <motion.div
+        animate={{ height: focused ? "auto" : 0, opacity: focused ? 1 : 0 }}
+        initial={false}
+        transition={{ type: "spring", stiffness: 380, damping: 34 }}
+        className="overflow-hidden"
+      >
+        <div className="flex flex-wrap items-center gap-2 border-t border-[var(--color-line-soft)] px-4 py-2.5">
+          <input type="hidden" name="kind" value={kind} />
           {KINDS.filter((k) => k.v !== "all").map((k) => (
-            <option key={k.v} value={k.v}>
+            <motion.button
+              type="button"
+              key={k.v}
+              onClick={() => setKind(k.v)}
+              whileTap={{ scale: 0.95 }}
+              className={`rounded-full border px-2.5 py-1 text-[11.5px] transition ${
+                kind === k.v
+                  ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-white"
+                  : "border-[var(--color-line)] text-[var(--color-ink-soft)]"
+              }`}
+            >
               {k.t}
-            </option>
+            </motion.button>
           ))}
-        </select>
+        </div>
+      </motion.div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[var(--color-line-soft)] px-4 py-2.5">
+        {!focused && <span className="chip !h-[24px] !text-[10.5px]">{KINDS.find((k) => k.v === kind)?.t}</span>}
         <select
           name="project_id"
           aria-label="关联作品"
@@ -375,9 +400,18 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
         <span className="hidden text-[11.5px] text-[var(--color-faint)] sm:inline">
           #标签自动识别 · ⌘/Ctrl + Enter 发布
         </span>
-        {length > 3500 && (
-          <span className="font-mono text-[11.5px] text-[var(--color-watermelon)] tabular-nums">
-            {length}/4000
+        {length > 0 && (
+          <span className="relative grid h-6 w-6 shrink-0 place-items-center" title={`${length}/4000`}>
+            <svg width="24" height="24" viewBox="0 0 24 24" className="-rotate-90" aria-hidden>
+              <circle cx="12" cy="12" r="9" fill="none" stroke="var(--color-line)" strokeWidth="2" />
+              <circle
+                cx="12" cy="12" r="9" fill="none"
+                stroke={pct > 90 ? "var(--color-like)" : "var(--color-ink-soft)"}
+                strokeWidth="2" strokeLinecap="round"
+                strokeDasharray={`${(pct / 100) * 56.5} 56.5`}
+              />
+            </svg>
+            <span className="absolute font-mono text-[7px] text-[var(--color-faint)] tabular-nums">{length > 999 ? `${Math.round(length/1000)}k` : length}</span>
           </span>
         )}
         <button
@@ -392,10 +426,12 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
 }
 
 function TabLink({
+  id: _id,
   to,
   active,
   children,
 }: {
+  id: string;
   to: string;
   active: boolean;
   children: React.ReactNode;
@@ -404,13 +440,18 @@ function TabLink({
     <Link
       to={to}
       preventScrollReset
-      className={`rounded-full px-3.5 py-1.5 text-[14px] font-medium transition ${
-        active
-          ? "bg-[var(--color-ink-2)] text-white"
-          : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+      className={`relative rounded-full px-3.5 py-1.5 text-[13.5px] font-medium transition ${
+        active ? "text-[var(--color-ink)]" : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
       }`}
     >
-      {children}
+      {active && (
+        <motion.span
+          layoutId="feed-tab-indicator"
+          className="absolute inset-0 rounded-full border border-[var(--hairline)] bg-white shadow-[var(--shadow-card)]"
+          transition={{ type: "spring", stiffness: 480, damping: 36 }}
+        />
+      )}
+      <span className="relative z-10">{children}</span>
     </Link>
   );
 }

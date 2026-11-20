@@ -2,12 +2,22 @@ import type { AppLoadContext } from "react-router";
 import { batch, many, stmt } from "./db.server";
 import { relativeTime } from "./format";
 
-export interface ProjectCardRow {
+/** Fields an author hover-card needs, selected alongside any list row. */
+export interface AuthorCardRow {
+  author_id: string;
+  author_headline: string | null;
+  author_hide_follows: number;
+  author_projects: number;
+  author_followers: number;
+}
+
+export interface ProjectCardRow extends AuthorCardRow {
   id: string;
   slug: string;
   kind: string;
   title: string;
   summary: string;
+  description: string | null;
   cover_url: string | null;
   featured: number;
   created_at: number;
@@ -37,9 +47,14 @@ export interface PersonRow {
  * 都不对其他人可见", so every public surface honours it — the owner excepted.
  */
 const projectSelect = (viewerSlot: number) => `
-  SELECT pr.id, pr.slug, pr.kind, pr.title, pr.summary, pr.cover_url,
+  SELECT pr.id, pr.slug, pr.kind, pr.title, pr.summary, pr.description, pr.cover_url,
          pr.featured, pr.created_at,
          u.handle, p.display_name, p.avatar_url,
+         pr.owner_id AS author_id, p.headline AS author_headline,
+         p.hide_follows AS author_hide_follows,
+         (SELECT COUNT(*) FROM projects ap WHERE ap.owner_id = pr.owner_id
+            AND ap.visibility = 'public') AS author_projects,
+         (SELECT COUNT(*) FROM follows af WHERE af.followed_id = pr.owner_id) AS author_followers,
          (SELECT COUNT(*) FROM reactions r
            WHERE r.target_type = 'project' AND r.target_id = pr.id) AS likes
     FROM projects pr
@@ -91,7 +106,7 @@ export interface RepostSource {
   project_cover_url: string | null;
 }
 
-export interface FeedPostRow {
+export interface FeedPostRow extends AuthorCardRow {
   id: string;
   kind: string;
   body: string;
@@ -132,6 +147,11 @@ const FEED_SELECT = (viewerSlot: number) => `
   SELECT po.id, po.kind, po.body, po.created_at, po.author_id,
          po.project_id, po.repost_of_id,
          u.handle, p.display_name, p.avatar_url,
+         po.author_id AS author_id, p.headline AS author_headline,
+         p.hide_follows AS author_hide_follows,
+         (SELECT COUNT(*) FROM projects ap WHERE ap.owner_id = po.author_id
+            AND ap.visibility = 'public') AS author_projects,
+         (SELECT COUNT(*) FROM follows af WHERE af.followed_id = po.author_id) AS author_followers,
          pr.slug AS project_slug, pr.title AS project_title,
          pr.summary AS project_summary, pr.cover_url AS project_cover_url,
          (SELECT COUNT(*) FROM reactions r

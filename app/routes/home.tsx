@@ -1,6 +1,7 @@
 import type { Route } from "./+types/home";
 import { Link } from "react-router";
-import { Search } from "lucide-react";
+import { Search, ArrowUpRight, Link2, Heart, MessageCircle, Repeat2, Bookmark } from "lucide-react";
+import { PreviewStage } from "~/components/preview-stage";
 import { getMe } from "~/lib/session.server";
 import {
   feedPosts,
@@ -229,66 +230,38 @@ function Landing({
   people: Awaited<ReturnType<typeof featuredPeople>>;
   posts: Awaited<ReturnType<typeof feedPosts>>["rows"];
 }) {
-  const heroProjects = projects.slice(0, 3);
-
   return (
     <div className="pb-8">
-      {/* hero: artwork column 437px + headline column, matching Contra's grid */}
-      <section className="pt-6">
-        <div className="grid items-start gap-[21px] lg:grid-cols-[437px_minmax(0,1fr)]">
-          <div className="relative hidden h-[432px] lg:block" aria-hidden="true">
-            <div className="absolute inset-0 overflow-hidden rounded-[20px]">
-              <CoverArt seed="imfde-hero" aspect="1 / 1" className="h-full" photo={false} />
-            </div>
-            <p className="absolute left-6 top-5 font-mono text-[11px] tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">
-              imfde.ai / @你的名字
+      {/* hero: high-contrast type + interactive three-state preview stage */}
+      <section className="hero-glow pt-8 sm:pt-12">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+          <div>
+            <p className="mb-5 font-mono text-[10.5px] tracking-[1.4px] text-[var(--color-ink-soft)] uppercase">
+              FDE 的主页 · 作品集 · 专业网络
             </p>
-            <div className="absolute bottom-5 left-5 right-5 rounded-[14px] border border-[var(--color-line-soft)] bg-white/92 p-3.5 backdrop-blur">
-              <div className="flex items-center gap-2.5">
-                <Avatar name="林舟" size={34} />
-                <div className="min-w-0">
-                  <p className="truncate text-[14px] font-semibold">林舟 · @lin</p>
-                  <p className="truncate text-[12.5px] text-[var(--color-muted)]">
-                    3 个作品 · 语音与工单
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 grid grid-cols-3 gap-1.5">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="overflow-hidden rounded-[8px]">
-                    <CoverArt
-                      seed={heroProjects[i]?.slug ?? ["agent", "voice", "notes"][i]!}
-                      aspect="1 / 1"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-2">
-            <h1 className="display max-w-[560px] text-[clamp(34px,4vw,58px)]">
+            <h1 className="display text-[clamp(40px,5vw,66px)]">
               你的作品，
               <br />
               值得被找到。
             </h1>
-            <p className="lead mt-5 max-w-[420px]">
-              iMFDE 是 FDE 的主页、作品集和专业网络。分散在 GitHub、LinkedIn
-              和聊天记录里的东西，集中到一个能被搜索、被分享的地址。
+            <p className="lead mt-6 max-w-[470px]">
+              iMFDE 把散落在 GitHub、LinkedIn 和聊天记录里的证据，集中到一个能被搜索、能被分享的地址。
+              不做交易撮合，不合成信用分，只展示可观察的事实。
             </p>
-
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link to="/join" className="btn btn-primary">
-                建我的主页
+              <Link to="/join" className="btn btn-primary !h-[52px] !px-7">
+                免费建主页
               </Link>
-              <Link to="/discover" className="btn btn-ghost">
-                先看看别人
+              <Link to="/feed" className="btn btn-ghost !h-[52px] !px-7">
+                先逛广场 <ArrowUpRight size={16} strokeWidth={1.65} aria-hidden />
               </Link>
             </div>
-
-            <p className="mt-5 font-mono text-[11px] tracking-[0.14em] text-[var(--color-faint)] uppercase">
+            <p className="mt-7 font-mono text-[10.5px] tracking-[0.14em] text-[var(--color-faint)] uppercase">
               不经手交易 · 不做信用分 · 只展示可观察的信息
             </p>
+          </div>
+          <div className="min-w-0">
+            <PreviewStage />
           </div>
         </div>
       </section>
@@ -325,30 +298,59 @@ function Landing({
         </form>
       </section>
 
-      <section className="mt-16 grid gap-px overflow-hidden border-y border-[var(--color-line-soft)] bg-[var(--color-line-soft)] sm:grid-cols-3">
-        {[
-          {
-            t: "一个稳定地址",
-            d: "imfde.ai/@你的名字。可以被搜索、被分享、被写进简历和邮件签名。",
-          },
-          {
-            t: "作品比简历有说服力",
-            d: "项目、Agent、自动化流程，配得上截图、Demo、仓库链接和你的角色说明。",
-          },
-          {
-            t: "同行的视线",
-            d: "发动态、关注人、被关注。专业关系从真实做过的事开始，不从粉丝数开始。",
-          },
-        ].map((x) => (
-          <div key={x.t} className="bg-white px-1 py-6 sm:px-6">
-            <h3 className="font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
-              {x.t}
-            </h3>
-            <p className="mt-2.5 text-[15px] leading-[1.6] text-[var(--color-ink)]">
-              {x.d}
-            </p>
+      {/* visual bento: three promises, each with a tiny real UI specimen */}
+      <section className="mt-16 grid gap-4 lg:grid-cols-3">
+        <div className="surface-panel relative overflow-hidden p-6 lg:col-span-1">
+          <div className="mb-5 rounded-[10px] border border-[var(--color-line)] bg-[var(--color-paper)] p-2.5">
+            <div className="flex items-center gap-1.5 rounded-[6px] border border-[var(--color-line)] bg-white px-2.5 py-1.5">
+              <span className="micro-mono truncate">imfde.ai/@你的名字</span>
+              <Link2 size={12} strokeWidth={1.65} className="ml-auto shrink-0 text-[var(--color-faint)]" aria-hidden />
+            </div>
           </div>
-        ))}
+          <h3 className="font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+            一个稳定地址
+          </h3>
+          <p className="mt-2.5 text-[15px] font-medium leading-[1.55] tracking-[-0.01em] text-[var(--color-ink)]">
+            能被搜索、被分享，写进简历和邮件签名。
+          </p>
+        </div>
+
+        <div className="surface-panel relative overflow-hidden p-6 lg:col-span-1">
+          <div className="mb-5 flex gap-2">
+            <div className="h-16 flex-1 overflow-hidden rounded-[8px] border border-[var(--hairline)]">
+              <CoverArt seed="feature-work-1" aspect="4 / 3" />
+            </div>
+            <div className="h-16 flex-1 overflow-hidden rounded-[8px] border border-[var(--hairline)]">
+              <CoverArt seed="feature-work-2" aspect="4 / 3" />
+            </div>
+          </div>
+          <h3 className="font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+            作品比简历有说服力
+          </h3>
+          <p className="mt-2.5 text-[15px] font-medium leading-[1.55] tracking-[-0.01em] text-[var(--color-ink)]">
+            截图、Demo、仓库链接，加上你本人写的角色说明。
+          </p>
+        </div>
+
+        <div className="surface-panel relative overflow-hidden p-6 lg:col-span-1">
+          <div className="mb-5 rounded-[10px] border border-[var(--color-line)] bg-white p-3">
+            <p className="text-[11px] leading-relaxed text-[var(--color-ink)]">
+              卡在 <span className="text-[var(--color-link)]">#语音转写</span> 的延迟上，下一步试流式。
+            </p>
+            <div className="mt-2 flex items-center gap-4 text-[var(--color-faint)]">
+              <span className="flex items-center gap-1 text-[var(--color-like)]"><Heart size={12} strokeWidth={1.65} fill="currentColor" aria-hidden /> 24</span>
+              <span className="flex items-center gap-1 text-[var(--color-link)]"><MessageCircle size={12} strokeWidth={1.65} aria-hidden /> 8</span>
+              <span className="flex items-center gap-1 text-[var(--color-repost)]"><Repeat2 size={12} strokeWidth={1.65} aria-hidden /> 5</span>
+              <span className="flex items-center gap-1"><Bookmark size={12} strokeWidth={1.65} aria-hidden /></span>
+            </div>
+          </div>
+          <h3 className="font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+            同行的视线
+          </h3>
+          <p className="mt-2.5 text-[15px] font-medium leading-[1.55] tracking-[-0.01em] text-[var(--color-ink)]">
+            专业关系从真实做过的事开始，不从粉丝数开始。
+          </p>
+        </div>
       </section>
 
       {projects.length > 0 && (

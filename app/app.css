@@ -19,7 +19,10 @@
    ───────────────────────────────────────────────────────────────────── */
 
 @theme {
+  /* Three surfaces: a warm canvas, a pure-white panel, and a raised sheet.
+     The warm canvas gives white panels an edge without adding a border. */
   --color-canvas: #ffffff;
+  --color-canvas-warm: #f7f7f9;
   --color-surface: #ffffff;
   --color-paper: #f6f6f6;
   --color-sunken: #f2f2f2;
@@ -38,6 +41,15 @@
   --color-lilac: #8f6fdb;
   --color-sky: #6ca3e0;
 
+  /* Semantic interaction colours: used only on icon states and micro-feedback,
+     never as large fills. Paired with a 10% halo on hover. */
+  --color-like: #f43f5e;
+  --color-like-halo: rgba(244, 63, 94, 0.1);
+  --color-repost: #10b981;
+  --color-repost-halo: rgba(16, 185, 129, 0.1);
+  --color-link: #0ea5e9;
+  --color-link-halo: rgba(14, 165, 233, 0.1);
+
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-display: "Instrument Sans Variable", "Inter Variable", ui-sans-serif,
@@ -50,8 +62,9 @@
   --radius-search: 20px;
   --radius-pill: 999px;
 
-  --shadow-card: 0 10px 20px rgba(0, 0, 0, 0.05);
-  --shadow-lift: 0 14px 32px rgba(0, 0, 0, 0.09);
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.04);
+  --shadow-lift: 0 2px 4px rgba(16, 24, 40, 0.05), 0 18px 40px rgba(16, 24, 40, 0.1);
+  --hairline: 1px solid rgba(20, 23, 31, 0.07);
 }
 
 @layer base {
@@ -119,7 +132,33 @@
     border-radius: 999px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  
+/* Editorial-gallery hero glow: three very low-saturation light sources,
+   held in a single layer so it never competes with the type above it. */
+.hero-glow {
+  position: relative;
+  isolation: isolate;
+}
+.hero-glow::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -10% -5% 0;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 42% at 18% 22%, rgba(226, 240, 236, 0.7), transparent 70%),
+    radial-gradient(40% 38% at 82% 12%, rgba(244, 236, 222, 0.65), transparent 72%),
+    radial-gradient(36% 40% at 62% 70%, rgba(232, 231, 244, 0.45), transparent 74%);
+  filter: blur(8px);
+  opacity: 0.9;
+}
+
+/* Fine inner stroke for gallery covers — lighter than the outer hairline. */
+.cover-inner-stroke {
+  box-shadow: inset 0 0 0 1px rgba(20, 23, 31, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
     }
@@ -152,9 +191,9 @@
   /* h1: 58/500/1.05/-0.01em, measured off "Get more creative" */
   .display {
     font-family: var(--font-display);
-    font-weight: 500;
-    line-height: 1.05;
-    letter-spacing: -0.01em;
+    font-weight: 600;
+    line-height: 1.04;
+    letter-spacing: -0.03em;
     color: var(--color-ink);
   }
 
@@ -179,7 +218,67 @@
     background: var(--color-surface);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-card);
-    border: 1px solid var(--color-line-soft);
+    border: var(--hairline);
+  }
+
+  /* Raised panel: the gallery surface that sits on the warm canvas. */
+  .surface-panel {
+    background: var(--color-surface);
+    border: var(--hairline);
+    box-shadow: var(--shadow-card);
+    border-radius: 18px;
+  }
+
+  /* Frosted surface used for sticky bars, corner badges and hover bars. */
+  .frost {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
+
+  /* Semantic action chip: 34px hit area, 10% halo on hover, coloured icon. */
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0 7px;
+    border-radius: 999px;
+    color: var(--color-muted);
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .action-btn:hover {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+  .action-like:hover,
+  .action-like[aria-pressed='true'] {
+    color: var(--color-like);
+    background: var(--color-like-halo);
+  }
+  .action-repost:hover,
+  .action-repost[aria-pressed='true'] {
+    color: var(--color-repost);
+    background: var(--color-repost-halo);
+  }
+  .action-link:hover,
+  .action-link[aria-pressed='true'] {
+    color: var(--color-link);
+    background: var(--color-link-halo);
+  }
+
+  /* Mono micro-label for handles, timestamps and codes. */
+  .micro-mono {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    color: var(--color-faint);
+    font-variant-numeric: tabular-nums;
   }
 
   .card-link {
@@ -486,6 +585,32 @@
 /* Popover and dialog bodies fade up on open. */
 .pop-in {
   animation: pop-in 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+/* Editorial-gallery hero glow: three very low-saturation light sources,
+   held in a single layer so it never competes with the type above it. */
+.hero-glow {
+  position: relative;
+  isolation: isolate;
+}
+.hero-glow::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -10% -5% 0;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 42% at 18% 22%, rgba(226, 240, 236, 0.7), transparent 70%),
+    radial-gradient(40% 38% at 82% 12%, rgba(244, 236, 222, 0.65), transparent 72%),
+    radial-gradient(36% 40% at 62% 70%, rgba(232, 231, 244, 0.45), transparent 74%);
+  filter: blur(8px);
+  opacity: 0.9;
+}
+
+/* Fine inner stroke for gallery covers — lighter than the outer hairline. */
+.cover-inner-stroke {
+  box-shadow: inset 0 0 0 1px rgba(20, 23, 31, 0.06);
 }
 
 @media (prefers-reduced-motion: reduce) {

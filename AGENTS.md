@@ -11,8 +11,9 @@
   迁移文件在 `migrations/`，只增不改旧文件。
 - **Tailwind CSS v4** + `app/app.css` 中的 `@theme` token。不要新增颜色变量，
   除非它确实属于现有体系（`--color-canvas / paper / sunken / ink / ink-soft / muted / faint / line`）。
-- **lucide-react** 图标（`strokeWidth={1.65}`）、**sonner** Toast、**Radix**（popover / dialog）。
-  除此之外不加 UI 依赖，尤其不加动画/图表库。
+- **lucide-react** 图标（`strokeWidth={1.65}`）、**sonner** Toast、**Radix**（popover / dialog / hover-card）、
+  **motion**（`motion/react`，根节点 `MotionConfig reducedMotion="user"`）。
+  除此之外不加 UI 依赖，尤其不加图表库或特效库。
 
 ## 四条产品红线
 
@@ -35,8 +36,11 @@
   外层不能再包 `<Link>`；否则 HTML 解析器会切树，React 报 #418。
 - **浮层**：一律用 Radix popover/dialog —— ESC、点击外部、焦点回收都由它处理，
   不要自己写 keydown 监听，也不要用浏览器原生 `confirm()`。
-- **动效 CSS-first**：过渡用 `transition`；进场用 `app.css` 里的 `pop-in` / `fade-in` /
-  `fade-up`；点赞用 `like-pop`。不写 JS 动画，尊重 `prefers-reduced-motion`。
+- **动效**：共享元素滑块用 `motion` 的 `layoutId`（`rail-active-pill` / `feed-tab-indicator` /
+  `profile-tab-underline`），按钮反馈用 `whileTap`，点赞/转发/收藏用 `useAnimationControls`。
+  **SSR 红线**：任何容器都不能在首屏以 `opacity:0` 渲染；`AnimatePresence` 用 `initial={false}`，
+  第一个状态必须在服务端就存在。`MotionConfig reducedMotion="user"` 已挂在根节点。
+  进场也可复用 `app.css` 的 `pop-in` / `fade-in` / `like-pop`。
 - **未登录**：任何写操作（赞/关注/收藏/转发/发帖）在未登录时渲染成
   `<Link to="/login?next=<当前页>">`，不要提交到 `/actions/*` 后靠后端 302。
 

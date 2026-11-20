@@ -4,6 +4,7 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/instrument-sans";
 import "./app.css";
 import { Toaster } from "sonner";
+import { MotionConfig } from "motion/react";
 
 export const meta: Route.MetaFunction = ({ location }) => {
   const origin = location.pathname;
@@ -34,7 +35,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        {/* reducedMotion="user" makes every motion component honour the OS
+            setting; nothing here sets initial opacity on first paint, so SSR
+            HTML is fully visible before hydration. */}
+        <MotionConfig reducedMotion="user" transition={{ type: "spring", stiffness: 420, damping: 34 }}>
+          {children}
+        </MotionConfig>
         <Toaster
           position="bottom-right"
           theme="light"

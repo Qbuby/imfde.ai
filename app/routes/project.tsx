@@ -5,6 +5,7 @@ import { many, one } from "~/lib/db.server";
 import { Avatar, CoverArt } from "~/components/media";
 import { FollowButton } from "~/components/cards";
 import { CopyLinkButton } from "~/components/copy-link";
+import { Lightbox } from "~/components/lightbox";
 import { Heart } from "lucide-react";
 import { absoluteDate, compact } from "~/lib/format";
 
@@ -135,8 +136,20 @@ export default function Project({ loaderData }: Route.ComponentProps) {
 
   return (
     <article className="max-w-[1060px]">
-      <div className="overflow-hidden rounded-[12px]">
-        <CoverArt seed={project.slug} src={project.cover_url} aspect="16 / 9" />
+      <div className="overflow-hidden rounded-[16px] border border-[var(--hairline)] cover-inner-stroke">
+        {project.cover_url ? (
+          <Lightbox
+            src={project.cover_url}
+            alt={project.title}
+            thumbnail={
+              <div className="transition-transform duration-500 ease-out hover:scale-[1.01]">
+                <CoverArt seed={project.slug} src={project.cover_url} aspect="16 / 9" />
+              </div>
+            }
+          />
+        ) : (
+          <CoverArt seed={project.slug} aspect="16 / 9" />
+        )}
       </div>
 
       <header className="mt-7 flex flex-wrap items-center gap-2">
@@ -147,7 +160,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
         )}
       </header>
 
-      <h1 className="mt-4 text-[34px] font-semibold leading-tight tracking-[-0.02em]">
+      <h1 className="mt-4 text-[34px] font-semibold leading-tight tracking-[-0.03em]">
         {project.title}
       </h1>
       <p className="mt-3 max-w-[680px] text-[15px] leading-[1.7] text-[var(--color-ink-soft)]">
@@ -223,24 +236,22 @@ export default function Project({ loaderData }: Route.ComponentProps) {
         </section>
       )}
 
-      {project.role && (
-        <section className="mt-8 rounded-[var(--radius-panel)] border border-[var(--color-line)] bg-[var(--color-sunken)] p-5">
-          <h2 className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">我负责的部分</h2>
-          <p className="whitespace-pre-wrap text-[14px] leading-[1.8] text-[var(--color-ink-2)]">
-            {project.role}
-          </p>
-          <p className="mt-3 text-[12px] text-[var(--color-faint)]">
-            作者自述，未经平台核实。
-          </p>
-        </section>
-      )}
-
-      {project.limitations && (
-        <section className="mt-6">
-          <h2 className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">限制与前提</h2>
-          <p className="whitespace-pre-wrap text-[14px] leading-[1.8] text-[var(--color-muted)]">
-            {project.limitations}
-          </p>
+      {(project.role || project.limitations) && (
+        <section className="mt-8 grid gap-4 sm:grid-cols-2">
+          {project.role && (
+            <div className="surface-panel p-5">
+              <h2 className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">我负责的部分</h2>
+              <p className="whitespace-pre-wrap text-[14px] leading-[1.8] text-[var(--color-ink-2)]">{project.role}</p>
+              <p className="mt-3 text-[11.5px] text-[var(--color-faint)]">作者自述，未经平台核实。</p>
+            </div>
+          )}
+          {project.limitations && (
+            <div className="surface-panel p-5">
+              <h2 className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">限制与前提</h2>
+              <p className="whitespace-pre-wrap text-[14px] leading-[1.8] text-[var(--color-ink-2)]">{project.limitations}</p>
+              <p className="mt-3 text-[11.5px] text-[var(--color-faint)]">作者自述，未经平台核实。</p>
+            </div>
+          )}
         </section>
       )}
 

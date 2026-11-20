@@ -1,4 +1,5 @@
-import { Link, NavLink, Outlet, Form } from "react-router";
+import { NavLink, Outlet, Form } from "react-router";
+import { motion } from "motion/react";
 import {
   Bell,
   Home,
@@ -6,37 +7,31 @@ import {
   LogOut,
   MessageSquareText,
   Plus,
+  Search,
   SlidersHorizontal,
   User,
   Users,
 } from "lucide-react";
 import { Avatar } from "./media";
+import { QuickPostModal } from "./quick-post";
+import { CommandPalette } from "./command-palette";
 import type { Me } from "~/lib/session.server";
 
-/** One icon per rail destination, drawn at the same weight as the type. */
 const RAIL_ICONS = {
   home: Home,
   square: MessageSquareText,
   discover: Users,
   work: Layers,
   messages: Bell,
-  settings: SlidersHorizontal,
   profile: User,
-  logout: LogOut,
 } as const;
 
 /**
- * Signed-in shell, rebuilt from a live measurement of Contra's workspace view
- * at 1536×730:
- *
- *   body          bg #fbfcfd
- *   rail          288px wide content in a 336px column, items 40px tall,
- *                 8px radius, 15px/400 labels, 24px gaps between groups
- *   primary CTA   full-rail 288×40, #222834, radius 24
- *   panel         1209×722 at x=312, white, radius 20, 8px top padding
- *   group labels  10px, letter-spacing 1.2px, #4a5264, uppercase
+ * Signed-in workspace: a compact 256px rail on a warm canvas, with the white
+ * reading panel taking the rest. Motion is limited to the active pill, which
+ * is visible on SSR (NavLink renders the class server-side) and only *slides*
+ * after hydration — the first paint never depends on JS.
  */
-
 export const RAIL_ITEMS = [
   { icon: "home", label: "首页", to: "/", end: true },
   { icon: "square", label: "广场", to: "/feed", end: true },
@@ -45,79 +40,96 @@ export const RAIL_ITEMS = [
   { icon: "messages", label: "消息", to: "/notifications", end: false },
 ] as const;
 
-
 export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
   return (
-    <div className="min-h-dvh bg-[#fbfcfd]">
+    <div className="min-h-dvh bg-[var(--color-canvas-warm)]">
       {/* ── mobile top bar ─────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 py-3 md:hidden">
-        <Link to="/" className="display text-[22px] tracking-[-0.02em]">
+      <div className="frost flex items-center gap-3 border-b border-[var(--hairline)] px-4 py-3 md:hidden">
+        <NavLink to="/" className="display text-[22px]">
           iMFDE
-        </Link>
-        <Link to="/new/post" className="btn btn-primary btn-sm ml-auto">
-          写点什么
-        </Link>
-        <Link to={`/@${me.handle}`}>
-          <Avatar name={me.display_name} src={me.avatar_url} size={34} />
-        </Link>
+        </NavLink>
+        <CommandPalette
+          me={me}
+          trigger={
+            <button
+              aria-label="快捷搜索"
+              className="ml-auto grid h-9 w-9 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-paper)]"
+            >
+              <Search size={17} strokeWidth={1.65} aria-hidden />
+            </button>
+          }
+        />
+        <QuickPostModal
+          me={me}
+          trigger={
+            <button className="btn btn-primary btn-sm !h-9">
+              <Plus size={15} strokeWidth={1.8} aria-hidden />
+              写点什么
+            </button>
+          }
+        />
+        <NavLink to={`/@${me.handle}`} aria-label="我的主页">
+          <Avatar name={me.display_name} src={me.avatar_url} size={32} />
+        </NavLink>
       </div>
 
       <div className="flex">
-        {/* ── rail: 288px content inside a 336px gutter ─────────────── */}
-        <aside className="sticky top-0 hidden h-dvh w-[336px] shrink-0 flex-col px-3 pb-3 pt-4 md:flex">
-          <div className="flex h-8 items-center gap-2 px-3">
-            <Link to="/" className="display text-[24px] tracking-[-0.02em]">
+        {/* ── rail: 256px, icon-only on md, full on lg ─────────────── */}
+        <aside className="sticky top-0 hidden h-dvh w-[76px] shrink-0 flex-col px-3 pb-4 pt-4 md:flex lg:w-[256px]">
+          <div className="flex h-9 items-center gap-2 px-2">
+            <NavLink to="/" className="display text-[22px] lg:text-[24px]">
               iMFDE
-            </Link>
-            <span className="ml-auto flex items-center gap-1">
-              <Link
-                to="/notifications"
-                className="grid h-8 w-8 place-items-center rounded-[4px] text-[var(--color-ink-soft)] transition hover:bg-white"
-                aria-label="通知"
-              >
-                <Bell size={17} strokeWidth={1.65} aria-hidden />
-              </Link>
-              <Link
-                to={`/@${me.handle}`}
-                className="rounded-full border border-[var(--color-line)]"
-                aria-label="我的主页"
-              >
-                <Avatar name={me.display_name} src={me.avatar_url} size={28} />
-              </Link>
-            </span>
+            </NavLink>
+            <CommandPalette
+              me={me}
+              enableShortcut
+              trigger={
+                <button
+                  aria-label="快捷搜索 Cmd+K"
+                  className="ml-auto hidden items-center gap-1.5 rounded-full border border-[var(--color-line)] px-2.5 py-1 text-[11.5px] text-[var(--color-faint)] transition hover:border-[var(--color-ink-soft)] hover:text-[var(--color-ink)] lg:flex"
+                >
+                  <Search size={13} strokeWidth={1.65} aria-hidden />
+                  <span className="font-mono">⌘K</span>
+                </button>
+              }
+            />
           </div>
 
-          {/* full-width primary action: 288×40, radius 24 */}
-          <Link
-            to="/new/post"
-            className="mt-6 flex h-10 w-full items-center justify-center gap-2 rounded-[24px] bg-[var(--color-ink-2)] text-[14px] font-semibold text-white transition hover:bg-[#2f3746]"
-          >
-            <Plus size={16} strokeWidth={1.8} aria-hidden />
-            写点什么
-          </Link>
+          <QuickPostModal
+            me={me}
+            trigger={
+              <button className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-[24px] bg-[var(--color-ink-2)] text-[14px] font-semibold text-white transition hover:bg-[#2f3746] active:scale-[0.985]">
+                <Plus size={16} strokeWidth={1.8} aria-hidden />
+                <span className="hidden lg:inline">写点什么</span>
+              </button>
+            }
+          />
 
           <nav className="mt-4 space-y-1">
             {RAIL_ITEMS.map((item) => (
               <RailLink key={item.to} {...item} />
             ))}
-            <Link
+            <NavLink
               to="/settings/profile"
-              className="flex h-10 items-center gap-3 rounded-[8px] px-3 text-[15px] text-[var(--color-ink)] transition hover:bg-white"
+              className={({ isActive }) =>
+                `relative flex h-10 items-center gap-3 rounded-[10px] px-3 text-[14px] transition ${
+                  isActive
+                    ? "font-medium text-[var(--color-ink)]"
+                    : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+                }`
+              }
             >
-              <span className="grid h-[18px] w-[18px] place-items-center text-[var(--color-ink-soft)]">
-                <SlidersHorizontal size={17} strokeWidth={1.65} aria-hidden />
+              <SlidersHorizontal size={17} strokeWidth={1.65} className="shrink-0" aria-hidden />
+              <span className="hidden truncate lg:inline">
+                {setupDone === 4 ? "主页已完整" : "完成设置"}
               </span>
-              {setupDone === 4 ? "主页已完整" : "完成设置"}
-              <span className="ml-auto font-mono text-[13px] text-[var(--color-faint)]">
+              <span className="ml-auto hidden font-mono text-[12px] text-[var(--color-faint)] tabular-nums lg:inline">
                 {setupDone}/4
               </span>
-            </Link>
+            </NavLink>
           </nav>
 
-          <div className="mt-6">
-            <p className="mb-1 px-3 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
-              我的
-            </p>
+          <div className="mt-6 border-t border-[var(--color-line)] pt-5">
             <div className="space-y-1">
               <RailLink
                 key="profile"
@@ -127,34 +139,31 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
                 end={false}
               />
               <Form method="post" action="/logout">
-                <button className="flex h-10 w-full items-center gap-3 rounded-[8px] px-3 text-left text-[15px] text-[var(--color-ink)] transition hover:bg-white">
-                  <span className="grid h-[18px] w-[18px] place-items-center text-[var(--color-ink-soft)]">
-                    <LogOut size={17} strokeWidth={1.65} aria-hidden />
-                  </span>
-                  退出
+                <button className="flex h-10 w-full items-center gap-3 rounded-[10px] px-3 text-left text-[14px] text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink)]">
+                  <LogOut size={17} strokeWidth={1.65} className="shrink-0" aria-hidden />
+                  <span className="hidden lg:inline">退出</span>
                 </button>
               </Form>
             </div>
           </div>
 
-          {/* bottom promo, as the rail's card sits flush above the fold */}
-          <Link
+          <NavLink
             to="/new/project"
-            className="mt-auto block rounded-[12px] bg-[var(--color-ink-2)] p-3.5 text-white"
+            className="mt-auto hidden rounded-[14px] border border-[var(--hairline)] bg-white p-3.5 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-lift)] lg:block"
           >
-            <p className="text-[14px] font-semibold leading-snug">把作品放上来</p>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-white/65">
+            <p className="text-[13.5px] font-semibold leading-snug">把作品放上来</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-ink-soft)]">
               一个标题、一句话就能开始。
             </p>
-            <p className="mt-2 text-[12.5px] font-semibold text-white/90">
+            <p className="mt-2 text-[12px] font-semibold text-[var(--color-ink)]">
               上传作品 →
             </p>
-          </Link>
+          </NavLink>
         </aside>
 
-        {/* ── white panel: radius 20, 8px inset from the top ────────── */}
-        <div className="min-w-0 flex-1 pb-3 md:pr-3">
-          <div className="min-h-[calc(100dvh-8px)] rounded-[20px] border border-[var(--color-line-soft)] bg-white px-5 pb-8 pt-6 md:px-14 md:pt-10">
+        {/* ── reading panel ─────────────────────────────────────────── */}
+        <div className="min-w-0 flex-1 pb-4 pr-0 md:pr-4">
+          <div className="surface-panel min-h-[calc(100dvh-16px)] px-5 pb-10 pt-6 md:px-10 md:pt-9 lg:px-14">
             <div className="mb-6 flex gap-1 overflow-x-auto md:hidden">
               {RAIL_ITEMS.map((item) => (
                 <NavLink
@@ -172,23 +181,6 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
                   {item.label}
                 </NavLink>
               ))}
-              <NavLink
-                to="/settings/profile"
-                className={({ isActive }) =>
-                  `shrink-0 rounded-full px-3 py-1.5 text-[14px] font-medium ${
-                    isActive
-                      ? "bg-[var(--color-ink-2)] text-white"
-                      : "text-[var(--color-ink-soft)]"
-                  }`
-                }
-              >
-                设置
-              </NavLink>
-              <Form method="post" action="/logout" className="shrink-0">
-                <button className="rounded-full px-3 py-1.5 text-[14px] font-medium text-[var(--color-ink-soft)]">
-                  退出
-                </button>
-              </Form>
             </div>
             <Outlet />
           </div>
@@ -214,29 +206,33 @@ function RailLink({
     <NavLink
       to={to}
       end={end}
+      title={label}
       className={({ isActive }) =>
-        `flex h-10 items-center gap-3 rounded-[8px] px-3 text-[15px] transition ${
+        `relative flex h-10 items-center gap-3 rounded-[10px] px-3 text-[14px] transition ${
           isActive
-            ? "bg-white font-medium text-[var(--color-ink)] shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
-            : "text-[var(--color-ink)] hover:bg-white"
+            ? "font-medium text-[var(--color-ink)]"
+            : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
         }`
       }
     >
       {({ isActive }) => (
         <>
-          <span
-            className={`grid h-[18px] w-[18px] place-items-center ${
-              isActive ? "text-[var(--color-ink)]" : "text-[var(--color-ink-soft)]"
-            }`}
-          >
-            <Icon size={17} strokeWidth={1.65} aria-hidden />
-          </span>
-          {label}
+          {isActive && (
+            <motion.span
+              layoutId="rail-active-pill"
+              className="absolute inset-0 rounded-[10px] border border-[var(--hairline)] bg-white shadow-[var(--shadow-card)]"
+              transition={{ type: "spring", stiffness: 480, damping: 36 }}
+            />
+          )}
+          <Icon
+            size={17}
+            strokeWidth={1.65}
+            className="relative z-10 shrink-0"
+            aria-hidden
+          />
+          <span className="relative z-10 hidden truncate lg:inline">{label}</span>
         </>
       )}
     </NavLink>
   );
 }
-
-/* ── icons: 18px, 1.6 stroke, quiet like the measured rail ───────────── */
-
