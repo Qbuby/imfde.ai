@@ -1,6 +1,7 @@
 import type { Route } from "./+types/feed";
 import { Link, useFetcher, useSearchParams } from "react-router";
 import { motion } from "motion/react";
+import { AnimatedBackground } from "~/components/motion/animated-background";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Flame, History, Bookmark as BookmarkIcon } from "lucide-react";
@@ -128,19 +129,20 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
         />
 
         <div className="frost sticky top-0 z-20 -mx-2 mt-5 flex items-center gap-1 border-b border-[var(--color-line-soft)] px-2 py-2">
-          <TabLink id="all" to={href({ tab: null })} active={tab === "all"}>
-            全站最新
-          </TabLink>
-          {me && (
-            <>
-              <TabLink id="following" to={href({ tab: "following" })} active={tab === "following"}>
-                关注
-              </TabLink>
-              <TabLink id="bookmarks" to={href({ tab: "bookmarks" })} active={tab === "bookmarks"}>
-                收藏
-              </TabLink>
-            </>
-          )}
+          <AnimatedBackground
+            defaultValue={tab}
+            className="rounded-full border border-[var(--hairline)] bg-white shadow-[var(--shadow-card)]"
+          >
+            {[
+              <TabLink key="all" id="all" data-id="all" to={href({ tab: null })} active={tab === "all"}>全站最新</TabLink>,
+              ...(me
+                ? [
+                    <TabLink key="following" id="following" data-id="following" to={href({ tab: "following" })} active={tab === "following"}>关注</TabLink>,
+                    <TabLink key="bookmarks" id="bookmarks" data-id="bookmarks" to={href({ tab: "bookmarks" })} active={tab === "bookmarks"}>收藏</TabLink>,
+                  ]
+                : []),
+            ]}
+          </AnimatedBackground>
         </div>
 
         {me ? <Composer myProjects={myProjects} /> : null}
@@ -430,27 +432,23 @@ function TabLink({
   to,
   active,
   children,
+  ...rest
 }: {
   id: string;
   to: string;
   active: boolean;
   children: React.ReactNode;
+  [key: string]: unknown;
 }) {
   return (
     <Link
+      {...rest}
       to={to}
       preventScrollReset
       className={`relative rounded-full px-3.5 py-1.5 text-[13.5px] font-medium transition ${
         active ? "text-[var(--color-ink)]" : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
       }`}
     >
-      {active && (
-        <motion.span
-          layoutId="feed-tab-indicator"
-          className="absolute inset-0 rounded-full border border-[var(--hairline)] bg-white shadow-[var(--shadow-card)]"
-          transition={{ type: "spring", stiffness: 480, damping: 36 }}
-        />
-      )}
       <span className="relative z-10">{children}</span>
     </Link>
   );

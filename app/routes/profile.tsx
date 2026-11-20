@@ -2,6 +2,8 @@ import type { Route } from "./+types/profile";
 import { useState } from "react";
 import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
+import { AnimatedBackground } from "~/components/motion/animated-background";
+import { BorderBeam } from "~/components/magicui/border-beam";
 import { getMe, normalizeHandle } from "~/lib/session.server";
 import { many, one } from "~/lib/db.server";
 import { Avatar, CoverArt } from "~/components/media";
@@ -223,19 +225,20 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
 
         <div className="min-w-0">
           <div className="flex items-center gap-6 border-b border-[var(--color-line)]">
-            {([["work", "作品集"], ["posts", "动态"], ["about", "关于"]] as const).map(([id, label]) => (
-              <button key={id} type="button" onClick={() => setTab(id)}
-                className={`relative pb-3 pt-1 text-[14px] font-medium transition ${
-                  tab === id ? "text-[var(--color-ink)]" : "text-[var(--color-muted)] hover:text-[var(--color-ink)]"
-                }`}>
-                {label}
-                {tab === id && (
-                  <motion.span layoutId="profile-tab-underline"
-                    className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[var(--color-ink)]"
-                    transition={{ type: "spring", stiffness: 480, damping: 36 }} />
-                )}
-              </button>
-            ))}
+            <AnimatedBackground
+              defaultValue={tab}
+              onValueChange={(id) => id && setTab(id as typeof tab)}
+              className="rounded-t-full border-b-2 border-[var(--color-ink)] bg-transparent"
+            >
+              {([["work", "作品集"], ["posts", "动态"], ["about", "关于"]] as const).map(([id, label]) => (
+                <button key={id} data-id={id} type="button"
+                  className={`pb-3 pt-1 text-[14px] font-medium transition ${
+                    tab === id ? "text-[var(--color-ink)]" : "text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </AnimatedBackground>
             <span className="ml-auto font-mono text-[11px] text-[var(--color-faint)] tabular-nums">
               {projects.length} 作品 · {posts.length} 动态
             </span>
@@ -253,9 +256,15 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                   </div>
                 ) : (
                   <div className="grid gap-x-6 gap-y-9 sm:grid-cols-2">
-                    {shown.map((p, i) => (
-                      <ProjectCard key={p.id} project={p} viewerId={me?.id ?? null} hero={i === 0 && p.featured === 1} />
-                    ))}
+                    {shown.map((p, i) => {
+                      const hero = i === 0 && p.featured === 1;
+                      return (
+                        <div key={p.id} className={`relative ${hero ? "col-span-full" : ""}`}>
+                          {hero && <BorderBeam size={120} duration={10} colorFrom="#f59e0b" colorTo="#6ca3e0" borderWidth={1.2} />}
+                          <ProjectCard project={p} viewerId={me?.id ?? null} hero={hero} />
+                        </div>
+                      );
+                    })}
                   </div>
                 )
               )}

@@ -41,10 +41,11 @@ export function Avatar({
 }
 
 /**
- * Cover art for work that has no image of its own. Ten openly licensed
- * photographs stand in, desaturated and tinted with a per-slug palette so a
- * project without a screenshot still looks like part of the set — and keeps
- * looking the same across visits.
+ * Cover media for a piece of work. Three cases:
+ *   1. a video URL (.mp4/.webm) plays a muted loop — a live demo beats a still;
+ *   2. an image URL renders at full colour;
+ *   3. no URL falls back to a deterministic photograph or, for a person's
+ *      banner, a slow-drifting aurora field.
  *
  * No title is baked in: the title is always set in type next to the card.
  */
@@ -66,17 +67,17 @@ export function CoverArt({
   const p = useMemo(() => coverPalette(seed), [seed]);
 
   if (src) {
+    const isVideo = /\.(mp4|webm)(?:[?#].*)?$/i.test(src);
     return (
       <div
-        className={`overflow-hidden bg-[var(--color-sunken)] ${className}`}
+        className={`cover-photo overflow-hidden bg-[var(--color-sunken)] ${className}`}
         style={{ aspectRatio: aspect }}
       >
-        <img
-          src={src}
-          alt=""
-          loading="lazy"
-          className="h-full w-full object-cover"
-        />
+        {isVideo ? (
+          <video src={src} autoPlay muted loop playsInline preload="metadata" aria-hidden />
+        ) : (
+          <img src={src} alt="" loading="lazy" decoding="async" />
+        )}
       </div>
     );
   }

@@ -12,7 +12,9 @@
 - **Tailwind CSS v4** + `app/app.css` 中的 `@theme` token。不要新增颜色变量，
   除非它确实属于现有体系（`--color-canvas / paper / sunken / ink / ink-soft / muted / faint / line`）。
 - **lucide-react** 图标（`strokeWidth={1.65}`）、**sonner** Toast、**Radix**（popover / dialog / hover-card）、
-  **motion**（`motion/react`，根节点 `MotionConfig reducedMotion="user"`）。
+  **motion**（`motion/react`，根节点 `MotionConfig reducedMotion="user"`）、
+  **clsx + tailwind-merge**（`app/lib/cn.ts`）。
+  Motion Primitives 在 `app/components/motion/`，Magic UI 在 `app/components/magicui/`，均从官方仓库源码集成。
   除此之外不加 UI 依赖，尤其不加图表库或特效库。
 
 ## 四条产品红线

@@ -5,8 +5,8 @@ import { many, one } from "~/lib/db.server";
 import { Avatar, CoverArt } from "~/components/media";
 import { FollowButton } from "~/components/cards";
 import { CopyLinkButton } from "~/components/copy-link";
-import { Lightbox } from "~/components/lightbox";
-import { Heart } from "lucide-react";
+import { GalleryLightbox } from "~/components/gallery-lightbox";
+import { Heart, ArrowUpRight } from "lucide-react";
 import { absoluteDate, compact } from "~/lib/format";
 
 const KIND_LABEL: Record<string, string> = {
@@ -138,9 +138,9 @@ export default function Project({ loaderData }: Route.ComponentProps) {
     <article className="max-w-[1060px]">
       <div className="overflow-hidden rounded-[16px] border border-[var(--hairline)] cover-inner-stroke">
         {project.cover_url ? (
-          <Lightbox
+          <GalleryLightbox
             src={project.cover_url}
-            alt={project.title}
+            title={project.title}
             thumbnail={
               <div className="transition-transform duration-500 ease-out hover:scale-[1.01]">
                 <CoverArt seed={project.slug} src={project.cover_url} aspect="16 / 9" />
@@ -320,12 +320,15 @@ function ExternalLink({ href, label }: { href: string; label: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer nofollow"
-      className="btn btn-ghost btn-sm"
+      className="btn btn-ghost btn-sm group"
     >
       {label}
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M8 16L16 8M16 8H9M16 8v7" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
+      <ArrowUpRight
+        size={13}
+        strokeWidth={1.65}
+        aria-hidden
+        className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+      />
     </a>
   );
 }

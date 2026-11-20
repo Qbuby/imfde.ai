@@ -16,6 +16,9 @@ import { Avatar, CoverArt } from "./media";
 import { compact } from "~/lib/format";
 import { extractTags } from "~/lib/tags";
 import { AuthorHoverCard } from "./author-hover-card";
+import { Spotlight } from "./motion/spotlight";
+import { SlidingNumber } from "./motion/sliding-number";
+import { Confetti, type ConfettiRef } from "./magicui/confetti";
 import { FollowButton } from "./follow-button";
 import type { FeedPostRow, PersonRow, ProjectCardRow } from "~/lib/queries.server";
 import { PostBody, TagLinks } from "./post-body";
@@ -98,8 +101,14 @@ export function ProjectCard({
             hero ? "aspect-[16/9]" : "aspect-[4/3]"
           }`}
         >
-          <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-[1.04]">
+          <Spotlight size={260} className="text-white/25" />
+          <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-[1.05]">
             <CoverArt seed={project.slug} src={project.cover_url} aspect={hero ? "16 / 9" : "4 / 3"} />
+          </div>
+          {/* bottom action bar slides up on hover */}
+          <div className="frost absolute inset-x-3 bottom-3 z-10 flex translate-y-3 items-center gap-2 rounded-[10px] border border-white/60 px-3 py-2 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <span className="text-[12px] font-medium">查看详情</span>
+            <ArrowUpRight size={13} strokeWidth={1.65} className="ml-auto" aria-hidden />
           </div>
           {/* frosted kind badge */}
           <span className="frost absolute left-3 top-3 rounded-full border border-white/60 px-2.5 py-1 font-mono text-[10.5px] font-medium tracking-wide text-[var(--color-ink)] tabular-nums">
@@ -118,8 +127,8 @@ export function ProjectCard({
             {project.title}
           </h3>
         </Link>
-        <span className="shrink-0 font-mono text-[11px] text-[var(--color-faint)] tabular-nums">
-          {compact(project.likes)} 赞
+        <span className="flex shrink-0 items-center gap-1 text-[11px] text-[var(--color-faint)] tabular-nums">
+          <SlidingNumber value={project.likes} /> 赞
         </span>
       </div>
       <p className={`mt-1 text-[13.5px] leading-relaxed text-[var(--color-ink-soft)] ${hero ? "line-clamp-2 max-w-[720px]" : "line-clamp-2"}`}>
@@ -224,9 +233,17 @@ export function FeedCard({
   const heartControls = useAnimationControls();
   const repostControls = useAnimationControls();
   const bookmarkControls = useAnimationControls();
+  const confettiRef = useRef<ConfettiRef>(null);
 
   function popLike() {
     heartControls.start({ scale: [1, 1.32, 0.92, 1], transition: { duration: 0.42 } });
+    void confettiRef.current?.fire({
+      particleCount: 8,
+      spread: 52,
+      startVelocity: 20,
+      scalar: 0.65,
+      colors: ["#f43f5e", "#f59e0b", "#10b981", "#0ea5e9"],
+    });
   }
   function popRepost() {
     repostControls.start({ rotate: [0, 180, 360], transition: { duration: 0.5 } });
@@ -424,13 +441,13 @@ export function FeedCard({
               <motion.span animate={heartControls} className="grid place-items-center">
                 <Heart size={17} strokeWidth={1.65} fill={liked ? "currentColor" : "none"} aria-hidden />
               </motion.span>
-              {likeCount > 0 ? compact(likeCount) : ""}
+              {likeCount > 0 ? <SlidingNumber value={likeCount} /> : ""}
             </button>
           </likeFetcher.Form>
 
           <Link to={`/posts/${post.id}`} aria-label="评论" className="action-btn action-link">
             <MessageCircle size={17} strokeWidth={1.65} aria-hidden />
-            {post.comments > 0 ? compact(post.comments) : ""}
+            {post.comments > 0 ? <SlidingNumber value={post.comments} /> : ""}
           </Link>
 
           {signedIn ? (
@@ -445,7 +462,7 @@ export function FeedCard({
                     <motion.span animate={repostControls} className="grid place-items-center">
                       <Repeat2 size={17} strokeWidth={1.65} aria-hidden />
                     </motion.span>
-                    {repostCount > 0 ? compact(repostCount) : ""}
+                    {repostCount > 0 ? <SlidingNumber value={repostCount} /> : ""}
                   </button>
                 </Popover.Trigger>
                 <Popover.Portal>
@@ -510,6 +527,9 @@ export function FeedCard({
           )}
         </footer>
       </div>
+
+      {/* inert until a like fires; canvas is safe on SSR */}
+      <Confetti ref={confettiRef} className="pointer-events-none absolute inset-0 z-10" />
     </article>
   );
 }
