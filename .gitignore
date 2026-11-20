@@ -9,3 +9,7 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+
+# Repomix / AI context bundles
+imfde-code.md
+repomix-output.*
