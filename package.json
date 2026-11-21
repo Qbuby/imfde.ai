@@ -9,7 +9,11 @@
     "typecheck": "react-router typegen && tsc",
     "deploy": "npm run build && wrangler deploy",
     "db:migrate:local": "wrangler d1 migrations apply imfde --local",
-    "db:migrate:remote": "wrangler d1 migrations apply imfde --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply imfde --remote",
+    "db:seed:local": "wrangler d1 execute imfde --local --file=scripts/seed.sql",
+    "db:seed:remote": "wrangler d1 execute imfde --remote --file=scripts/seed.sql",
+    "db:unseed:local": "wrangler d1 execute imfde --local --file=scripts/unseed.sql",
+    "db:unseed:remote": "wrangler d1 execute imfde --remote --file=scripts/unseed.sql"
   },
   "dependencies": {
     "@fontsource-variable/instrument-sans": "^5.2.5",
