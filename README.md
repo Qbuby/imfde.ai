@@ -1,4 +1,4 @@
-# iMFDE
+# ImFDE
 
 FDE（Forward Deployed Engineer）的展示网络。一个主页、一份作品集、一条能持续更新的动态。
 
@@ -6,7 +6,7 @@ FDE（Forward Deployed Engineer）的展示网络。一个主页、一份作品�
 
 ## 这个产品是什么
 
-FDE 做的事通常散在 GitHub、LinkedIn、demo 视频和聊天记录里。iMFDE 把它们收拢到一个可以搜索、可以分享、可以写进简历和邮件签名的地址：`imfde.ai/@你的名字`。
+FDE 做的事通常散在 GitHub、LinkedIn、demo 视频和聊天记录里。ImFDE 把它们收拢到一个可以搜索、可以分享、可以写进简历和邮件签名的地址：`imfde.ai/@你的名字`。
 
 它刻意不是这些东西：
 

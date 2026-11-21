@@ -165,12 +165,12 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 }
 
 export const meta: Route.MetaFunction = ({ data }) => {
-  if (!data?.post) return [{ title: "动态不存在 — iMFDE" }];
+  if (!data?.post) return [{ title: "动态不存在 — ImFDE" }];
   const body = (data.post.body.trim() || data.post.r_body || "转发动态").slice(0, 150);
   return [
-    { title: `${data.post.display_name}：${(data.post.body.trim() || data.post.r_body || "转发动态").slice(0, 40)} — iMFDE` },
+    { title: `${data.post.display_name}：${(data.post.body.trim() || data.post.r_body || "转发动态").slice(0, 40)} — ImFDE` },
     { name: "description", content: body },
-    { property: "og:title", content: `${data.post.display_name} on iMFDE` },
+    { property: "og:title", content: `${data.post.display_name} on ImFDE` },
     { property: "og:description", content: body },
     { property: "og:type", content: "article" },
   ];

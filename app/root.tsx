@@ -9,13 +9,13 @@ import { MotionConfig } from "motion/react";
 export const meta: Route.MetaFunction = ({ location }) => {
   const origin = location.pathname;
   return [
-    { title: "iMFDE — FDE 的作品集与专业网络" },
+    { title: "ImFDE — FDE 的作品集与专业网络" },
     {
       name: "description",
       content:
-        "iMFDE 是 FDE 展示自己、分享作品、连接同行的专业网络。建主页、传作品、发动态，让世界看到你能做什么。",
+        "ImFDE 是 FDE 展示自己、分享作品、连接同行的专业网络。建主页、传作品、发动态，让世界看到你能做什么。",
     },
-    { property: "og:site_name", content: "iMFDE" },
+    { property: "og:site_name", content: "ImFDE" },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
     { tagName: "link", rel: "canonical", href: `https://imfde.ai${origin}` },

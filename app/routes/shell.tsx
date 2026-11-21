@@ -58,7 +58,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
       <header className="sticky top-0 z-40 border-b border-[var(--color-line-soft)] bg-[color-mix(in_srgb,#fff_88%,transparent)] backdrop-blur-xl">
         <div className="frame flex h-[74px] items-center gap-1">
           <Link to="/" className="mr-6 shrink-0">
-            <span className="display text-[24px] tracking-[-0.02em]">iMFDE</span>
+            <span className="display text-[24px] tracking-[-0.02em]">ImFDE</span>
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
@@ -131,7 +131,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
       <footer className="border-t border-[var(--color-line-soft)]">
         <div className="frame flex flex-wrap items-center justify-between gap-4 py-10">
           <div>
-            <p className="display text-[16px]">iMFDE</p>
+            <p className="display text-[16px]">ImFDE</p>
             <p className="mt-1.5 max-w-[440px] text-[14px] leading-relaxed text-[var(--color-muted)]">
               展示可观察的信息，由访问者自行判断。平台不提供信用分、认证等级，也不经手任何交易。
             </p>

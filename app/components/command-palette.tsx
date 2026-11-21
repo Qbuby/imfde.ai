@@ -154,7 +154,7 @@ export function CommandPalette({
           <div className="flex items-center gap-4 border-t border-[var(--color-line-soft)] px-4 py-2 text-[11px] text-[var(--color-faint)]">
             <span>↑↓ 选择</span>
             <span>↵ 打开</span>
-            <span className="ml-auto">iMFDE 快捷面板</span>
+            <span className="ml-auto">ImFDE 快捷面板</span>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

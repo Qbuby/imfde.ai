@@ -112,11 +112,11 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 }
 
 export const meta: Route.MetaFunction = ({ data }) => {
-  if (!data?.project) return [{ title: "作品不存在 — iMFDE" }];
+  if (!data?.project) return [{ title: "作品不存在 — ImFDE" }];
   const p = data.project;
   const desc = p.summary.slice(0, 150);
   return [
-    { title: `${p.title} — ${p.display_name} · iMFDE` },
+    { title: `${p.title} — ${p.display_name} · ImFDE` },
     { name: "description", content: desc },
     { property: "og:title", content: p.title },
     { property: "og:description", content: desc },

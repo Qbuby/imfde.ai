@@ -103,15 +103,15 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 }
 
 export const meta: Route.MetaFunction = ({ data }) => {
-  if (!data?.user) return [{ title: "找不到这个人 — iMFDE" }];
+  if (!data?.user) return [{ title: "找不到这个人 — ImFDE" }];
   const u = data.user;
   const desc =
     u.headline ??
-    `${u.display_name} 在 iMFDE 上的主页：作品、动态与外部资料。`;
+    `${u.display_name} 在 ImFDE 上的主页：作品、动态与外部资料。`;
   return [
-    { title: `${u.display_name} (@${u.handle}) — iMFDE` },
+    { title: `${u.display_name} (@${u.handle}) — ImFDE` },
     { name: "description", content: desc },
-    { property: "og:title", content: `${u.display_name} on iMFDE` },
+    { property: "og:title", content: `${u.display_name} on ImFDE` },
     { property: "og:description", content: desc },
     { property: "og:type", content: "profile" },
   ];

@@ -240,7 +240,7 @@ export function AuthShell({
       <div className="mx-auto grid min-h-dvh max-w-[1100px] items-center gap-12 px-6 py-12 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
         <div>
           <Link to="/" className="display text-[22px]">
-            iMFDE<span className="text-[var(--color-ink-soft)]">.</span>
+            ImFDE<span className="text-[var(--color-ink-soft)]">.</span>
           </Link>
           <h1 className="display mt-8 text-[clamp(26px,3.2vw,34px)]">{title}</h1>
           <p className="mt-2 text-[13.5px] text-[var(--color-muted)]">{subtitle}</p>

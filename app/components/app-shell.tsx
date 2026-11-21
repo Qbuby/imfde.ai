@@ -46,7 +46,7 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
       {/* ── mobile top bar ─────────────────────────────────────────── */}
       <div className="frost flex items-center gap-3 border-b border-[var(--hairline)] px-4 py-3 md:hidden">
         <NavLink to="/" className="display text-[22px]">
-          iMFDE
+          ImFDE
         </NavLink>
         <CommandPalette
           me={me}
@@ -78,7 +78,7 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
         <aside className="sticky top-0 hidden h-dvh w-[76px] shrink-0 flex-col px-3 pb-4 pt-4 md:flex lg:w-[256px]">
           <div className="flex h-9 items-center gap-2 px-2">
             <NavLink to="/" className="display text-[22px] lg:text-[24px]">
-              iMFDE
+              ImFDE
             </NavLink>
             <CommandPalette
               me={me}
