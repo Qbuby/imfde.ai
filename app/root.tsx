@@ -1,7 +1,6 @@
 import type { Route } from "./+types/root";
 import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import "@fontsource-variable/inter";
-import "@fontsource-variable/instrument-sans";
+import "@fontsource-variable/onest";
 import "./app.css";
 import { Toaster } from "sonner";
 import { MotionConfig } from "motion/react";

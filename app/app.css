@@ -11,9 +11,10 @@
    canvas     #ffffff
    card       16px radius · 0 10px 20px rgba(0,0,0,.05)
    search     20px radius
-   type       h1 58/500 · 1.05 · -0.01em
-              h2 23/500 · 1.39 · +0.02em
-              lead 19/400 · 1.47 · +0.02em
+   font       Onest Variable, self-hosted (no CDN)
+   type       display 600 · 1.06 · -0.025em
+              section 23/500 · 1.35 · -0.015em
+              lead 19/400 · 1.55 · 0
               label 16/600 · small 14/400
    buttons    48h · 24r · 16px/600     and 36h · 999r · 14px
    ───────────────────────────────────────────────────────────────────── */
@@ -51,10 +52,10 @@
   --color-link-halo: rgba(29, 155, 240, 0.10);
   --color-featured: #f59e0b;
 
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-display: "Instrument Sans Variable", "Inter Variable", ui-sans-serif,
-    system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-display: "Onest Variable", ui-sans-serif, system-ui, -apple-system,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
   --radius-card: 16px;
@@ -104,7 +105,7 @@
     font-family: var(--font-sans);
     font-size: 16px;
     line-height: 1.5;
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -197,29 +198,30 @@
     color: var(--color-faint);
   }
 
-  /* h1: 58/500/1.05/-0.01em, measured off "Get more creative" */
+  /* Hero / brand: tight and confident in Onest. */
   .display {
     font-family: var(--font-display);
     font-weight: 600;
-    line-height: 1.04;
-    letter-spacing: -0.03em;
+    line-height: 1.06;
+    letter-spacing: -0.025em;
     color: var(--color-ink);
   }
 
-  /* h2: 23/500/1.39 with the positive +0.02em tracking Contra uses */
+  /* Section headings: compact tracking for both CJK and Latin. */
   .section-title {
     font-family: var(--font-display);
     font-size: 23px;
     font-weight: 500;
-    line-height: 1.39;
-    letter-spacing: 0.02em;
+    line-height: 1.35;
+    letter-spacing: -0.015em;
     color: var(--color-ink);
   }
 
   .lead {
     font-size: 19px;
-    line-height: 1.47;
-    letter-spacing: 0.02em;
+    font-weight: 400;
+    line-height: 1.55;
+    letter-spacing: 0;
     color: var(--color-muted);
   }
 

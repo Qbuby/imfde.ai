@@ -19,6 +19,14 @@
   `app/components/motion/` 只保留 `sliding-number.tsx`、`morphing-dialog.tsx` 与工具 `use-click-outside.ts`；
   `app/components/magicui/` 已清空。除此之外不加 UI 依赖，尤其不加图表库或特效库。
 
+## 字体约束
+
+- 全站展示体与正文字体统一为 **Onest Variable**（`@fontsource-variable/onest`），
+  由 Vite 打包进 `build/client/assets`，经 Cloudflare Static Assets 自托管。
+  **禁止**改回 Inter / Instrument Sans，禁止引入 Google Fonts 或任何外部字体 CDN。
+- 中文回退顺序：`PingFang SC` → `Hiragino Sans GB` → `Microsoft YaHei`；
+  计数、时间戳与 `@handle` 必须保留 `font-variant-numeric: tabular-nums`。
+
 ## 四条产品红线
 
 1. **不做交易撮合**：没有支付、订单、议价、佣金、成交记录。任何"联系我们成交"的入口都不写。
