@@ -27,6 +27,7 @@ export default [
     route(":handle", "routes/profile.tsx"),
     route(":handle/projects", "routes/profile-projects.tsx"),
 
+    route("actions/ack", "routes/actions-ack.tsx"),
     route("actions/like", "routes/actions-like.tsx"),
     route("actions/follow", "routes/actions-follow.tsx"),
     route("actions/comment", "routes/actions-comment.tsx"),

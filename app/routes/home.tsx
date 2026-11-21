@@ -12,13 +12,16 @@ import {
 } from "~/lib/queries.server";
 import { FeedCard, PersonCard } from "~/components/cards";
 import { Avatar, CoverArt } from "~/components/media";
+import { RailTrio } from "~/components/feed-rail";
+import { ackQuotaToday } from "~/lib/queries.server";
+import { utc8DayKey } from "~/lib/format";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
   const viewerId = me?.id ?? null;
 
   // all independent — run them together instead of six sequential awaits
-  const [projects, people, feed, recommended, skills, stats] = await Promise.all([
+  const [projects, people, feed, recommended, skills, stats, quota] = await Promise.all([
     latestProjects(context, viewerId, 8),
     featuredPeople(context, viewerId, 6),
     feedPosts(context, { viewerId, limit: 5 }),
@@ -26,7 +29,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     me ? topSkills(context, 4) : Promise.resolve([]),
     me
       ? countsForProfile(context, me.id)
-      : Promise.resolve({ projects: 0, posts: 0, followers: 0, following: 0 }),
+      : Promise.resolve({ projects: 0, posts: 0, followers: 0, following: 0, acks_received: 0 }),
+    me ? ackQuotaToday(context, me.id, utc8DayKey()) : Promise.resolve({ used: 0, limit: 2 as const, remaining: 2 }),
   ]);
 
   return {
@@ -37,11 +41,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     recommended,
     skills,
     stats,
+    quota,
   };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { me, projects, people, posts, recommended, skills, stats } = loaderData;
+  const { me, projects, people, posts, recommended, skills, stats, quota } = loaderData;
 
   if (!me) return <Landing projects={projects} people={people} posts={posts} />;
 
@@ -128,6 +133,9 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
       <aside className="hidden xl:block">
         <div className="sticky top-6 space-y-7">
+          <div className="rounded-[16px] bg-[#f7f9f9] p-3">
+            <RailTrio handle={me.handle} remaining={quota.remaining} />
+          </div>
           {skills.length > 0 && (
             <div>
               <p className="mb-2.5 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">

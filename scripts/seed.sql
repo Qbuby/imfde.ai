@@ -269,3 +269,27 @@ INSERT OR IGNORE INTO notifications (id, recipient_id, actor_id, type, target_ty
  ('seed_ntf_4','seed_user_ming','seed_user_fieldcraft','comment','post','seed_post_2', CAST((strftime('%s','now') - 3600) * 1000 AS INTEGER), CAST((strftime('%s','now') - 3600) * 1000 AS INTEGER)),
  ('seed_ntf_5','seed_user_fieldcraft','seed_user_siyu','comment','post','seed_post_5',NULL, CAST((strftime('%s','now') - 18000) * 1000 AS INTEGER)),
  ('seed_ntf_6','seed_user_linyu','seed_user_kwu','follow','user','seed_user_kwu',NULL, CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER));
+
+-- ── E. brand signature: 同题切磋 (prompts) + 稀缺 ACK ──────────────────
+INSERT OR IGNORE INTO prompts (id, slug, title, summary, tag, status, ends_at, created_at) VALUES
+ ('seed_prompt_tables','dirty-pdf-tables','脏 PDF 跨页表格怎么解','财务附注、扫描单据里的跨页合并单元格，大家线上怎么稳住表头？','RAG','active',
+  CAST((strftime('%s','now') + 345600) * 1000 AS INTEGER), CAST((strftime('%s','now') - 259200) * 1000 AS INTEGER)),
+ ('seed_prompt_voice','voice-barge-in-500ms','把语音打断压到 500ms 内','真实车载、弱网和运营商回声下，你的 VAD 和缓冲策略是什么？','语音交互','active',
+  CAST((strftime('%s','now') + 777600) * 1000 AS INTEGER), CAST((strftime('%s','now') - 432000) * 1000 AS INTEGER));
+
+UPDATE posts SET prompt_id = 'seed_prompt_tables' WHERE id IN ('seed_post_3','seed_post_11');
+UPDATE posts SET prompt_id = 'seed_prompt_voice' WHERE id IN ('seed_post_2','seed_post_8','seed_post_10');
+
+-- Historical ACKs on yesterday / the day before, so real logged-in users keep
+-- their full 2-per-day quota. No money, no ranking — just raw acknowledgements.
+INSERT OR IGNORE INTO acks (id, user_id, post_id, day_key, created_at) VALUES
+ ('seed_ack_1','seed_user_ming','seed_post_1',date('now','+8 hours','-1 day'), CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER)),
+ ('seed_ack_2','seed_user_siyu','seed_post_1',date('now','+8 hours','-1 day'), CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER)),
+ ('seed_ack_3','seed_user_laok','seed_post_1',date('now','+8 hours','-2 day'), CAST((strftime('%s','now') - 172800) * 1000 AS INTEGER)),
+ ('seed_ack_4','seed_user_kwu','seed_post_2',date('now','+8 hours','-1 day'), CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER)),
+ ('seed_ack_5','seed_user_fieldcraft','seed_post_2',date('now','+8 hours','-1 day'), CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER)),
+ ('seed_ack_6','seed_user_linyu','seed_post_3',date('now','+8 hours','-2 day'), CAST((strftime('%s','now') - 172800) * 1000 AS INTEGER)),
+ ('seed_ack_7','seed_user_kwu','seed_post_5',date('now','+8 hours','-1 day'), CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER)),
+ ('seed_ack_8','seed_user_ming','seed_post_6',date('now','+8 hours','-2 day'), CAST((strftime('%s','now') - 172800) * 1000 AS INTEGER)),
+ ('seed_ack_9','seed_user_siyu','seed_post_8',date('now','+8 hours','-1 day'), CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER)),
+ ('seed_ack_10','seed_user_laok','seed_post_9',date('now','+8 hours','-2 day'), CAST((strftime('%s','now') - 172800) * 1000 AS INTEGER));

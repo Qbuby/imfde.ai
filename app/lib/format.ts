@@ -139,3 +139,9 @@ export function slugify(input: string): string {
   if (ascii.length >= 2) return ascii;
   return `work-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+/** UTC+8 calendar day key (YYYY-MM-DD) for daily quota accounting. */
+export function utc8DayKey(ms: number = Date.now()): string {
+  const shifted = new Date(ms + 8 * 60 * 60 * 1000);
+  return shifted.toISOString().slice(0, 10);
+}

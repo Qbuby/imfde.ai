@@ -8,6 +8,7 @@ import { getMe } from "~/lib/session.server";
 import { many, one } from "~/lib/db.server";
 import { Avatar } from "~/components/media";
 import { FollowButton } from "~/components/cards";
+import { AckButton } from "~/components/ack-button";
 import { AuthorHoverCard } from "~/components/author-hover-card";
 import { ConfirmDialog } from "~/components/confirm-dialog";
 import { SlidingNumber } from "~/components/motion/sliding-number";
@@ -58,6 +59,8 @@ interface PostDetail {
   bookmarked: number;
   reposted: number;
   liked: number;
+  acks: number;
+  acked: number;
 }
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
@@ -85,6 +88,9 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
             (SELECT COUNT(*) FROM reactions lr
               WHERE lr.target_type='post' AND lr.target_id = po.id AND lr.type='like'
                 AND lr.user_id = ?2) AS liked,
+            (SELECT COUNT(*) FROM acks a WHERE a.post_id = po.id) AS acks,
+            (SELECT COUNT(*) FROM acks a2
+              WHERE a2.post_id = po.id AND a2.user_id = ?2) AS acked,
             po.repost_of_id,
             op.body AS r_body, op.created_at AS r_created_at,
             ou.handle AS r_handle, opf.display_name AS r_display_name,
@@ -381,6 +387,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
       )}
 
       <div className="mt-6 flex items-center justify-between border-y border-[#eef0f2] py-2">
+        <AckButton postId={post.id} acks={post.acks} acked={Boolean(post.acked)} viewerId={me?.id ?? null} authorId={post.author_id} />
         <button type="button" aria-label="评论" onClick={() => commentRef.current?.focus()} className="action-btn action-link">
           <MessageCircle size={16} strokeWidth={1.65} aria-hidden />
           <SlidingNumber value={localComments.length} />

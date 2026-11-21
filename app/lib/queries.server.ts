@@ -1,5 +1,5 @@
 import type { AppLoadContext } from "react-router";
-import { batch, many, stmt } from "./db.server";
+import { batch, many, one, stmt } from "./db.server";
 import { relativeTime } from "./format";
 
 /** Fields an author hover-card needs, selected alongside any list row. */
@@ -138,6 +138,20 @@ export interface FeedPostRow extends AuthorCardRow {
   author_following: number;
   /** 1 when the viewer already has a live bare repost of this post. */
   reposted: number;
+  /** Raw acknowledgement counts — no score, no ranking. */
+  acks: number;
+  acked: number;
+  prompt_id: string | null;
+  prompt_slug: string | null;
+  prompt_title: string | null;
+  preview_comment: {
+    id: string;
+    body: string;
+    time_label: string;
+    handle: string;
+    display_name: string;
+    avatar_url: string | null;
+  } | null;
   repost_of_id: string | null;
   tags: string[];
   /** Non-null when the original is still readable; null means it is gone. */
@@ -155,7 +169,8 @@ export interface FeedPostRow extends AuthorCardRow {
  */
 const FEED_SELECT = (viewerSlot: number) => `
   SELECT po.id, po.kind, po.body, po.created_at, po.author_id,
-         po.project_id, po.repost_of_id,
+         po.project_id, po.repost_of_id, po.prompt_id,
+         prm.slug AS prompt_slug, prm.title AS prompt_title,
          u.handle, p.display_name, p.avatar_url,
          po.author_id AS author_id, p.headline AS author_headline,
          p.hide_follows AS author_hide_follows,
@@ -181,6 +196,9 @@ const FEED_SELECT = (viewerSlot: number) => `
          (SELECT COUNT(*) FROM posts myrp
            WHERE myrp.repost_of_id = po.id AND myrp.author_id = ?${viewerSlot}
              AND myrp.body = '' AND myrp.deleted_at IS NULL) AS reposted,
+         (SELECT COUNT(*) FROM acks a WHERE a.post_id = po.id) AS acks,
+         (SELECT COUNT(*) FROM acks a2
+           WHERE a2.post_id = po.id AND a2.user_id = ?${viewerSlot}) AS acked,
          op.id AS r_id, op.kind AS r_kind, op.body AS r_body,
          op.created_at AS r_created_at,
          ou.handle AS r_handle, opf.display_name AS r_display_name,
@@ -193,6 +211,7 @@ const FEED_SELECT = (viewerSlot: number) => `
     LEFT JOIN projects pr
            ON pr.id = po.project_id
           AND (pr.visibility <> 'private' OR pr.owner_id = ?${viewerSlot})
+    LEFT JOIN prompts prm ON prm.id = po.prompt_id
     LEFT JOIN posts op
            ON op.id = po.repost_of_id
           AND op.deleted_at IS NULL
@@ -209,7 +228,7 @@ const FEED_SELECT = (viewerSlot: number) => `
      AND (p.visibility = 'public' OR po.author_id = ?${viewerSlot})
 `;
 
-type RawFeedRow = Omit<FeedPostRow, "time_label" | "tags" | "repost"> & {
+type RawFeedRow = Omit<FeedPostRow, "time_label" | "tags" | "repost" | "preview_comment"> & {
   r_id: string | null;
   r_kind: string | null;
   r_body: string | null;
@@ -236,6 +255,7 @@ export async function feedPosts(
     /** Matched case-insensitively, so #RAG and #rag are the same topic. */
     tag?: string;
     authorId?: string;
+    promptSlug?: string;
     sort?: "latest" | "active";
     limit?: number;
     offset?: number;
@@ -260,6 +280,10 @@ export async function feedPosts(
   if (opts.authorId) {
     params.push(opts.authorId);
     clauses.push(`po.author_id = ?${i++}`);
+  }
+  if (opts.promptSlug) {
+    params.push(opts.promptSlug);
+    clauses.push(`prm.slug = ?${i++}`);
   }
   if (opts.scope === "following") {
     clauses.push(
@@ -293,9 +317,11 @@ export async function feedPosts(
   const page = hasMore ? rows.slice(0, limit) : rows;
 
   const tags = await tagsForPosts(context, page.map((r) => r.id));
+  const previews = await previewCommentsForPosts(context, page.map((r) => r.id));
   return {
     hasMore,
     rows: page.map((r) => ({
+      preview_comment: previews.get(r.id) ?? null,
       ...r,
       time_label: relativeTime(r.created_at),
       tags: tags.get(r.id) ?? [],
@@ -399,6 +425,7 @@ export async function insertPost(
     body: string;
     projectId?: string | null;
     repostOfId?: string | null;
+    promptId?: string | null;
     tags?: string[];
   },
 ): Promise<string> {
@@ -408,15 +435,16 @@ export async function insertPost(
     stmt(
       context,
       `INSERT INTO posts
-         (id, author_id, kind, body, project_id, repost_of_id, visibility,
+         (id, author_id, kind, body, project_id, repost_of_id, prompt_id, visibility,
           created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'public', ?7, ?7)`,
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'public', ?8, ?8)`,
       id,
       input.authorId,
       input.kind,
       input.body,
       input.projectId ?? null,
       input.repostOfId ?? null,
+      input.promptId ?? null,
       now,
     ),
     ...(input.tags ?? []).map((tag) =>
@@ -656,12 +684,13 @@ export async function searchProjects(
 export async function countsForProfile(
   context: AppLoadContext,
   userId: string,
-): Promise<{ followers: number; following: number; posts: number; projects: number }> {
+): Promise<{ followers: number; following: number; posts: number; projects: number; acks_received: number }> {
   const rows = await many<{
     followers: number;
     following: number;
     posts: number;
     projects: number;
+    acks_received: number;
   }>(
     context,
     `SELECT
@@ -670,10 +699,14 @@ export async function countsForProfile(
        (SELECT COUNT(*) FROM posts WHERE author_id = ?1
           AND deleted_at IS NULL AND visibility = 'public') AS posts,
        (SELECT COUNT(*) FROM projects WHERE owner_id = ?1
-          AND visibility = 'public') AS projects`,
+          AND visibility = 'public') AS projects,
+       (SELECT COUNT(*) FROM acks a
+          JOIN posts ap ON ap.id = a.post_id
+         WHERE ap.author_id = ?1 AND ap.deleted_at IS NULL
+           AND ap.visibility = 'public') AS acks_received`,
     userId,
   );
-  return rows[0] ?? { followers: 0, following: 0, posts: 0, projects: 0 };
+  return rows[0] ?? { followers: 0, following: 0, posts: 0, projects: 0, acks_received: 0 };
 }
 
 /** Skills clustered across public work — the feed's "trending" rail. */
@@ -695,4 +728,153 @@ export async function topSkills(
       LIMIT ?1`,
     limit,
   );
+}
+
+/* ── brand signature: ACK quota, reply previews, 同题切磋 ─────────────── */
+
+/** Daily ACK quota: at most 2 per UTC+8 day. */
+export async function ackQuotaToday(
+  context: AppLoadContext,
+  userId: string,
+  dayKey: string,
+): Promise<{ used: number; limit: 2; remaining: number }> {
+  const row = await one<{ n: number }>(
+    context,
+    `SELECT COUNT(*) AS n FROM acks WHERE user_id = ?1 AND day_key = ?2`,
+    userId,
+    dayKey,
+  );
+  const used = row?.n ?? 0;
+  return { used, limit: 2, remaining: Math.max(0, 2 - used) };
+}
+
+/** Newest non-deleted comment for each post, in ONE query — no N+1. */
+export async function previewCommentsForPosts(
+  context: AppLoadContext,
+  postIds: string[],
+): Promise<Map<string, { id: string; body: string; time_label: string; handle: string; display_name: string; avatar_url: string | null }>> {
+  const out = new Map<string, { id: string; body: string; time_label: string; handle: string; display_name: string; avatar_url: string | null }>();
+  if (!postIds.length) return out;
+  const ph = postIds.map((_, n) => `?${n + 1}`).join(",");
+  const rows = await many<{
+    id: string;
+    post_id: string;
+    body: string;
+    created_at: number;
+    handle: string;
+    display_name: string;
+    avatar_url: string | null;
+  }>(
+    context,
+    `SELECT c.id, c.post_id, c.body, c.created_at,
+            u.handle, p.display_name, p.avatar_url
+       FROM comments c
+       JOIN users u    ON u.id = c.author_id AND u.status = 'active'
+       JOIN profiles p ON p.user_id = c.author_id AND p.visibility = 'public'
+      WHERE c.deleted_at IS NULL AND c.post_id IN (${ph})
+      ORDER BY c.created_at DESC`,
+    ...postIds,
+  );
+  for (const r of rows) {
+    if (out.has(r.post_id)) continue; // rows are newest-first
+    out.set(r.post_id, {
+      id: r.id,
+      body: r.body,
+      time_label: relativeTime(r.created_at),
+      handle: r.handle,
+      display_name: r.display_name,
+      avatar_url: r.avatar_url,
+    });
+  }
+  return out;
+}
+
+export interface ActivePrompt {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  tag: string;
+  ends_at: number;
+  created_at: number;
+  submissions: number;
+  participants: Array<{ handle: string; display_name: string; avatar_url: string | null }>;
+}
+
+/** Active prompts with submission counts and up to 3 distinct participants each. */
+export async function activePrompts(
+  context: AppLoadContext,
+  limit = 3,
+): Promise<ActivePrompt[]> {
+  const rows = await many<Omit<ActivePrompt, "participants">>(
+    context,
+    `SELECT pr.id, pr.slug, pr.title, pr.summary, pr.tag, pr.ends_at, pr.created_at,
+            (SELECT COUNT(*) FROM posts po
+              WHERE po.prompt_id = pr.id AND po.deleted_at IS NULL
+                AND po.visibility = 'public') AS submissions
+       FROM prompts pr
+      WHERE pr.status = 'active'
+      ORDER BY pr.ends_at ASC LIMIT ?1`,
+    limit,
+  );
+  if (!rows.length) return rows.map((r) => ({ ...r, participants: [] }));
+  const ids = rows.map((r) => r.id);
+  const ph = ids.map((_, n) => `?${n + 1}`).join(",");
+  const people = await many<{
+    prompt_id: string;
+    handle: string;
+    display_name: string;
+    avatar_url: string | null;
+  }>(
+    context,
+    `SELECT po.prompt_id, u.handle, p.display_name, p.avatar_url
+       FROM posts po
+       JOIN users u    ON u.id = po.author_id AND u.status = 'active'
+       JOIN profiles p ON p.user_id = u.id AND p.visibility = 'public'
+      WHERE po.prompt_id IN (${ph}) AND po.deleted_at IS NULL
+        AND po.visibility = 'public'
+      ORDER BY po.created_at DESC`,
+    ...ids,
+  );
+  const byPrompt = new Map<string, ActivePrompt["participants"]>();
+  for (const row of people) {
+    const list = byPrompt.get(row.prompt_id) ?? [];
+    if (list.length >= 3 || list.some((x) => x.handle === row.handle)) continue;
+    list.push({ handle: row.handle, display_name: row.display_name, avatar_url: row.avatar_url });
+    byPrompt.set(row.prompt_id, list);
+  }
+  return rows.map((r) => ({ ...r, participants: byPrompt.get(r.id) ?? [] }));
+}
+
+export async function promptBySlug(
+  context: AppLoadContext,
+  slug: string,
+): Promise<ActivePrompt | null> {
+  const rows = await many<ActivePrompt>(
+    context,
+    `SELECT pr.id, pr.slug, pr.title, pr.summary, pr.tag, pr.ends_at, pr.created_at,
+            (SELECT COUNT(*) FROM posts po
+              WHERE po.prompt_id = pr.id AND po.deleted_at IS NULL
+                AND po.visibility = 'public') AS submissions
+       FROM prompts pr WHERE pr.slug = ?1 AND pr.status = 'active' LIMIT 1`,
+    slug,
+  );
+  if (!rows.length) return null;
+  const prompt = rows[0];
+  const people = await many<{
+    handle: string;
+    display_name: string;
+    avatar_url: string | null;
+  }>(
+    context,
+    `SELECT u.handle, p.display_name, p.avatar_url
+       FROM posts po
+       JOIN users u    ON u.id = po.author_id AND u.status = 'active'
+       JOIN profiles p ON p.user_id = u.id AND p.visibility = 'public'
+      WHERE po.prompt_id = ?1 AND po.deleted_at IS NULL
+        AND po.visibility = 'public'
+      ORDER BY po.created_at DESC LIMIT 3`,
+    prompt.id,
+  );
+  return { ...prompt, participants: people };
 }

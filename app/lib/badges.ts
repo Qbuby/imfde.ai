@@ -33,3 +33,19 @@ export function badgeFor(
 ): BadgeStyle {
   return table[kind] ?? { bg: "bg-[#f3f4f6]", text: "text-[#374151]", dot: "bg-[#6b7280]", label: kind };
 }
+
+/** One-line editorial blurbs for the community's hot topics. */
+export const TOPIC_BLURBS: Record<string, string> = {
+  Eval: "真实难例集与基准线对比，拒绝玄学调参",
+  RAG: "解析、切块、混合检索与引用核查",
+  私有部署: "断网机房、显存稳定与老系统兼容",
+  语音交互: "VAD、打断延迟与真实噪声通话",
+  Agent: "工具调用、状态机与人工兜底边界",
+  工作流自动化: "把重复流程跑顺并留痕",
+  现场踩坑: "那些 Demo 里绝对不会出现的问题",
+  MCP: "内部系统只读桥接与权限隔离",
+  多模态OCR: "盖章、手写与倾斜扫描件的字段还原",
+  可观测性: "调用链、成本与异常的第一现场",
+  LiveKit: "实时音视频管道与端到端延迟",
+  混合检索: "关键词与向量各取所长",
+};

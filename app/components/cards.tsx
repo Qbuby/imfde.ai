@@ -19,6 +19,7 @@ import { fireLikeBurst } from "~/lib/burst";
 import { AuthorHoverCard } from "./author-hover-card";
 import { SlidingNumber } from "./motion/sliding-number";
 import { FollowButton } from "./follow-button";
+import { AckButton } from "./ack-button";
 import type { FeedPostRow, PersonRow, ProjectCardRow } from "~/lib/queries.server";
 import { PostBody, TagLinks } from "./post-body";
 import { badgeFor, POST_KIND_STYLE, PROJECT_KIND_STYLE } from "~/lib/badges";
@@ -191,11 +192,13 @@ export function FeedCard({
   post,
   viewerId = null,
   showFollow = true,
+  showReplyPreview = false,
   className = "",
 }: {
   post: FeedPostRow;
   viewerId?: string | null;
   showFollow?: boolean;
+  showReplyPreview?: boolean;
   className?: string;
 }) {
   const signedIn = Boolean(viewerId);
@@ -336,6 +339,11 @@ export function FeedCard({
             <span className="micro-mono shrink-0">· {post.time_label}</span>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            {post.prompt_slug && (
+              <Link to={`/feed?prompt=${post.prompt_slug}`} className="inline-flex items-center gap-1 rounded-full border border-[#e2e5ea] bg-white px-2 py-0.5 text-[11.5px] font-medium text-[#0f1419] transition hover:border-[#0f1419]" title={post.prompt_title ?? ""}>
+                同题 · {post.prompt_title}
+              </Link>
+            )}
             {showFollow && signedIn && !isSelf && (
               <FollowButton
                 targetId={post.author_id}
@@ -416,9 +424,15 @@ export function FeedCard({
             <ArrowUpRight size={15} strokeWidth={1.65} className="shrink-0 text-[var(--color-faint)]" aria-hidden />
           </Link>
         )}
+        {post.project_slug && (
+          <Link to={`/projects/${post.project_slug}`} className="mt-2 inline-flex items-center gap-1 rounded-full border border-[#e2e5ea] px-3 py-1 text-[12px] font-medium text-[#0f1419] transition hover:border-[#0f1419]">
+            查看作品 ↗
+          </Link>
+        )}
 
         {/* action bar: evenly distributed, semantic colours */}
-        <footer className="mt-3 flex max-w-[420px] items-center justify-between text-[12.5px] text-[var(--color-muted)] tabular-nums">
+        <footer className="mt-3 flex max-w-[480px] items-center justify-between gap-1 text-[12.5px] text-[var(--color-muted)] tabular-nums">
+          <AckButton postId={post.id} acks={post.acks} acked={Boolean(post.acked)} viewerId={viewerId} authorId={post.author_id} />
           <likeFetcher.Form method="post" action="/actions/like">
             <input type="hidden" name="target_type" value="post" />
             <input type="hidden" name="target_id" value={post.id} />
@@ -540,6 +554,26 @@ export function FeedCard({
             </>
           )}
         </footer>
+
+        {showReplyPreview && post.preview_comment && (
+          <div className="mt-3 border-t border-[#eff3f4] pt-2.5">
+            <div className="flex items-start gap-2.5">
+              <span className="shrink-0"><Avatar name={post.preview_comment.display_name} src={post.preview_comment.avatar_url} size={24} /></span>
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 text-[12px]">
+                  <span className="font-semibold text-[#0f1419]">{post.preview_comment.display_name}</span>
+                  <span className="micro-mono">@{post.preview_comment.handle} · {post.preview_comment.time_label}</span>
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-[13.5px] leading-relaxed text-[#0f1419]">{post.preview_comment.body}</p>
+              </div>
+            </div>
+            {post.comments > 1 && (
+              <Link to={`/posts/${post.id}#comments`} className="mt-1.5 inline-block text-[12.5px] font-medium text-[#536471] hover:text-[#0f1419]">
+                查看其余 {post.comments - 1} 条回复 →
+              </Link>
+            )}
+          </div>
+        )}
       </div>
 
     </article>

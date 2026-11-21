@@ -5,15 +5,20 @@ import { Avatar } from "~/components/media";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Flame, History } from "lucide-react";
+import { utc8DayKey } from "~/lib/format";
+import { RailTrio, PromptsRail, TopicsRail } from "~/components/feed-rail";
 import { getMe, requireMe } from "~/lib/session.server";
 import type { Me } from "~/lib/session.server";
 import {
   feedPosts,
+  ackQuotaToday,
+  activePrompts,
   featuredPeople,
   hotTags,
   insertPost,
   latestProjects,
   projectsForComposer,
+  promptBySlug,
   recommendedPeople,
 } from "~/lib/queries.server";
 import { FollowButton } from "~/components/cards";
@@ -48,14 +53,16 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const tag = url.searchParams.get("tag")?.trim() || "";
   const sort = url.searchParams.get("sort") === "active" ? "active" : "latest";
   const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
+  const promptSlug = url.searchParams.get("prompt")?.trim() || "";
 
-  const [feed, tags, myProjects, sidePeople, sideProjects] = await Promise.all([
+  const [feed, tags, myProjects, sidePeople, sideProjects, prompts, quota, promptRow] = await Promise.all([
     feedPosts(context, {
       viewerId: me?.id ?? null,
       scope: tab,
       kind,
       tag,
       sort,
+      promptSlug,
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
     }),
@@ -63,6 +70,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     me ? projectsForComposer(context, me.id) : Promise.resolve([]),
     me ? recommendedPeople(context, me.id, 3) : featuredPeople(context, null, 3),
     latestProjects(context, me?.id ?? null, 2),
+    activePrompts(context, 3),
+    me ? ackQuotaToday(context, me.id, utc8DayKey()) : Promise.resolve({ used: 0, limit: 2 as const, remaining: 2 }),
+    promptSlug ? promptBySlug(context, promptSlug) : Promise.resolve(null),
   ]);
 
   return {
@@ -78,6 +88,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     myProjects,
     sidePeople,
     sideProjects,
+    prompts,
+    quota,
+    prompt: promptRow,
+    promptSlug,
   };
 }
 
@@ -88,6 +102,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const kind = String(form.get("kind") ?? "build");
   const body = String(form.get("body") ?? "").trim();
   const projectId = String(form.get("project_id") ?? "");
+  const promptId = String(form.get("prompt_id") ?? "");
 
   if (!body || body.length > 4000) {
     return Response.json({ ok: false, error: "内容不能为空，且不超过 4000 字" }, { status: 400 });
@@ -105,6 +120,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     kind: ["show", "build", "thought", "discussion"].includes(kind) ? kind : "build",
     body,
     projectId: attachable,
+    promptId: promptId || null,
     tags: extractTags(body),
   });
 
@@ -114,7 +130,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 export default function Feed({ loaderData }: Route.ComponentProps) {
   const {
     me, tab, kind, tag, sort, page, posts, hasMore,
-    hotTags: tags, myProjects, sidePeople, sideProjects,
+    hotTags: tags, myProjects, sidePeople, sideProjects, prompts, quota, prompt, promptSlug,
   } = loaderData;
   const [params] = useSearchParams();
   const viewerId = me?.id ?? null;
@@ -167,7 +183,20 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           </div>
         )}
 
-        {me ? <Composer me={me} myProjects={myProjects} /> : null}
+        {prompt && (
+          <div className="border-b border-[#eff3f4] bg-[#f7f9f9]/70 px-4 py-3.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold text-[#0f1419]">同题 · {prompt.title}</p>
+                <p className="mt-0.5 text-[12.5px] leading-relaxed text-[#536471]">{prompt.summary}</p>
+                <p className="mt-1 font-sans text-[11.5px] text-[#8b93a3] tabular-nums">{prompt.submissions} 条参与 · {Math.max(1, Math.ceil((prompt.ends_at - Date.now()) / 86400000))} 天剩余</p>
+              </div>
+              <Link to="/feed" className="shrink-0 text-[12px] font-medium text-[#536471] hover:text-[#0f1419]">退出命题筛选</Link>
+            </div>
+          </div>
+        )}
+
+        {me ? <Composer me={me} myProjects={myProjects} prompts={prompts} defaultPromptSlug={promptSlug} /> : null}
 
         <div className="flex flex-wrap items-center gap-1.5 border-b border-[#eff3f4] px-4 py-2.5">
           {KINDS.map((k) => (
@@ -204,7 +233,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           <div className="divide-y divide-[#eff3f4]">
             {posts.map((post) => (
               <div key={post.id} className="px-4 py-3.5 transition-colors hover:bg-[#fafafa]">
-                <FeedCard post={post} viewerId={viewerId} />
+                <FeedCard post={post} viewerId={viewerId} showReplyPreview />
               </div>
             ))}
           </div>
@@ -221,19 +250,14 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
 
       <aside className="hidden xl:block">
         <div className="sticky top-4 space-y-4">
-          {tags.length > 0 && (
-            <section className="rounded-[16px] bg-[#f7f9f9] p-4">
-              <h2 className="text-[14px] font-bold text-[#0f1419]">热门话题</h2>
-              <div className="mt-2">
-                {tags.map((t) => (
-                  <Link key={t.tag} to={`/feed?tag=${encodeURIComponent(t.tag)}`} className="flex items-center justify-between rounded-[8px] px-2 py-1.5 text-[13.5px] transition hover:bg-white">
-                    <span className="font-medium text-[#0f1419]">#{t.tag}</span>
-                    <span className="font-sans text-[11.5px] text-[#8b93a3] tabular-nums">{t.n}</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
+          {me && (
+            <div className="rounded-[16px] bg-[#f7f9f9] p-3">
+              <RailTrio handle={me.handle} remaining={quota.remaining} />
+            </div>
           )}
+
+          <PromptsRail prompts={prompts} activeSlug={promptSlug} />
+          <TopicsRail tags={tags} />
 
           {sidePeople.length > 0 && (
             <section className="rounded-[16px] bg-[#f7f9f9] p-4">
@@ -286,9 +310,13 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
 function Composer({
   me,
   myProjects,
+  prompts = [],
+  defaultPromptSlug = "",
 }: {
   me: Me;
   myProjects: Array<{ id: string; title: string }>;
+  prompts?: Array<{ id: string; slug: string; title: string }>;
+  defaultPromptSlug?: string;
 }) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
@@ -353,6 +381,13 @@ function Composer({
       >
         <div className="flex flex-wrap items-center gap-2 border-t border-[var(--color-line-soft)] px-4 py-2.5">
           <input type="hidden" name="kind" value={kind} />
+          {prompts.length > 0 && (
+            <select name="prompt_id" defaultValue={prompts.find((x) => x.slug === defaultPromptSlug)?.id ?? ""} aria-label="参与命题"
+              className="field !h-[32px] !w-auto !max-w-[220px] !px-2 !text-[12.5px]">
+              <option value="">不参与命题</option>
+              {prompts.map((x) => <option key={x.id} value={x.id}>同题 · {x.title}</option>)}
+            </select>
+          )}
           {KINDS.filter((k) => k.v !== "all").map((k) => (
             <motion.button
               type="button"
