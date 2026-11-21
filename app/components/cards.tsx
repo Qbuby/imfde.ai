@@ -424,6 +424,7 @@ export function FeedCard({
             <input type="hidden" name="target_id" value={post.id} />
             <input type="hidden" name="intent" value={liked ? "unlike" : "like"} />
             <button
+              ref={likeButtonRef}
               aria-pressed={liked}
               aria-label={liked ? "取消赞" : "赞"}
               onClick={() => !liked && popLike()}

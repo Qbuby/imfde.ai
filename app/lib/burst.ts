@@ -20,7 +20,7 @@ export function fireLikeBurst(el: HTMLElement | null) {
       x: (rect.left + rect.width / 2) / window.innerWidth,
       y: (rect.top + rect.height / 2) / window.innerHeight,
     },
-    colors: ["#f43f5e", "#fb7185", "#f59e0b", "#10b981", "#0ea5e9"],
+    colors: ["#f91880", "#fb7185", "#f59e0b", "#00ba7c", "#1d9bf0"],
     disableForReducedMotion: true,
   });
 }
