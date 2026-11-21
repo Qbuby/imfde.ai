@@ -486,10 +486,15 @@ export async function searchPeople(
     clauses.push(`u.kind = ?${i++}`);
   }
   if (opts.skill) {
-    params.push(opts.skill);
+    // partial skill names should find people: "RAG" matches "RAG 检索",
+    // "语音" matches "语音交互". Also scan the one-line headline.
+    params.push(`%${opts.skill}%`, `%${opts.skill}%`);
     clauses.push(
-      `u.id IN (SELECT user_id FROM profile_skills WHERE skill_name = ?${i++})`,
+      `(u.id IN (SELECT user_id FROM profile_skills
+                  WHERE skill_name LIKE ?${i} OR skill_name LIKE ?${i + 1})
+        OR p.headline LIKE ?${i} OR p.headline LIKE ?${i + 1})`,
     );
+    i += 2;
   }
 
   const where = clauses.length ? ` AND ${clauses.join(" AND ")}` : "";

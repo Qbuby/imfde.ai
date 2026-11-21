@@ -46,7 +46,7 @@ export function Marquee({
     <div
       {...props}
       className={cn(
-        "group flex gap-(--gap) overflow-hidden p-2 [--duration:40s] [--gap:1rem]",
+        "group flex gap-(--gap) overflow-hidden p-2 [--duration:40s] [--gap:1rem] [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]",
         {
           "flex-row": !vertical,
           "flex-col": vertical,

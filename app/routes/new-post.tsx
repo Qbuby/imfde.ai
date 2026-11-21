@@ -28,7 +28,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 export async function action({ request, context }: Route.ActionArgs) {
   const me = await requireMe(context, request);
   const form = await request.formData();
-  const kind = String(form.get("kind") ?? "show");
+  const kind = String(form.get("kind") ?? "build");
   const body = String(form.get("body") ?? "").trim();
   const projectId = String(form.get("project_id") ?? "");
 
@@ -45,7 +45,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   const id = await insertPost(context, {
     authorId: me.id,
-    kind: KINDS.some((k) => k.v === kind) ? kind : "show",
+    kind: KINDS.some((k) => k.v === kind) ? kind : "build",
     body,
     projectId: attachable,
     tags: extractTags(body),

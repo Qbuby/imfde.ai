@@ -49,6 +49,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
   const post = await one<PostDetail>(
     context,
     `SELECT po.id, po.kind, po.body, po.created_at, po.author_id,
+            po.visibility,
             u.handle, p.display_name, p.avatar_url, p.headline,
             p.visibility AS author_visibility,
             pr.slug AS project_slug, pr.title AS project_title,
@@ -64,12 +65,22 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
        FROM posts po
        JOIN users u ON u.id = po.author_id
        JOIN profiles p ON p.user_id = po.author_id
-       LEFT JOIN projects pr ON pr.id = po.project_id
-       LEFT JOIN posts op    ON op.id = po.repost_of_id AND op.deleted_at IS NULL
-       LEFT JOIN users ou    ON ou.id = op.author_id
-       LEFT JOIN profiles opf ON opf.user_id = op.author_id
-       LEFT JOIN projects rpr ON rpr.id = op.project_id
-      WHERE po.id = ?1 AND po.deleted_at IS NULL`,
+       LEFT JOIN projects pr
+              ON pr.id = po.project_id
+             AND (pr.visibility <> 'private' OR pr.owner_id = ?2)
+       LEFT JOIN posts op
+              ON op.id = po.repost_of_id
+             AND op.deleted_at IS NULL
+             AND op.visibility = 'public'
+       LEFT JOIN users ou
+              ON ou.id = op.author_id AND ou.status = 'active'
+       LEFT JOIN profiles opf
+              ON opf.user_id = op.author_id
+             AND (opf.visibility <> 'private' OR op.author_id = ?2)
+       LEFT JOIN projects rpr
+              ON rpr.id = op.project_id
+             AND (rpr.visibility <> 'private' OR rpr.owner_id = ?2)
+      WHERE po.id = ?1 AND po.deleted_at IS NULL AND u.status = 'active'`,
     params.id,
     me?.id ?? "·none·",
   );
@@ -129,9 +140,9 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 
 export const meta: Route.MetaFunction = ({ data }) => {
   if (!data?.post) return [{ title: "动态不存在 — iMFDE" }];
-  const body = (data.post.body.trim() || data.post.r_body || "").slice(0, 150);
+  const body = (data.post.body.trim() || data.post.r_body || "转发动态").slice(0, 150);
   return [
-    { title: `${data.post.display_name}：${data.post.body.slice(0, 40)} — iMFDE` },
+    { title: `${data.post.display_name}：${(data.post.body.trim() || data.post.r_body || "转发动态").slice(0, 40)} — iMFDE` },
     { name: "description", content: body },
     { property: "og:title", content: `${data.post.display_name} on iMFDE` },
     { property: "og:description", content: body },

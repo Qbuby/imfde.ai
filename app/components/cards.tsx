@@ -15,10 +15,10 @@ import {
 import { Avatar, CoverArt } from "./media";
 import { compact } from "~/lib/format";
 import { extractTags } from "~/lib/tags";
+import { fireLikeBurst } from "~/lib/like-burst";
 import { AuthorHoverCard } from "./author-hover-card";
 import { Spotlight } from "./motion/spotlight";
 import { SlidingNumber } from "./motion/sliding-number";
-import { Confetti, type ConfettiRef } from "./magicui/confetti";
 import { FollowButton } from "./follow-button";
 import type { FeedPostRow, PersonRow, ProjectCardRow } from "~/lib/queries.server";
 import { PostBody, TagLinks } from "./post-body";
@@ -233,17 +233,11 @@ export function FeedCard({
   const heartControls = useAnimationControls();
   const repostControls = useAnimationControls();
   const bookmarkControls = useAnimationControls();
-  const confettiRef = useRef<ConfettiRef>(null);
+  const likeButtonRef = useRef<HTMLButtonElement>(null);
 
   function popLike() {
     heartControls.start({ scale: [1, 1.32, 0.92, 1], transition: { duration: 0.42 } });
-    void confettiRef.current?.fire({
-      particleCount: 8,
-      spread: 52,
-      startVelocity: 20,
-      scalar: 0.65,
-      colors: ["#f43f5e", "#f59e0b", "#10b981", "#0ea5e9"],
-    });
+    fireLikeBurst(likeButtonRef.current);
   }
   function popRepost() {
     repostControls.start({ rotate: [0, 180, 360], transition: { duration: 0.5 } });
@@ -306,6 +300,14 @@ export function FeedCard({
       onClick={cardClick}
       className={`group grid grid-cols-[42px_minmax(0,1fr)] gap-3 border-b border-[var(--color-line-soft)] px-2 py-4 transition-colors hover:bg-[#fafafa] last:border-b-0 ${className}`}
     >
+      {/* a pure repost announces the source above everything, X-style */}
+      {post.repost && post.body.trim() === "" && (
+        <p className="col-span-2 -mb-1 flex items-center gap-1.5 text-[11.5px] text-[var(--color-faint)]">
+          <Repeat2 size={12} strokeWidth={1.65} aria-hidden />
+          转发了 @{post.repost.handle} 的动态
+        </p>
+      )}
+
       {/* avatar axis */}
       <AuthorHoverCard
         author={author}
@@ -360,13 +362,6 @@ export function FeedCard({
             body={post.body}
             className="mt-1.5 text-[14.5px] leading-[1.6] text-[var(--color-ink)]"
           />
-        )}
-
-        {post.repost && (
-          <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-[var(--color-faint)]">
-            <Repeat2 size={12} strokeWidth={1.65} aria-hidden />
-            转发了 @{post.repost.handle} 的动态
-          </p>
         )}
 
         {post.repost && (
@@ -528,8 +523,6 @@ export function FeedCard({
         </footer>
       </div>
 
-      {/* inert until a like fires; canvas is safe on SSR */}
-      <Confetti ref={confettiRef} className="pointer-events-none absolute inset-0 z-10" />
     </article>
   );
 }

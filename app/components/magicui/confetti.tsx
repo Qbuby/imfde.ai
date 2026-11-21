@@ -16,6 +16,7 @@ import type {
   Options as ConfettiOptions,
 } from "canvas-confetti"
 import confetti from "canvas-confetti"
+import { cn } from "~/lib/cn"
 
 
 export type ConfettiRef = {
@@ -35,7 +36,7 @@ const ConfettiComponent = forwardRef<ConfettiRef, Props>((props, ref) => {
   const {
     options,
     globalOptions = { resize: true, useWorker: true },
-    manualstart = false,
+    manualstart = true,
     children,
     className,
     ...rest
@@ -92,7 +93,11 @@ const ConfettiComponent = forwardRef<ConfettiRef, Props>((props, ref) => {
 
   return (
     <ConfettiContext.Provider value={api}>
-      <canvas ref={canvasNodeRef} className={className} {...rest} />
+            <canvas
+        ref={canvasNodeRef}
+        className={cn("pointer-events-none fixed inset-0 z-[60] h-full w-full", className)}
+        {...rest}
+      />
       {children}
     </ConfettiContext.Provider>
   )

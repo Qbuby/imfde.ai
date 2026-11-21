@@ -8,12 +8,15 @@ export type SpotlightProps = {
   className?: string;
   size?: number;
   springOptions?: SpringOptions;
+  /** Explicit radial layers; caller chooses light-card aurora or dark-card ice. */
+  fill?: string;
 };
 
 export function Spotlight({
   className,
   size = 200,
   springOptions = { bounce: 0 },
+  fill = "radial-gradient(circle at center, rgba(56,189,248,0.22), rgba(139,92,246,0.14) 45%, transparent 72%)",
 }: SpotlightProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -70,8 +73,7 @@ export function Spotlight({
     <motion.div
       ref={containerRef}
       className={cn(
-        'pointer-events-none absolute rounded-full bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops),transparent_80%)] blur-xl transition-opacity duration-200',
-        'from-zinc-100 via-zinc-200 to-zinc-400 dark:from-zinc-50 dark:via-zinc-100 dark:to-zinc-200',
+        'pointer-events-none absolute rounded-full blur-xl transition-opacity duration-200',
         isHovered ? 'opacity-100' : 'opacity-0',
         className
       )}
@@ -80,6 +82,7 @@ export function Spotlight({
         height: size,
         left: spotlightLeft,
         top: spotlightTop,
+        background: fill,
       }}
     />
   );

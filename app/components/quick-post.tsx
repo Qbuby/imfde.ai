@@ -29,7 +29,7 @@ export function QuickPostModal({
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState("show");
+  const [kind, setKind] = useState("build");
   const [length, setLength] = useState(0);
   const sent = useRef<string | null>(null);
   const pending = fetcher.state !== "idle";
@@ -40,7 +40,7 @@ export function QuickPostModal({
     sent.current = data.id;
     formRef.current?.reset();
     setLength(0);
-    setKind("show");
+    setKind("build");
     setOpen(false);
     toast.success("动态已发布");
   }, [fetcher.data]);

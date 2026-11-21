@@ -76,7 +76,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const me = await requireMe(context, request);
   const form = await request.formData();
 
-  const kind = String(form.get("kind") ?? "show");
+  const kind = String(form.get("kind") ?? "build");
   const body = String(form.get("body") ?? "").trim();
   const projectId = String(form.get("project_id") ?? "");
 
@@ -93,7 +93,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   const id = await insertPost(context, {
     authorId: me.id,
-    kind: ["show", "build", "thought", "discussion"].includes(kind) ? kind : "show",
+    kind: ["show", "build", "thought", "discussion"].includes(kind) ? kind : "build",
     body,
     projectId: attachable,
     tags: extractTags(body),
@@ -318,7 +318,7 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [length, setLength] = useState(0);
   const [focused, setFocused] = useState(false);
-  const [kind, setKind] = useState("show");
+  const [kind, setKind] = useState("build");
   const pending = fetcher.state !== "idle";
   const sent = useRef<string | null>(null);
   const pct = Math.min(100, Math.round((length / 4000) * 100));
@@ -329,7 +329,7 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
     sent.current = data.id;
     formRef.current?.reset();
     setLength(0);
-    setKind("show");
+    setKind("build");
     setFocused(false);
     toast.success("动态已发布");
   }, [fetcher.data]);
