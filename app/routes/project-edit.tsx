@@ -319,13 +319,13 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
           </label>
           <label className="block">
             <span className="mb-1.5 flex gap-2 text-[12.5px] font-medium">
-              封面图 URL
+              封面图 URL · 支持图片或 .mp4 / .webm 短视频（自动静音循环）
               {errors.cover_url && <span className="text-[#c0392b]">{errors.cover_url}</span>}
             </span>
             <input
               name="cover_url"
               {...bind("cover_url")}
-              placeholder="留空则自动生成"
+              placeholder="图片或 .mp4 / .webm 短视频链接，留空则自动生成"
               className="field"
             />
           </label>

@@ -322,10 +322,10 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1.5 flex gap-2 text-[12px] text-[var(--color-ink-soft)]">
-                封面图片 URL
+                封面图 URL · 支持图片或 .mp4 / .webm 短视频（自动静音循环）
                 {errors.cover_url && <span className="text-[#c0392b]">{errors.cover_url}</span>}
               </span>
-              <input name="cover_url" {...bind("cover_url")} placeholder="https://…" className="field !h-[42px]" />
+              <input name="cover_url" {...bind("cover_url")} placeholder="图片 URL 或 https://…/demo.mp4" className="field !h-[42px]" />
             </label>
             <label className="block">
               <span className="mb-1.5 flex gap-2 text-[12px] text-[var(--color-ink-soft)]">

@@ -55,6 +55,8 @@ export function CoverArt({
   aspect = "16 / 9",
   className = "",
   photo = true,
+  poster,
+  videoMode = "auto",
 }: {
   seed: string;
   src?: string | null;
@@ -63,6 +65,10 @@ export function CoverArt({
   /** Work gets photography; a person's banner stays an abstract field, so a
       profile never reads as somebody's holiday snap. */
   photo?: boolean;
+  /** First-frame image shown before the video decodes — no black flash. */
+  poster?: string | null;
+  /** "auto" plays muted immediately; "hover" starts on pointer enter. */
+  videoMode?: "auto" | "hover";
 }) {
   const p = useMemo(() => coverPalette(seed), [seed]);
 
@@ -74,7 +80,17 @@ export function CoverArt({
         style={{ aspectRatio: aspect }}
       >
         {isVideo ? (
-          <video src={src} autoPlay muted loop playsInline preload="metadata" aria-hidden />
+          <video
+            src={src}
+            poster={poster ?? undefined}
+            autoPlay={videoMode === "auto"}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden
+            className="h-full w-full object-cover"
+          />
         ) : (
           <img src={src} alt="" loading="lazy" decoding="async" />
         )}

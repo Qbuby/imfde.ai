@@ -8,7 +8,6 @@ import {
   Boxes,
   Check,
   ChevronRight,
-  CircleDot,
   FileSearch,
   Heart,
   MessageCircle,
@@ -22,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "~/lib/cn";
 import { Avatar, CoverArt } from "./media";
-import { PersonCard, ProjectCard, FeedCard } from "./cards";
+import { PersonCard, FeedCard } from "./cards";
 import { PostBody } from "./post-body";
 import { AnimatedBackground } from "./motion/animated-background";
 import { SlidingNumber } from "./motion/sliding-number";
@@ -300,7 +299,7 @@ export function Landing({
       </section>
 
       {/* ── obsidian gallery theatre: real work or live samples ───── */}
-      <ObsidianTheatre projects={projects} />
+      <ObsidianTheatre />
 
       {people.length > 0 && (
         <section className="mt-16">
@@ -381,7 +380,12 @@ function PortfolioPreview({ projects }: { projects: ProjectCardRow[] }) {
         <p className="mb-2 font-mono text-[9.5px] tracking-[1px] text-[var(--color-ink-soft)] uppercase">作品集</p>
         <div className="grid grid-cols-2 gap-2">
           <div className="col-span-2 overflow-hidden rounded-[10px] border border-[var(--hairline)]">
-            <CoverArt seed={covers[0]?.slug ?? "preview-hero"} src={covers[0]?.cover_url} aspect="16 / 7" />
+            <CoverArt
+              seed={covers[0]?.slug ?? "preview-hero"}
+              src={covers[0]?.cover_url ?? "/demos/browser-use-demo.mp4"}
+              poster={covers[0]?.cover_url ? undefined : "/demos/browser-use-demo.webp"}
+              aspect="16 / 7"
+            />
             <div className="bg-white px-2.5 py-2">
               <p className="truncate text-[11.5px] font-semibold">{covers[0]?.title ?? "工单自动归档 Agent"}</p>
             </div>
@@ -486,188 +490,154 @@ function SquarePreview({ post }: { post?: FeedPostRow }) {
 
 /* ── obsidian gallery: live miniature product previews ──────────────── */
 
-const SAMPLES = [
-  { seed: "sample-agent", title: "会议转写与纪要 Agent", kind: "Agent", skills: ["语音转写", "Agent"], summary: "接飞书录制，自动分段去口头禅，产出可检索纪要。" },
-  { seed: "sample-rag", title: "企业文档 RAG 检索", kind: "项目", skills: ["RAG", "检索"], summary: "把散落的 PDF 与 Wiki 接到同一个入口，回答带出处。" },
-  { seed: "sample-deploy", title: "私有部署工具链", kind: "工具", skills: ["私有部署", "DevOps"], summary: "一套脚本把模型与向量库落到客户内网，可离线运行。" },
+/** Official OSS demos — local copies in public/demos, never hotlinked. */
+const DEMOS = [
+  {
+    id: "vhs-demo",
+    name: "VHS",
+    category: "CLI",
+    license: "MIT",
+    repo: "https://github.com/charmbracelet/vhs",
+    title: "VHS · 声明式终端录制",
+    summary: "把终端操作写成脚本，自动生成可复现的演示动图；FDE 交付演示的标准工具。",
+    tags: ["终端", "录制"],
+  },
+  {
+    id: "browser-use-demo",
+    name: "Browser Use",
+    category: "Agent",
+    license: "MIT",
+    repo: "https://github.com/browser-use/browser-use",
+    title: "Browser Use · 自动操作浏览器",
+    summary: "让 AI Agent 像人一样点网页、填表单、查信息，完成真实的业务流程。",
+    tags: ["Agent", "自动化"],
+  },
+  {
+    id: "workflow-demo",
+    name: "Dify",
+    category: "Workflow",
+    license: "Apache-2.0",
+    repo: "https://github.com/langgenius/dify",
+    title: "Dify · Agent 工作流编排",
+    summary: "可视化搭建 LLM 应用与 Agent 流程，节点与数据流一目了然。",
+    tags: ["LLM", "编排"],
+  },
+  {
+    id: "code-motion-demo",
+    name: "Motion Canvas",
+    category: "Motion",
+    license: "MIT",
+    repo: "https://github.com/motion-canvas/motion-canvas",
+    title: "Motion Canvas · 代码驱动动效",
+    summary: "用 TypeScript 编排技术演示动画，把架构与原理讲清楚。",
+    tags: ["可视化", "动效"],
+  },
 ] as const;
 
-function ObsidianTheatre({ projects }: { projects: ProjectCardRow[] }) {
-  const hasReal = projects.length > 0;
+function ObsidianTheatre() {
   return (
     <section className="obsidian-band relative mt-16 overflow-hidden rounded-[28px] px-6 py-14 sm:px-10">
       <div className="relative z-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 font-mono text-[10px] tracking-[1.2px] text-white/70 uppercase">
-              {hasReal ? "现场作品" : "形态预览 · 示例作品"}
+              作品页支持视频与交互演示
             </span>
             <h2 className="mt-4 text-[30px] font-semibold tracking-[-0.03em] text-white">
-              {hasReal ? "他们真的把它跑起来了" : "作品页长什么样"}
+              真实演示，放在作品里
             </h2>
-            <p className="mt-2 max-w-[560px] text-[14px] leading-relaxed text-white/60">
-              {hasReal
-                ? "项目、Agent、自动化流程。每一条都由作者本人写下。"
-                : "下面三张是会自己动的微型产品界面，展示 FDE 如何呈现证据与过程。它们不是任何真实用户的作品。"}
+            <p className="mt-2 max-w-[600px] text-[14px] leading-relaxed text-white/60">
+              以下是真实开源项目的官方演示片段，展示 FDE 作品在画廊中的呈现效果；支持直接贴 .mp4 / .webm 链接作为作品封面。
             </p>
           </div>
           <Link
             to="/new/project"
             className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-6 text-[14px] font-semibold text-[#0e1117] transition hover:bg-white/90"
           >
-            {hasReal ? "上传我的作品" : "上传我的第一个作品，占领首页画廊"}{" "}
-            <ArrowUpRight size={15} strokeWidth={1.65} aria-hidden />
+            上传我的作品，登上首页画廊 <ArrowUpRight size={15} strokeWidth={1.65} aria-hidden />
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {hasReal
-            ? projects.slice(0, 3).map((p) => (
-                <InView key={p.id} once viewOptions={{ amount: 0.15 }}>
-                  <div className="on-dark rounded-[16px] border border-white/12 bg-white/5 p-3">
-                    <ProjectCard project={p} />
-                  </div>
-                </InView>
-              ))
-            : SAMPLES.map((s) => (
-                <InView key={s.seed} once viewOptions={{ amount: 0.15 }}>
-                  <SampleCard sample={s} />
-                </InView>
-              ))}
+        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {DEMOS.map((d) => (
+            <InView key={d.id} once viewOptions={{ amount: 0.15 }}>
+              <DemoCard demo={d} />
+            </InView>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-function SampleCard({ sample }: { sample: (typeof SAMPLES)[number] }) {
-  const preview =
-    sample.kind === "Agent" ? (
-      <WaveformMini />
-    ) : sample.kind === "项目" ? (
-      <RagMini />
-    ) : (
-      <DeployMini />
-    );
-
+function DemoCard({ demo }: { demo: (typeof DEMOS)[number] }) {
+  const src = `/demos/${demo.id}.mp4`;
+  const poster = `/demos/${demo.id}.webp`;
   return (
     <MorphingDialog transition={{ type: "spring", stiffness: 260, damping: 28 }}>
-      <MorphingDialogTrigger className="group block w-full overflow-hidden rounded-[16px] border border-white/12 bg-[#151a22] text-left">
+      <MorphingDialogTrigger className="group relative block w-full overflow-hidden rounded-[18px] border border-white/10 bg-[#151923] text-left transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-[2px] hover:border-white/25 hover:shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
         <div className="relative aspect-[16/10] overflow-hidden">
-          <Spotlight
-            size={240}
-            fill="radial-gradient(circle at center, rgba(255,255,255,0.18), rgba(56,189,248,0.12) 45%, transparent 72%)"
-          />
-          <div className="relative z-10 h-full w-full">{preview}</div>
-          <span className="frost absolute left-3 top-3 z-20 rounded-full border border-white/50 px-2.5 py-1 font-mono text-[10px] text-[#14171f]">
-            {sample.kind}
+          <div className="h-full w-full transition-transform duration-500 ease-out group-hover:scale-[1.03]">
+            <CoverArt src={src} poster={poster} seed={demo.id} aspect="16 / 10" />
+          </div>
+          <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 font-mono text-[10.5px] text-white/90 backdrop-blur-md">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+            LIVE DEMO · {demo.category}
           </span>
-          <span className="frost absolute right-3 top-3 z-20 grid h-8 w-8 place-items-center rounded-full border border-white/50 text-[#14171f] opacity-0 transition group-hover:opacity-100">
-            <ArrowUpRight size={14} strokeWidth={1.65} aria-hidden />
+          <span className="absolute bottom-3 right-3 z-10 flex items-center gap-2 opacity-90 transition group-hover:opacity-100">
+            <span className="rounded-full bg-black/70 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur-md">
+              全屏看演示
+            </span>
           </span>
         </div>
         <div className="p-4">
-          <h3 className="text-[15px] font-semibold text-white">{sample.title}</h3>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-white/60">{sample.summary}</p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {sample.skills.map((sk) => (
-              <span key={sk} className="rounded-full border border-white/15 px-2 py-0.5 text-[10.5px] text-white/70">
-                {sk}
-              </span>
-            ))}
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-[15.5px] font-semibold text-white">{demo.title}</h3>
+            <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 font-mono text-[10px] text-white/70">
+              官方开源演示
+            </span>
           </div>
-          <div className="mt-3 flex items-center gap-2 border-t border-white/10 pt-3">
-            <Avatar name={sample.title} size={22} />
-            <span className="text-[11.5px] text-white/70">作者本人填写 · 未经平台核实</span>
+          <p className="mt-1 text-[13px] leading-relaxed text-white/65">{demo.summary}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+            <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 font-mono text-[10.5px] text-emerald-300">{demo.license}</span>
+            {demo.tags.map((t) => (
+              <span key={t} className="rounded-full border border-white/12 px-2 py-0.5 text-[10.5px] text-white/70">{t}</span>
+            ))}
+            <a
+              href={demo.repo}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              onClick={(e) => e.stopPropagation()}
+              className="ml-auto text-[11.5px] font-medium text-white/80 underline decoration-white/25 underline-offset-2 transition hover:text-white"
+            >
+              GitHub ↗
+            </a>
           </div>
         </div>
       </MorphingDialogTrigger>
       <MorphingDialogContainer>
-        <MorphingDialogContent className="w-[min(94vw,720px)] overflow-hidden rounded-[18px] bg-[#151a22]">
-          <div className="aspect-[16/10] w-full">{preview}</div>
+        <MorphingDialogContent className="w-[min(94vw,900px)] overflow-hidden rounded-[18px] bg-[#151a22]">
+          <CoverArt src={src} poster={poster} seed={demo.id} aspect="16 / 10" />
           <div className="flex items-center justify-between gap-4 p-4">
-            <MorphingDialogTitle className="text-[15px] font-semibold text-white">{sample.title}</MorphingDialogTitle>
-            <MorphingDialogClose className="grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white/80 transition hover:bg-white/10">
+            <div className="min-w-0">
+              <MorphingDialogTitle className="text-[15px] font-semibold text-white">{demo.title}</MorphingDialogTitle>
+              <p className="mt-1 text-[12px] text-white/60">{demo.name} · {demo.license} · 官方开源演示</p>
+            </div>
+            <a
+              href={demo.repo}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="shrink-0 rounded-full border border-white/20 px-3 py-1.5 text-[12px] text-white/80 transition hover:bg-white/10"
+            >
+              GitHub ↗
+            </a>
+            <MorphingDialogClose className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/20 text-white/80 transition hover:bg-white/10">
               <span aria-hidden>✕</span>
             </MorphingDialogClose>
           </div>
         </MorphingDialogContent>
       </MorphingDialogContainer>
     </MorphingDialog>
-  );
-}
-
-function WaveformMini() {
-  const bars = [12, 26, 18, 34, 22, 40, 16, 30, 20, 36, 14, 28, 24, 38, 18, 32];
-  return (
-    <div className="flex h-full flex-col gap-3 bg-[#0b0f15] p-4">
-      <div className="flex items-center gap-2 font-mono text-[10px] text-emerald-400">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" /> 转写中 · 00:42
-      </div>
-      <div className="flex h-14 items-center gap-[3px]">
-        {bars.map((h, i) => (
-          <motion.span
-            key={i}
-            className="flex-1 rounded-full bg-emerald-400/60"
-            animate={{ height: [`${h * 0.5}%`, `${h}%`, `${h * 0.6}%`] }}
-            transition={{ duration: 1.1 + (i % 4) * 0.2, repeat: Infinity, repeatType: "mirror" }}
-          />
-        ))}
-      </div>
-      <motion.div
-        initial={{ opacity: 0.5 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.4, repeat: Infinity, repeatType: "reverse" }}
-        className="rounded-[8px] border border-emerald-400/25 bg-emerald-400/8 px-3 py-2 text-[11px] leading-relaxed text-emerald-200"
-      >
-        ✓ 待办：下周三前回传部署文档 · 00:38
-      </motion.div>
-    </div>
-  );
-}
-
-function RagMini() {
-  const quotes = ["[来源 #1] 产品手册 p.12", "[来源 #2] 内部 Wiki · 部署章节", "[来源 #3] API 文档 v2"];
-  return (
-    <div className="flex h-full flex-col gap-2 bg-[#0b0f15] p-4">
-      <div className="self-start rounded-[10px] rounded-tl-sm bg-sky-500/15 px-3 py-2 text-[11px] text-sky-200">
-        私有部署支持离线运行吗？
-      </div>
-      {quotes.map((q, i) => (
-        <motion.div
-          key={q}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 + i * 0.5, duration: 0.35, repeat: Infinity, repeatDelay: 2.2 }}
-          className="rounded-[8px] border border-sky-400/20 bg-sky-400/8 px-3 py-1.5 font-mono text-[10px] text-sky-300"
-        >
-          {q}
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function DeployMini() {
-  return (
-    <div className="flex h-full flex-col gap-3 bg-[#0b0f15] p-4">
-      <div className="flex items-center gap-2 font-mono text-[10px] text-violet-300">
-        <CircleDot size={12} /> cluster · 3/3 healthy
-      </div>
-      {["gateway", "vector-db", "model-runner"].map((name, i) => (
-        <div key={name} className="flex items-center gap-3 rounded-[8px] border border-white/10 bg-white/4 px-3 py-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          <span className="flex-1 font-mono text-[10.5px] text-white/70">{name}</span>
-          <motion.span
-            className="font-mono text-[10px] text-violet-300"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.2 + i * 0.3, repeat: Infinity }}
-          >
-            {18 + i * 7}ms
-          </motion.span>
-        </div>
-      ))}
-    </div>
   );
 }
 
