@@ -1,4 +1,5 @@
 import type { Route } from "./+types/join";
+import { useState } from "react";
 import { data, Form, Link, redirect } from "react-router";
 import { hashPassword, createSessionCookie } from "~/lib/auth.server";
 import { one, stmt, batch } from "~/lib/db.server";
@@ -86,19 +87,21 @@ export async function action({ request, context }: Route.ActionArgs) {
 export default function Join({ actionData }: Route.ComponentProps) {
   const errors = actionData?.errors ?? {};
   const values = actionData?.values;
+  const [draft, setDraft] = useState({
+    handle: values?.handle ?? "",
+    display_name: values?.display_name ?? "",
+    kind: values?.kind ?? "individual",
+  });
+  const bind = (key: keyof typeof draft) => ({
+    value: draft[key],
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDraft((d) => ({ ...d, [key]: e.target.value })),
+  });
 
   return (
     <AuthShell
-      title="建你的主页"
-      subtitle="两分钟。不需要认证，不需要审核。"
-      side={{
-        title: "一个地址，装下你做过的事。",
-        points: [
-          "imfde.ai/@你的名字 — 可搜索、可分享",
-          "作品配得上截图、Demo 和仓库链接",
-          "同行会看到，但没人给你打分",
-        ],
-      }}
+      title="注册 ImFDE"
+      subtitle="选一个 handle，创建你的公开主页"
+      side={<JoinPreview handle={draft.handle} displayName={draft.display_name} kind={draft.kind} />}
     >
       <Form method="post" className="space-y-4">
         <Field label="邮箱" error={errors.email}>
@@ -134,7 +137,7 @@ export default function Join({ actionData }: Route.ComponentProps) {
               name="handle"
               required
               autoComplete="username"
-              defaultValue={values?.handle}
+              {...bind("handle")}
               placeholder="yourname"
               pattern="[a-z0-9][a-z0-9_]{1,23}"
               className="field pl-8"
@@ -147,7 +150,7 @@ export default function Join({ actionData }: Route.ComponentProps) {
             name="display_name"
             required
             autoComplete="name"
-            defaultValue={values?.display_name}
+            {...bind("display_name")}
             placeholder="你的名字，或工作室名字"
             className="field"
           />
@@ -170,7 +173,8 @@ export default function Join({ actionData }: Route.ComponentProps) {
                   type="radio"
                   name="kind"
                   value={o.v}
-                  defaultChecked={(values?.kind ?? "individual") === o.v}
+                  checked={draft.kind === o.v}
+                  onChange={() => setDraft((d) => ({ ...d, kind: o.v }))}
                   className="sr-only"
                 />
                 <span className="block text-[13px] font-medium">{o.t}</span>
@@ -228,7 +232,7 @@ export function AuthShell({
 }: {
   title: string;
   subtitle: string;
-  side: { title: string; points: string[] };
+  side?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -243,19 +247,25 @@ export function AuthShell({
           <div className="mt-8">{children}</div>
         </div>
 
-        <aside className="hidden lg:block">
-          <div className="rounded-[20px] border border-[#eff3f4] bg-[#f7f9f9] p-10 text-[#0f1419]">
-            <p className="display text-[clamp(22px,2.4vw,30px)] leading-[1.25]">{side.title}</p>
-            <ul className="mt-7 space-y-3.5">
-              {side.points.map((p) => (
-                <li key={p} className="flex items-start gap-2.5 text-[13.5px] text-[#536471]">
-                  <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[#0f1419] text-[10px] font-bold text-white">✓</span>
-                  {p}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
+        {side && <aside className="hidden lg:block">{side}</aside>}
+      </div>
+    </div>
+  );
+}
+
+/** Quiet live preview of the address card as the visitor types. */
+function JoinPreview({ handle, displayName, kind }: { handle: string; displayName: string; kind: string }) {
+  return (
+    <div className="rounded-[20px] border border-[#eff3f4] bg-[#f7f9f9] p-8">
+      <p className="font-sans text-[11px] tracking-[0.08em] text-[#8b93a3] uppercase">地址预览</p>
+      <p className="mt-3 truncate text-[15px] font-medium text-[#0f1419]">imfde.ai/@{handle || "yourname"}</p>
+      <div className="mt-6 rounded-[14px] border border-[#e2e5ea] bg-white p-5">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f0f2f5] text-[17px] font-semibold text-[#536471]">
+          {(displayName || "F").slice(0, 1)}
+        </div>
+        <p className="mt-3 text-[15px] font-semibold text-[#0f1419]">{displayName || "你的名字"}</p>
+        <p className="mt-0.5 text-[12px] text-[#8b93a3]">@{handle || "yourname"}</p>
+        <p className="mt-3 text-[12px] text-[#536471]">{kind === "team" ? "团队 / Studio" : "独立 FDE"}</p>
       </div>
     </div>
   );

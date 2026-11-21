@@ -58,8 +58,8 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
   return (
     <div>
       <PageHead
-        title="有人真的把它跑起来了"
-        description="项目、Agent、自动化流程。每一条都由作者自己写，链接指向他们愿意公开的地方。"
+        title="作品"
+        description="项目、Agent、工具与自动化案例"
       />
 
       <form method="get" className="mt-6 max-w-[560px]">

@@ -96,7 +96,7 @@ export default function SettingsAccounts({
     <div className="max-w-[760px]">
       <PageHead
         title="外部账号"
-        description="加 GitHub、LinkedIn 这些链接，会显示在主页上，并标注为「外部链接」——意思是我们不核实那边的内容，访问者点过去自己看。"
+        description="添加 GitHub、个人网站或社交账号链接"
       />
       <div className="mt-5"><SettingsTabs /></div>
 

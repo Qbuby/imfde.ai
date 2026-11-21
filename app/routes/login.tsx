@@ -3,7 +3,6 @@ import { data, Form, Link, redirect } from "react-router";
 import { createSessionCookie, verifyPassword } from "~/lib/auth.server";
 import { one } from "~/lib/db.server";
 import { safeNext, getMe } from "~/lib/session.server";
-import { AuthShell } from "./join";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
@@ -54,60 +53,34 @@ export default function Login({ loaderData, actionData }: Route.ComponentProps) 
   const error = actionData?.error;
 
   return (
-    <AuthShell
-      title="欢迎回来"
-      subtitle="登录后可以关注、点赞、评论和发布。"
-      side={{
-        title: "这里的数字只是数字。",
-        points: [
-          "关注数和点赞数不会变成信用分",
-          "平台不经手任何交易",
-          "你写的每一句都标注为本人自述",
-        ],
-      }}
-    >
-      <Form method="post" className="space-y-4">
-        <input type="hidden" name="next" value={next} />
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-[var(--color-canvas)] px-6 py-12">
+      <div className="w-full max-w-[400px]">
+        <Link to="/" className="display text-[22px]">
+          ImFDE<span className="text-[var(--color-ink-soft)]">.</span>
+        </Link>
+        <h1 className="display mt-8 text-[30px]">登录</h1>
+        <p className="mt-2 text-[13.5px] text-[var(--color-muted)]">欢迎回来</p>
 
-        <label className="block">
-          <span className="mb-1.5 block text-[12.5px] font-medium">邮箱</span>
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="you@example.com"
-            className="field"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-[12.5px] font-medium">密码</span>
-          <input
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            placeholder="••••••••"
-            className="field"
-          />
-        </label>
-
-        {error && (
-          <p className="rounded-[var(--radius-field)] bg-[#fdeceb] px-3.5 py-2.5 text-[12.5px] text-[#c0392b]">
-            {error}
+        <Form method="post" className="mt-8 space-y-4">
+          <input type="hidden" name="next" value={next} />
+          <label className="block">
+            <span className="mb-1.5 block text-[12.5px] font-medium">邮箱</span>
+            <input name="email" type="email" required autoComplete="email" placeholder="you@example.com" className="field" />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-[12.5px] font-medium">密码</span>
+            <input name="password" type="password" required autoComplete="current-password" placeholder="••••••••" className="field" />
+          </label>
+          {error && (
+            <p className="rounded-[var(--radius-field)] bg-[#fdeceb] px-3.5 py-2.5 text-[12.5px] text-[#c0392b]">{error}</p>
+          )}
+          <button className="btn btn-primary !mt-6 w-full">登录</button>
+          <p className="pt-1 text-center text-[12.5px] text-[var(--color-muted)]">
+            还没有账号？
+            <Link to="/join" className="ml-1 text-[var(--color-ink-soft)] hover:underline">注册</Link>
           </p>
-        )}
-
-        <button className="btn btn-primary !mt-6 w-full">登录</button>
-
-        <p className="pt-1 text-center text-[12.5px] text-[var(--color-muted)]">
-          还没有账号？
-          <Link to="/join" className="ml-1 text-[var(--color-ink-soft)] hover:underline">
-            建一个
-          </Link>
-        </p>
-      </Form>
-    </AuthShell>
+        </Form>
+      </div>
+    </div>
   );
 }

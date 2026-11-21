@@ -24,6 +24,8 @@ import {
 import { FollowButton } from "~/components/cards";
 import { CoverArt } from "~/components/media";
 import { FeedCard } from "~/components/cards";
+import { PageHead } from "~/components/page-head";
+import { UnderlineTabs } from "~/components/underline-tabs";
 import { extractTags } from "~/lib/tags";
 
 const KINDS = [
@@ -146,36 +148,25 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
     return `/feed${s ? `?${s}` : ""}`;
   };
 
-  const tabs = [
-    { id: "all", label: "全站最新", to: href({ tab: null }) },
-    ...(me ? [
-      { id: "following", label: "关注", to: href({ tab: "following" }) },
-      { id: "bookmarks", label: "收藏", to: href({ tab: "bookmarks" }) },
-    ] : []),
-  ];
+  const tabs = me
+    ? [
+        { id: "all", label: "全站", to: href({ tab: null }) },
+        { id: "following", label: "关注", to: href({ tab: "following" }) },
+        { id: "bookmarks", label: "收藏", to: href({ tab: "bookmarks" }) },
+      ]
+    : KINDS.map((k) => ({ id: "kind-" + k.v, label: k.t, to: href({ kind: k.v === "all" ? null : k.v }) }));
+  const activeTab = me ? tab : "kind-" + kind;
 
   return (
-    <div className="mx-auto grid max-w-[1040px] grid-cols-1 gap-8 xl:grid-cols-[minmax(0,660px)_310px]">
-      <div className="min-w-0 xl:border-x xl:border-[#eff3f4]">
-        <h1 className="px-4 pt-2 pb-3 text-[22px] font-bold tracking-[-0.02em] text-[#0f1419]">FDE 广场</h1>
-
-        <div className="sticky top-0 z-20 flex border-b border-[#eff3f4] bg-white/85 backdrop-blur-md">
-          {tabs.map((t) => (
-            <Link key={t.id} to={t.to} preventScrollReset
-              className={`relative flex h-[48px] flex-1 items-center justify-center text-[14px] transition hover:bg-[#f7f9f9] ${tab === t.id ? "font-bold text-[#0f1419]" : "font-medium text-[#536471]"}`}>
-              {t.label}
-              {tab === t.id && (
-                <motion.span layoutId="feed-tab-underline"
-                  className="absolute bottom-0 h-[3px] w-14 rounded-full bg-[#0f1419]"
-                  transition={{ type: "spring", stiffness: 500, damping: 38 }} />
-              )}
-            </Link>
-          ))}
-        </div>
+    <div>
+      <PageHead title="广场" />
+      <div className="mt-5 grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_310px]">
+      <div className="min-w-0">
+        <UnderlineTabs items={tabs} active={activeTab} sticky />
 
         {!me && (
           <div className="flex items-center justify-between gap-3 border-b border-[#eff3f4] bg-[#f7f9f9] px-4 py-3">
-            <p className="text-[13.5px] text-[#536471]">加入广场，发动态、关注同行、收藏作品。</p>
+            <p className="text-[13.5px] text-[#536471]">登录后可发帖、评论和收藏</p>
             <div className="flex shrink-0 items-center gap-2">
               <Link to="/login?next=%2Ffeed" className="text-[13px] font-semibold text-[#0f1419] hover:underline">登录</Link>
               <Link to="/join" className="rounded-full bg-[#0f1419] px-3.5 py-1.5 text-[12.5px] font-semibold text-white hover:bg-[#272c30]">加入</Link>
@@ -199,7 +190,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
         {me ? <Composer me={me} myProjects={myProjects} prompts={prompts} defaultPromptSlug={promptSlug} /> : null}
 
         <div className="flex flex-wrap items-center gap-1.5 border-b border-[#eff3f4] px-4 py-2.5">
-          {KINDS.map((k) => (
+          {me && KINDS.map((k) => (
             <Link key={k.v} to={href({ kind: k.v === "all" ? null : k.v })} preventScrollReset
               className={`rounded-full px-3 py-1 text-[12.5px] font-medium transition ${kind === k.v ? "bg-[#0f1419] text-white" : "text-[#536471] hover:bg-[#f7f9f9]"}`}>
               {k.t}
@@ -299,6 +290,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           )}
         </div>
       </aside>
+      </div>
     </div>
   );
 }
@@ -366,7 +358,7 @@ function Composer({
               e.currentTarget.form?.requestSubmit();
             }
           }}
-          placeholder="分享你现在在做的事。用 #话题 归类，别人才能顺着标签找到你。"
+          placeholder="写点近况，或加个 #话题…"
           className="min-h-[52px] w-full resize-y border-0 bg-transparent pt-1 text-[15px] leading-[1.55] outline-none placeholder:text-[var(--color-faint)]"
         />
       </div>

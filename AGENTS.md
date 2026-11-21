@@ -30,6 +30,11 @@
 - 中文回退顺序：`PingFang SC` → `Hiragino Sans GB` → `Microsoft YaHei`；
   计数、时间戳与 `@handle` 必须保留 `font-variant-numeric: tabular-nums`。
 
+## 文案规范
+
+- 任何 UI 文案、空态、示例数据必须遵守 `imfde-unslop`（`.claude/skills/imfde-unslop/SKILL.md`）：
+  功能词优先、平实口语、长短参差；禁止 PRD 免责说教、否定对比句式、三连排比广告句与工整四股文。
+
 ## 四条产品红线
 
 1. **不做交易撮合**：没有支付、订单、议价、佣金、成交记录。任何"联系我们成交"的入口都不写。

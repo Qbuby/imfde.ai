@@ -164,7 +164,6 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
     <div className="max-w-[1080px]">
       <PageHead
         title="上传一个作品"
-        description="标题之外都可以先跳过。作品页会明确标注哪些是本人自述、哪些是外部链接。"
         actions={
           <Link to="/" className="btn btn-ghost btn-sm">
             取消

@@ -7,6 +7,7 @@ import { getMe } from "~/lib/session.server";
 import { FollowButton } from "~/components/cards";
 import { Avatar, CoverArt } from "~/components/media";
 import { PageHead } from "~/components/page-head";
+import { UnderlineTabs } from "~/components/underline-tabs";
 import { compact } from "~/lib/format";
 
 const KINDS = [
@@ -65,8 +66,8 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
   return (
     <div>
       <PageHead
-        title="找到正在现场做事的人"
-        description="按名字、方向或技能找。页面上看到的都是原始信息，平台不做排名，也不给任何人打等级。"
+        title="发现 FDE"
+        description="按名字、方向或技能查找"
       />
 
       <form method="get" className="mt-6 max-w-[560px]">
@@ -83,15 +84,11 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
 
       {/* single flat filter row, no pills-in-pills */}
       <div className="mt-5 border-b border-[#eff3f4] pb-3">
-        <div className="flex flex-wrap items-center gap-1">
-          {KINDS.map((k) => (
-            <Link key={k.v || "all"} to={withParam("kind", k.v)} preventScrollReset
-              className={`rounded-[6px] px-3 py-1.5 text-[13px] font-medium transition ${kind === k.v ? "bg-[#f7f9f9] text-[#0f1419]" : "text-[#536471] hover:text-[#0f1419]"}`}>
-              {k.label}
-            </Link>
-          ))}
-          <span className="ml-auto text-[12.5px] text-[#8b93a3] tabular-nums">{people.length} 位</span>
-        </div>
+        <UnderlineTabs
+          items={KINDS.map((k) => ({ id: k.v || "all", label: k.label, to: withParam("kind", k.v) }))}
+          active={kind || "all"}
+        />
+        <span className="block px-3 pb-1 text-[12.5px] text-[#8b93a3] tabular-nums">{people.length} 位</span>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {QUICK_SKILLS.map((sk) => (
             <Link key={sk} to={withParam("skill", skill === sk ? "" : sk)} preventScrollReset

@@ -17,10 +17,10 @@ export function Landing({
       {/* 1 · Centred Contra hero */}
       <section className="mx-auto max-w-[760px] px-5 pt-14 pb-12 text-center sm:pt-20">
         <h1 className="text-[clamp(38px,5vw,60px)] font-semibold leading-[1.08] tracking-[-0.03em] text-[#0f1419]">
-          你的作品，值得被找到。
+          FDE 的主页、作品与广场
         </h1>
         <p className="mx-auto mt-4 max-w-[520px] text-[17px] leading-[1.6] text-[#536471]">
-          FDE 的主页、作品集与专业广场。只展示可观察的事实，不做信用分，不经手交易。
+          放上你做过的项目，看看同行最近在折腾什么。
         </p>
         <form action="/discover" method="get" className="group/search relative mx-auto mt-8 max-w-[600px]">
           {/* focus-only aura: never visible on first paint */}
@@ -31,7 +31,7 @@ export function Landing({
             <Search size={18} className="shrink-0 text-[#536471]" strokeWidth={1.65} aria-hidden />
             <input
               name="q"
-              placeholder="搜 FDE、Agent、RAG 或私有部署"
+              placeholder="搜人、方向或项目"
               aria-label="搜索 FDE"
               className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#8b93a3]"
             />
@@ -123,13 +123,10 @@ export function Landing({
       {/* 4 · Light CTA band */}
       <section className="mx-auto mt-16 max-w-[1180px] px-5">
         <div className="rounded-[20px] border border-[#eff3f4] bg-[#f7f9f9] px-6 py-12 text-center">
-          <h2 className="text-[26px] font-semibold tracking-[-0.02em] text-[#0f1419]">先把自己放上来。</h2>
-          <p className="mx-auto mt-2 max-w-[460px] text-[14px] leading-relaxed text-[#536471]">
-            注册不需要认证。填一个 handle，写一句话，贴一个作品，就足够开始了。
-          </p>
+          <h2 className="text-[26px] font-semibold tracking-[-0.02em] text-[#0f1419]">建一个你的主页</h2>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
             <Link to="/join" className="inline-flex h-11 items-center rounded-full bg-[#0f1419] px-6 text-[14px] font-semibold text-white transition hover:bg-[#272c30]">
-              免费建主页
+              注册
             </Link>
             <Link to="/feed" className="inline-flex h-11 items-center rounded-full border border-[#e2e5ea] bg-white px-6 text-[14px] font-medium text-[#0f1419] transition hover:border-[#0f1419]">
               逛广场

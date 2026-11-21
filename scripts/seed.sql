@@ -126,31 +126,27 @@ INSERT OR IGNORE INTO project_skills (project_id, skill_name, position) VALUES
 
 -- ── C. feed posts ───────────────────────────────────────────────────────
 INSERT OR IGNORE INTO posts (id, author_id, kind, body, project_id, visibility, created_at, updated_at, deleted_at, repost_of_id) VALUES
- ('seed_post_1','seed_user_kwu','build','现场扫出来的物流磅单，红章正好盖在金额小数点上。直接喂给 VLM 错率 14%，先用 OpenCV 分离红通道再进模型，错率直接掉到 1.8%，顺便把单张推理成本砍了一半。#私有部署 #多模态OCR','seed_proj_1','public', CAST((strftime('%s','now') - 2400) * 1000 AS INTEGER), CAST((strftime('%s','now') - 2400) * 1000 AS INTEGER), NULL, NULL),
- ('seed_post_2','seed_user_ming','thought','语音 Agent 现场落地最大的隐形杀手不是模型智商，是客户 PBX 网关偶尔多出来的 300ms 抖动。如果不在静音检测前做自适应缓冲，用户说完话等一秒没反应就会开始喂喂喂，然后整个对话状态机直接雪崩。#语音交互 #现场踩坑',NULL,'public', CAST((strftime('%s','now') - 7200) * 1000 AS INTEGER), CAST((strftime('%s','now') - 7200) * 1000 AS INTEGER), NULL, NULL),
- ('seed_post_3','seed_user_siyu','discussion','做企业文档 #RAG 大家现在怎么处理“跨页合并单元格”？我们试了三种 PDF 解析器，一遇到财务附注里的跨页表还是会丢表头。目前最稳的土办法是转图切页重叠送小 VLM 还原 Markdown，有更轻量的方案吗？#Eval',NULL,'public', CAST((strftime('%s','now') - 10800) * 1000 AS INTEGER), CAST((strftime('%s','now') - 10800) * 1000 AS INTEGER), NULL, NULL),
- ('seed_post_4','seed_user_laok','build','给客户内网装机第 4 次踩到同一颗雷：宿主机 glibc 太老，很多新轮子直接跑不起来。把离线镜像打包、CUDA 版本自检和 OOM 熔断脚本整理出来开源了，下次进断网机房少熬半宿。#私有部署 #可观测性','seed_proj_6','public', CAST((strftime('%s','now') - 18000) * 1000 AS INTEGER), CAST((strftime('%s','now') - 18000) * 1000 AS INTEGER), NULL, NULL),
- ('seed_post_5','seed_user_fieldcraft','show','把我们给 SaaS 客户做的飞书告警分诊助手整理成了案例页。上线前两周刻意只跑 Shadow Mode 不 @ 人，对比了 186 条真实告警，确认误报率低于 4% 才开正式推送。#工作流自动化 #Agent','seed_proj_7','public', CAST((strftime('%s','now') - 28800) * 1000 AS INTEGER), CAST((strftime('%s','now') - 28800) * 1000 AS INTEGER), NULL, NULL),
- ('seed_post_6','seed_user_linyu','thought','客户总问能不能做“全自动无人值守清关”。我的建议一直很明确：90% 机械填表交给脚本和 Agent，最后按“确认申报”那一下必须留给人看 10 秒。把人工从 15 分钟压到 10 秒，比硬冲 100% 自动但错一单赔十万靠谱得多。#Agent #工作流自动化',NULL,'public', CAST((strftime('%s','now') - 43200) * 1000 AS INTEGER), CAST((strftime('%s','now') - 43200) * 1000 AS INTEGER), NULL, NULL),
- ('seed_post_7','seed_user_kwu','thought','SAP RFC 白名单做了三个月，被拒最多的不是供应商表，是有人想用查询函数间接导出整张物料主数据。只读不等于安全，字段级脱敏和调用频率限制都得单独做一层。#私有部署 #MCP',NULL,'public', CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER), CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER), NULL, NULL),
- ('seed_post_8','seed_user_ming','show','打断延迟压测套件放到 120 段真实通话上了，车载噪声那组最狠：同样参数，安静环境 p95 是 210ms，车载直接飙到 1.1s。加自适应缓冲之后才压回 430ms。别拿实验室录音调 VAD 阈值。#语音交互 #Eval',NULL,'public', CAST((strftime('%s','now') - 172800) * 1000 AS INTEGER), CAST((strftime('%s','now') - 172800) * 1000 AS INTEGER), NULL, NULL),
- ('seed_post_9','seed_user_siyu','build','引用核查器在自建 200 条难例上跑完了：页码编造召回 87%，跨条款偷换前提只有 72%，误报 11%。后面一类真的难，同义改写经常被判成偷换。现在选择宁可多标也不漏标，法务那边接受这个取舍。#RAG #Eval','seed_proj_5','public', CAST((strftime('%s','now') - 259200) * 1000 AS INTEGER), CAST((strftime('%s','now') - 259200) * 1000 AS INTEGER), NULL, NULL),
- ('seed_post_10','seed_user_laok','thought','补一个现场数据：我们这边 PBX 抖动比 300ms 还夸张，跨运营商那几条线偶尔能到 800ms。除了自适应缓冲，我把 TTS 首包也做了预生成，不然用户听到的是一段很长的沉默。@mchen 你们的 bench 能不能加一组跨运营商的样本？#语音交互 #现场踩坑',NULL,'public', CAST((strftime('%s','now') - 432000) * 1000 AS INTEGER), CAST((strftime('%s','now') - 432000) * 1000 AS INTEGER), NULL, 'seed_post_2'),
- ('seed_post_11','seed_user_fieldcraft','thought','跨页合并单元格这个坑我们也踩过。财务附注里表头只在第一页，后面几页全是续行，PDF 解析器一律丢表头。最后是按页切图做 15% 重叠再送小 VLM 还原 Markdown，成本比换解析器低。另外建议先攒 200 条真实难例再调，不然优化没有基准线。#RAG #Eval',NULL,'public', CAST((strftime('%s','now') - 604800) * 1000 AS INTEGER), CAST((strftime('%s','now') - 604800) * 1000 AS INTEGER), NULL, 'seed_post_3'),
+ ('seed_post_1','seed_user_kwu','build','刚把红章磅单那套 OCR 整理传上来了。以前直接整页喂 VLM 经常把金额小数点看串，先用 OpenCV 扣掉红通道再识稳很多 #OCR','seed_proj_1','public', CAST((strftime('%s','now') - 2400) * 1000 AS INTEGER), CAST((strftime('%s','now') - 2400) * 1000 AS INTEGER), NULL, NULL),
+ ('seed_post_2','seed_user_ming','thought','调了一上午电话语音助手，客户老 PBX 动不动抖动 300ms，VAD 没做自适应缓冲直接把人家话打断了，听着太尴尬了 #语音交互',NULL,'public', CAST((strftime('%s','now') - 7200) * 1000 AS INTEGER), CAST((strftime('%s','now') - 7200) * 1000 AS INTEGER), NULL, NULL),
+ ('seed_post_3','seed_user_siyu','discussion','财务报告里的跨页合并单元格你们一般怎么解？试了三个 PDF 解析器表头全丢，目前只能转图重叠丢小 VLM，有没有更省事的办法 #RAG',NULL,'public', CAST((strftime('%s','now') - 10800) * 1000 AS INTEGER), CAST((strftime('%s','now') - 10800) * 1000 AS INTEGER), NULL, NULL),
+ ('seed_post_4','seed_user_laok','build','又进断网机房了，宿主机还是 CentOS 7，glibc 老得一批。索性把离线打包、CUDA 检查和 OOM 保护脚本整理开源了，省得下次再通宵 #私有部署','seed_proj_6','public', CAST((strftime('%s','now') - 18000) * 1000 AS INTEGER), CAST((strftime('%s','now') - 18000) * 1000 AS INTEGER), NULL, NULL),
+ ('seed_post_5','seed_user_fieldcraft','show','飞书告警分诊助手整理了个案例页。上线前先在后台静默跑了两周对比 186 条真实告警，确认不太会乱 @ 人才敢放进值班群 #Agent','seed_proj_7','public', CAST((strftime('%s','now') - 28800) * 1000 AS INTEGER), CAST((strftime('%s','now') - 28800) * 1000 AS INTEGER), NULL, NULL),
+ ('seed_post_6','seed_user_linyu','thought','客户又问能不能全自动清关不用人看。我还是坚持最后点提交前留给人扫一眼，省 15 分钟变成 10 秒已经够了，错一单谁也担不起',NULL,'public', CAST((strftime('%s','now') - 43200) * 1000 AS INTEGER), CAST((strftime('%s','now') - 43200) * 1000 AS INTEGER), NULL, NULL),
+ ('seed_post_7','seed_user_kwu','thought','给客户包了个 SAP 只读接口，看日志才发现有人拿查询工具批量拖整张物料表。只读不代表安全，限流和字段脱敏还是得加上',NULL,'public', CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER), CAST((strftime('%s','now') - 86400) * 1000 AS INTEGER), NULL, NULL),
+ ('seed_post_8','seed_user_ming','show','p95 barge-in latency was 210ms in the office and jumped to 1.1s on highway call recordings. Never tune VAD on clean audio. #Eval',NULL,'public', CAST((strftime('%s','now') - 172800) * 1000 AS INTEGER), CAST((strftime('%s','now') - 172800) * 1000 AS INTEGER), NULL, NULL),
+ ('seed_post_9','seed_user_siyu','build','拿 200 条法务难例跑了遍引用核查，页码编造基本能抓出来，但跨条款偷换前提还是容易漏，误报大概 11%，先这样上内测看看 #Eval','seed_proj_5','public', CAST((strftime('%s','now') - 259200) * 1000 AS INTEGER), CAST((strftime('%s','now') - 259200) * 1000 AS INTEGER), NULL, NULL),
+ ('seed_post_10','seed_user_laok','thought','跨运营商线路抖动有时能飙到七八百毫秒，我们后来顺手把 TTS 首包预生成了才没那么卡',NULL,'public', CAST((strftime('%s','now') - 432000) * 1000 AS INTEGER), CAST((strftime('%s','now') - 432000) * 1000 AS INTEGER), NULL, 'seed_post_2'),
+ ('seed_post_11','seed_user_fieldcraft','thought','我们也是切图加 15% 重叠送小模型，省心，就是比纯文本解析慢点',NULL,'public', CAST((strftime('%s','now') - 604800) * 1000 AS INTEGER), CAST((strftime('%s','now') - 604800) * 1000 AS INTEGER), NULL, 'seed_post_3'),
  ('seed_post_12','seed_user_linyu','show','',NULL,'public', CAST((strftime('%s','now') - 1036800) * 1000 AS INTEGER), CAST((strftime('%s','now') - 1036800) * 1000 AS INTEGER), NULL, 'seed_post_2');
 
 INSERT OR IGNORE INTO post_tags (post_id, tag) VALUES
- ('seed_post_1','私有部署'),('seed_post_1','多模态OCR'),
- ('seed_post_2','语音交互'),('seed_post_2','现场踩坑'),
- ('seed_post_3','RAG'),('seed_post_3','Eval'),
- ('seed_post_4','私有部署'),('seed_post_4','可观测性'),
- ('seed_post_5','工作流自动化'),('seed_post_5','Agent'),
- ('seed_post_6','Agent'),('seed_post_6','工作流自动化'),
- ('seed_post_7','私有部署'),('seed_post_7','MCP'),
- ('seed_post_8','语音交互'),('seed_post_8','Eval'),
- ('seed_post_9','RAG'),('seed_post_9','Eval'),
- ('seed_post_10','语音交互'),('seed_post_10','现场踩坑'),
- ('seed_post_11','RAG'),('seed_post_11','Eval');
+ ('seed_post_1','OCR'),
+ ('seed_post_2','语音交互'),
+ ('seed_post_3','RAG'),
+ ('seed_post_4','私有部署'),
+ ('seed_post_5','Agent'),
+ ('seed_post_8','Eval'),
+ ('seed_post_9','Eval');
 
 -- ── D1. follows: natural cross-following, 3–5 followers each ───────────
 INSERT OR IGNORE INTO follows (follower_id, followed_id, created_at) VALUES
@@ -240,18 +236,18 @@ INSERT OR IGNORE INTO reactions (user_id, target_type, target_id, type, created_
 
 -- ── D3. comments: peer discussion + author replies ────────────────────
 INSERT OR IGNORE INTO comments (id, post_id, author_id, parent_id, body, created_at, deleted_at) VALUES
- ('seed_cmt_1','seed_post_3','seed_user_kwu',NULL,'我们最后是按页切图、上下留 15% 重叠送小 VLM 还原 Markdown，表头基本能带回来。比换解析器便宜，代价是每页多一次调用。', CAST((strftime('%s','now') - 9000) * 1000 AS INTEGER), NULL),
- ('seed_cmt_2','seed_post_3','seed_user_laok',NULL,'显存占用实测：batch=4 的时候小 VLM 大概 6G，比上 7B 模型省一半。我们在 3060 上跑得动。', CAST((strftime('%s','now') - 7200) * 1000 AS INTEGER), NULL),
- ('seed_cmt_3','seed_post_3','seed_user_siyu','seed_cmt_1','这个思路和我们现在做的接近。想追问一下你们表头拼接是规则还是让模型自己判断？跨页表格列名偶尔会变。', CAST((strftime('%s','now') - 6300) * 1000 AS INTEGER), NULL),
- ('seed_cmt_4','seed_post_3','seed_user_kwu','seed_cmt_3','规则，用第一页的列名当 schema 固定住，后面页只允许填值。列名变了就整组标出来让人看，不敢让模型自由发挥。', CAST((strftime('%s','now') - 5400) * 1000 AS INTEGER), NULL),
- ('seed_cmt_5','seed_post_2','seed_user_fieldcraft',NULL,'VAD 阈值你们最后设多少？我们在呼叫中心场景 350ms 触发，安静环境没问题，一上车载噪声就误触发。', CAST((strftime('%s','now') - 5400) * 1000 AS INTEGER), NULL),
- ('seed_cmt_6','seed_post_2','seed_user_ming','seed_cmt_5','固定阈值不行，我们改成按最近 2 秒噪声底噪动态算，静音段自适应抬阈值。车载那批样本误触发降了大半，参数是每 5 分钟重估一次。', CAST((strftime('%s','now') - 3600) * 1000 AS INTEGER), NULL),
- ('seed_cmt_7','seed_post_2','seed_user_laok',NULL,'补充一个坑：有些运营商的 RTP 包会晚到 300~800ms，光调 VAD 解决不了，得在 jitter buffer 那层先稳定时间轴。', CAST((strftime('%s','now') - 1800) * 1000 AS INTEGER), NULL),
- ('seed_cmt_8','seed_post_1','seed_user_ming',NULL,'红通道分离这招在盖章场景很实用。我们用类似办法处理过手写签名压字，不过要注意有些红章是半透明的，直接减通道会伤到下面的字。', CAST((strftime('%s','now') - 1200) * 1000 AS INTEGER), NULL),
- ('seed_cmt_9','seed_post_1','seed_user_kwu','seed_cmt_8','对，半透明那种我们先做了一次对比度拉伸再分离，不然确实会把数字一起抹掉。这个 case 在样本里大概占 8%。', CAST((strftime('%s','now') - 600) * 1000 AS INTEGER), NULL),
- ('seed_cmt_10','seed_post_5','seed_user_siyu',NULL,'186 条告警里误报 4% 是怎么判定的？我们也想给 Shadow Mode 定一个能开工的门槛。', CAST((strftime('%s','now') - 21600) * 1000 AS INTEGER), NULL),
- ('seed_cmt_11','seed_post_5','seed_user_fieldcraft','seed_cmt_10','让值班同学盲评，只看助手给的判断不看是不是真告警，标“会照着做”还是“会忽略”。4% 是标错的占比，不是准确率。', CAST((strftime('%s','now') - 18000) * 1000 AS INTEGER), NULL),
- ('seed_cmt_12','seed_post_6','seed_user_linyu','seed_cmt_11','同意留人工确认那一下。我们试过去掉复核，单票省 3 秒，但有一次箱号填错赔了钱，之后就再没动过这个设计。', CAST((strftime('%s','now') - 36000) * 1000 AS INTEGER), NULL);
+ ('seed_cmt_1','seed_post_3','seed_user_kwu',NULL,'切图 + 15% 重叠送小 VLM，表头基本能回来，就是每页多一次调用', CAST((strftime('%s','now') - 9000) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_2','seed_post_3','seed_user_laok',NULL,'batch=4 大概 6G 显存，我们在 3060 上也能跑', CAST((strftime('%s','now') - 7200) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_3','seed_post_3','seed_user_siyu','seed_cmt_1','表头拼接是规则还是模型自己判断？我们这列名偶尔会变', CAST((strftime('%s','now') - 6300) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_4','seed_post_3','seed_user_kwu','seed_cmt_3','规则，第一页列名当 schema 固定住，后面只填值', CAST((strftime('%s','now') - 5400) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_5','seed_post_2','seed_user_fieldcraft',NULL,'VAD 阈值设多少？我们 350ms 触发，车载噪声下老误触发', CAST((strftime('%s','now') - 5400) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_6','seed_post_2','seed_user_ming','seed_cmt_5','别用固定阈值，按最近 2 秒底噪动态算，误触发少很多', CAST((strftime('%s','now') - 3600) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_7','seed_post_2','seed_user_laok',NULL,'还有个坑：有的运营商 RTP 包晚到七八百毫秒，得在 jitter buffer 那层稳一下', CAST((strftime('%s','now') - 1800) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_8','seed_post_1','seed_user_ming',NULL,'半透明红章直接减通道会伤到底下的字，我们一般先拉一下对比度', CAST((strftime('%s','now') - 1200) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_9','seed_post_1','seed_user_kwu','seed_cmt_8','对，先做对比度拉伸再分离就好，这类样本大概占 8%', CAST((strftime('%s','now') - 600) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_10','seed_post_5','seed_user_siyu',NULL,'误报 4% 你们怎么判定的？我们也想定个 Shadow Mode 的门槛', CAST((strftime('%s','now') - 21600) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_11','seed_post_5','seed_user_fieldcraft','seed_cmt_10','让值班同学盲评，只看助手判断，标会不会照着做', CAST((strftime('%s','now') - 18000) * 1000 AS INTEGER), NULL),
+ ('seed_cmt_12','seed_post_6','seed_user_linyu','seed_cmt_11','留人工确认是对的。我们去掉过一次，箱号填错赔过钱', CAST((strftime('%s','now') - 36000) * 1000 AS INTEGER), NULL);
 
 -- ── D4. bookmarks + notifications ─────────────────────────────────────
 INSERT OR IGNORE INTO bookmarks (user_id, target_type, target_id, created_at) VALUES

@@ -153,7 +153,7 @@ export default function SettingsProfile({
 
       <PageHead
         title="编辑主页"
-        description="别人看到的这一页，就是这里填的东西。"
+        description="修改公开主页的展示信息"
         actions={
           <Link to={`/@${me.handle}`} className="btn btn-ghost btn-sm">
             看主页
