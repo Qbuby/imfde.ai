@@ -3,7 +3,6 @@ import { Link, redirect } from "react-router";
 import { requireMe } from "~/lib/session.server";
 import { many, run } from "~/lib/db.server";
 import { useState } from "react";
-import { AnimatedBackground } from "~/components/motion/animated-background";
 import { Heart, Repeat2, MessageCircle, UserPlus, AtSign, Bell } from "lucide-react";
 import { relativeTime } from "~/lib/format";
 import { PageHead } from "~/components/page-head";
@@ -82,7 +81,6 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
   return (
     <div>
       <PageHead
-        label="Activity"
         title="通知"
         actions={
           unread > 0 ? (
@@ -93,16 +91,17 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
         }
       />
 
-      <div className="mt-5 inline-flex items-center rounded-full border border-[#e3e5ea] bg-[#f7f7f9] p-1">
-        <AnimatedBackground
-          defaultValue="all"
-          onValueChange={(id) => id && setFilter(id as typeof filter)}
-          className="rounded-full bg-[#14171f]"
-          transition={{ type: "spring", stiffness: 460, damping: 34 }}
-        >
-          <button data-id="all" type="button" className="rounded-full px-3 py-1 text-[12.5px] text-[#4a5264] data-[checked=true]:text-white">全部</button>
-          <button data-id="unread" type="button" className="rounded-full px-3 py-1 text-[12.5px] text-[#4a5264] data-[checked=true]:text-white">未读 · {unread}</button>
-        </AnimatedBackground>
+      <div className="mt-5 flex border-b border-[#eff3f4]">
+        <button type="button" onClick={() => setFilter("all")}
+          className={`relative flex h-[44px] flex-1 items-center justify-center text-[14px] transition hover:bg-[#f7f9f9] ${filter === "all" ? "font-bold text-[#0f1419]" : "font-medium text-[#536471]"}`}>
+          全部
+          {filter === "all" && <span className="absolute bottom-0 h-[3px] w-14 rounded-full bg-[#0f1419]" />}
+        </button>
+        <button type="button" onClick={() => setFilter("unread")}
+          className={`relative flex h-[44px] flex-1 items-center justify-center text-[14px] transition hover:bg-[#f7f9f9] ${filter === "unread" ? "font-bold text-[#0f1419]" : "font-medium text-[#536471]"}`}>
+          未读 · {unread}
+          {filter === "unread" && <span className="absolute bottom-0 h-[3px] w-14 rounded-full bg-[#0f1419]" />}
+        </button>
       </div>
 
       {shown.length === 0 ? (

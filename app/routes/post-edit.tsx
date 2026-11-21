@@ -114,7 +114,6 @@ export default function PostEdit({ loaderData }: Route.ComponentProps) {
   return (
     <div className="max-w-[760px]">
       <PageHead
-        label="Edit"
         title="编辑动态"
         description="改完立刻生效。已经有人点过的赞和评论都保留。"
         actions={

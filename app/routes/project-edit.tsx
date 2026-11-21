@@ -187,7 +187,6 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
   return (
     <div className="max-w-[1080px]">
       <PageHead
-        label="Edit"
         title="编辑作品"
         description="改完立刻生效。链接不会变，分享出去的地方仍然有效。"
         actions={
@@ -404,7 +403,7 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
         <p className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
           实时预览 · 作品卡片
         </p>
-        <div data-testid="project-preview" className="overflow-hidden rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
+        <div data-testid="project-preview" className="overflow-hidden rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white">
           <CoverArt seed={project.slug} src={live.cover_url || null} aspect="16 / 10" photo={false} />
           <div className="p-4">
             <div className="flex items-center gap-2">

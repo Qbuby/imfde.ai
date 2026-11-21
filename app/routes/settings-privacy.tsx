@@ -63,7 +63,6 @@ export default function SettingsPrivacy({
   return (
     <div className="max-w-[760px]">
       <PageHead
-        label="Settings"
         title="隐私"
         description="这些开关只影响别人看到什么，不影响数据本身。"
       />

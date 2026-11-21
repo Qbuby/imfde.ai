@@ -2,7 +2,6 @@ import type { Route } from "./+types/feed";
 import { Link, useFetcher, useSearchParams } from "react-router";
 import { motion } from "motion/react";
 import { Avatar } from "~/components/media";
-import { AnimatedBackground } from "~/components/motion/animated-background";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Flame, History } from "lucide-react";
@@ -19,7 +18,6 @@ import {
 } from "~/lib/queries.server";
 import { FollowButton } from "~/components/cards";
 import { CoverArt } from "~/components/media";
-import { PageHead } from "~/components/page-head";
 import { FeedCard } from "~/components/cards";
 import { extractTags } from "~/lib/tags";
 
@@ -115,18 +113,8 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 export default function Feed({ loaderData }: Route.ComponentProps) {
   const {
-    me,
-    tab,
-    kind,
-    tag,
-    sort,
-    page,
-    posts,
-    hasMore,
-    hotTags: tags,
-    myProjects,
-    sidePeople,
-    sideProjects,
+    me, tab, kind, tag, sort, page, posts, hasMore,
+    hotTags: tags, myProjects, sidePeople, sideProjects,
   } = loaderData;
   const [params] = useSearchParams();
   const viewerId = me?.id ?? null;
@@ -142,195 +130,124 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
     return `/feed${s ? `?${s}` : ""}`;
   };
 
-  return (
-    <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_300px]">
-      <div className="min-w-0">
-        <PageHead
-          label="Square"
-          title="FDE 广场"
-          description="正在发生的事、刚跑通的东西、还卡着的问题。按 #话题 归类，任何人都能读。"
-        />
+  const tabs = [
+    { id: "all", label: "全站最新", to: href({ tab: null }) },
+    ...(me ? [
+      { id: "following", label: "关注", to: href({ tab: "following" }) },
+      { id: "bookmarks", label: "收藏", to: href({ tab: "bookmarks" }) },
+    ] : []),
+  ];
 
-        <div className="frost sticky top-0 z-20 -mx-2 mt-5 flex items-center gap-1 border-b border-[var(--color-line-soft)] px-2 py-2">
-          <AnimatedBackground
-            defaultValue={tab}
-            className="rounded-full border border-[var(--hairline)] bg-white shadow-[var(--shadow-card)]"
-          >
-            {[
-              <TabLink key="all" id="all" data-id="all" to={href({ tab: null })} active={tab === "all"}>全站最新</TabLink>,
-              ...(me
-                ? [
-                    <TabLink key="following" id="following" data-id="following" to={href({ tab: "following" })} active={tab === "following"}>关注</TabLink>,
-                    <TabLink key="bookmarks" id="bookmarks" data-id="bookmarks" to={href({ tab: "bookmarks" })} active={tab === "bookmarks"}>收藏</TabLink>,
-                  ]
-                : []),
-            ]}
-          </AnimatedBackground>
+  return (
+    <div className="mx-auto grid max-w-[1040px] grid-cols-1 gap-8 xl:grid-cols-[minmax(0,660px)_310px]">
+      <div className="min-w-0 xl:border-x xl:border-[#eff3f4]">
+        <h1 className="px-4 pt-2 pb-3 text-[22px] font-bold tracking-[-0.02em] text-[#0f1419]">FDE 广场</h1>
+
+        <div className="sticky top-0 z-20 flex border-b border-[#eff3f4] bg-white/85 backdrop-blur-md">
+          {tabs.map((t) => (
+            <Link key={t.id} to={t.to} preventScrollReset
+              className={`relative flex h-[48px] flex-1 items-center justify-center text-[14px] transition hover:bg-[#f7f9f9] ${tab === t.id ? "font-bold text-[#0f1419]" : "font-medium text-[#536471]"}`}>
+              {t.label}
+              {tab === t.id && (
+                <motion.span layoutId="feed-tab-underline"
+                  className="absolute bottom-0 h-[3px] w-14 rounded-full bg-[#0f1419]"
+                  transition={{ type: "spring", stiffness: 500, damping: 38 }} />
+              )}
+            </Link>
+          ))}
         </div>
 
         {!me && (
-          <div className="relative mt-5 flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-[#f7f7f9] p-4">
-            <div>
-              <p className="text-[14px] font-semibold text-[#14171f]">加入 FDE 广场</p>
-              <p className="mt-1 text-[12.5px] text-[#677084]">发动态、收藏作品、关注同行，无需认证。</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link to="/login?next=%2Ffeed" className="btn btn-ghost btn-sm">登录</Link>
-              <Link to="/join" className="btn btn-primary btn-sm">免费建主页</Link>
+          <div className="flex items-center justify-between gap-3 border-b border-[#eff3f4] bg-[#f7f9f9] px-4 py-3">
+            <p className="text-[13.5px] text-[#536471]">加入广场，发动态、关注同行、收藏作品。</p>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link to="/login?next=%2Ffeed" className="text-[13px] font-semibold text-[#0f1419] hover:underline">登录</Link>
+              <Link to="/join" className="rounded-full bg-[#0f1419] px-3.5 py-1.5 text-[12.5px] font-semibold text-white hover:bg-[#272c30]">加入</Link>
             </div>
           </div>
         )}
 
         {me ? <Composer me={me} myProjects={myProjects} /> : null}
 
-        <div className="mt-5 flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-[#eff3f4] px-4 py-2.5">
           {KINDS.map((k) => (
-            <Link
-              key={k.v}
-              to={href({ kind: k.v === "all" ? null : k.v })}
-              preventScrollReset
-              className={`chip transition ${
-                kind === k.v
-                  ? "!bg-[var(--color-ink)] !text-white"
-                  : "hover:!bg-[var(--color-sunken-deep)]"
-              }`}
-            >
+            <Link key={k.v} to={href({ kind: k.v === "all" ? null : k.v })} preventScrollReset
+              className={`rounded-full px-3 py-1 text-[12.5px] font-medium transition ${kind === k.v ? "bg-[#0f1419] text-white" : "text-[#536471] hover:bg-[#f7f9f9]"}`}>
               {k.t}
             </Link>
           ))}
           {tag && (
-            <span className="ml-1 flex items-center gap-2 text-[12.5px] text-[var(--color-ink-soft)]">
-              话题：
-              <span className="chip chip-teal">#{tag}</span>
-              <Link
-                to={href({ tag: null })}
-                preventScrollReset
-                className="text-[var(--color-faint)] hover:text-[var(--color-ink)]"
-              >
-                清除
-              </Link>
+            <span className="ml-1 flex items-center gap-2 text-[12.5px] text-[#536471]">
+              #{tag}
+              <Link to={href({ tag: null })} preventScrollReset className="text-[#8b93a3] hover:text-[#0f1419]">清除</Link>
             </span>
           )}
           <span className="ml-auto flex items-center gap-1">
-            <SortLink to={href({ sort: null })} active={sort === "latest"}>
-              <History size={14} strokeWidth={1.65} aria-hidden />
-              最新
-            </SortLink>
-            <SortLink to={href({ sort: "active" })} active={sort === "active"}>
-              <Flame size={14} strokeWidth={1.65} aria-hidden />
-              近期互动多
-            </SortLink>
+            <SortLink to={href({ sort: null })} active={sort === "latest"}><History size={14} strokeWidth={1.65} aria-hidden />最新</SortLink>
+            <SortLink to={href({ sort: "active" })} active={sort === "active"}><Flame size={14} strokeWidth={1.65} aria-hidden />近期互动多</SortLink>
           </span>
         </div>
 
-        <div className="mt-6 border-t border-[var(--color-line-soft)]">
-          {posts.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-[16px] font-semibold">
-                {tab === "bookmarks"
-                  ? "还没有收藏的动态"
-                  : tab === "following"
-                    ? "关注的人还没有更新"
-                    : tag
-                      ? `还没有 #${tag} 的动态`
-                      : "广场还很安静"}
-              </p>
-              <p className="mt-1.5 text-[13.5px] text-[var(--color-ink-soft)]">
-                {tab === "bookmarks"
-                  ? "在广场里点书签图标，动态就会收到这里。"
-                  : tab === "following"
-                    ? "去发现页关注几位正在做事的人，他们的更新会出现在这里。"
-                    : "第一条公开动态会出现在这里。"}
-              </p>
-              <div className="mt-5 flex justify-center gap-2">
-                {tab === "bookmarks" || tab === "following" ? (
-                  <Link to={href({ tab: null })} className="btn btn-ghost btn-sm">
-                    去看全站最新
-                  </Link>
-                ) : (
-                  <Link to="/discover" className="btn btn-ghost btn-sm">
-                    去发现 FDE
-                  </Link>
-                )}
-                {me && (
-                  <Link to="/feed" className="btn btn-primary btn-sm">
-                    发第一条
-                  </Link>
-                )}
+        {posts.length === 0 ? (
+          <div className="py-16 text-center">
+            <p className="text-[16px] font-semibold text-[#0f1419]">
+              {tab === "bookmarks" ? "还没有收藏的动态" : tab === "following" ? "关注的人还没有更新" : tag ? `还没有 #${tag} 的动态` : "广场还很安静"}
+            </p>
+            <p className="mt-1.5 text-[13.5px] text-[#536471]">
+              {tab === "bookmarks" ? "在广场里点书签图标，动态就会收到这里。" : tab === "following" ? "去发现页关注几位正在做事的人。" : "第一条公开动态会出现在这里。"}
+            </p>
+            <Link to={tab === "all" ? "/discover" : href({ tab: null })} className="mt-5 inline-block text-[13px] font-medium text-[#0f1419] hover:underline">
+              {tab === "all" ? "去发现 FDE →" : "去看全站最新 →"}
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#eff3f4]">
+            {posts.map((post) => (
+              <div key={post.id} className="px-4 py-3.5 transition-colors hover:bg-[#fafafa]">
+                <FeedCard post={post} viewerId={viewerId} />
               </div>
-            </div>
-          ) : (
-            <div className="divide-y divide-[var(--color-line-soft)]">
-              {posts.map((post) => (
-                <FeedCard key={post.id} post={post} viewerId={viewerId} />
-              ))}
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         {(page > 1 || hasMore) && (
-          <nav className="mt-6 flex items-center justify-between gap-3">
-            {page > 1 ? (
-              <Link to={href({ page: String(page - 1) })} className="btn btn-ghost btn-sm">
-                ← 上一页
-              </Link>
-            ) : (
-              <span />
-            )}
-            <span className="font-mono text-[11.5px] text-[var(--color-faint)] tabular-nums">
-              第 {page} 页
-            </span>
-            {hasMore ? (
-              <Link to={href({ page: String(page + 1) })} className="btn btn-ghost btn-sm">
-                下一页 →
-              </Link>
-            ) : (
-              <span />
-            )}
+          <nav className="flex items-center justify-between gap-3 border-t border-[#eff3f4] px-4 py-3">
+            {page > 1 ? <Link to={href({ page: String(page - 1) })} className="text-[13px] text-[#536471] hover:text-[#0f1419]">← 上一页</Link> : <span />}
+            <span className="font-mono text-[11.5px] text-[#8b93a3] tabular-nums">第 {page} 页</span>
+            {hasMore ? <Link to={href({ page: String(page + 1) })} className="text-[13px] text-[#536471] hover:text-[#0f1419]">下一页 →</Link> : <span />}
           </nav>
         )}
       </div>
 
       <aside className="hidden xl:block">
-        <div className="sticky top-6 space-y-5">
-          <section className="rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
-            <h2 className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#677084]">热门话题</h2>
-            <div className="mt-2">
-              {tags.length === 0 ? (
-                <p className="text-[12.5px] text-[var(--color-faint)]">还没有标签。发帖时写 #话题 就会出现在这里。</p>
-              ) : (
-                tags.map((t) => (
-                  <Link
-                    key={t.tag}
-                    to={`/feed?tag=${encodeURIComponent(t.tag)}`}
-                    className="flex items-center justify-between rounded-[8px] px-2 py-1.5 text-[13.5px] transition hover:bg-[#f6f6f6]"
-                  >
-                    <span className="font-medium text-[#14171f]">#{t.tag}</span>
+        <div className="sticky top-4 space-y-4">
+          {tags.length > 0 && (
+            <section className="rounded-[16px] bg-[#f7f9f9] p-4">
+              <h2 className="text-[14px] font-bold text-[#0f1419]">热门话题</h2>
+              <div className="mt-2">
+                {tags.map((t) => (
+                  <Link key={t.tag} to={`/feed?tag=${encodeURIComponent(t.tag)}`} className="flex items-center justify-between rounded-[8px] px-2 py-1.5 text-[13.5px] transition hover:bg-white">
+                    <span className="font-medium text-[#0f1419]">#{t.tag}</span>
                     <span className="font-mono text-[11.5px] text-[#8b93a3] tabular-nums">{t.n}</span>
                   </Link>
-                ))
-              )}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
 
           {sidePeople.length > 0 && (
-            <section className="rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
-              <h2 className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#677084]">正在现场的 FDE</h2>
+            <section className="rounded-[16px] bg-[#f7f9f9] p-4">
+              <h2 className="text-[14px] font-bold text-[#0f1419]">正在现场的 FDE</h2>
               <div className="mt-2">
                 {sidePeople.slice(0, 3).map((p) => (
                   <div key={p.id} className="flex items-center gap-2.5 py-2">
                     <Avatar name={p.display_name} src={p.avatar_url} size={34} />
                     <div className="min-w-0 flex-1">
-                      <Link to={`/@${p.handle}`} className="block truncate text-[13.5px] font-semibold hover:opacity-70">{p.display_name}</Link>
-                      <p className="truncate text-[12px] text-[#677084]">{p.headline || `@${p.handle}`}</p>
+                      <Link to={`/@${p.handle}`} className="block truncate text-[13.5px] font-semibold text-[#0f1419] hover:opacity-70">{p.display_name}</Link>
+                      <p className="truncate text-[12px] text-[#536471]">{p.headline || `@${p.handle}`}</p>
                     </div>
                     {me?.id !== p.id && (
-                      <FollowButton
-                        targetId={p.id}
-                        following={Boolean(p.following)}
-                        signedIn={Boolean(me)}
-                        size="sm"
-                      />
+                      <FollowButton targetId={p.id} following={Boolean(p.following)} signedIn={Boolean(me)} size="sm" />
                     )}
                   </div>
                 ))}
@@ -339,21 +256,17 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           )}
 
           {sideProjects.length > 0 && (
-            <section className="rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
-              <h2 className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#677084]">最新公开作品</h2>
+            <section className="rounded-[16px] bg-[#f7f9f9] p-4">
+              <h2 className="text-[14px] font-bold text-[#0f1419]">最新作品</h2>
               <div className="mt-2">
                 {sideProjects.slice(0, 2).map((p) => (
-                  <Link
-                    key={p.id}
-                    to={`/projects/${p.slug}`}
-                    className="-mx-1.5 flex items-center gap-3 rounded-[10px] p-1.5 transition hover:bg-[#f6f6f6]"
-                  >
+                  <Link key={p.id} to={`/projects/${p.slug}`} className="-mx-1.5 flex items-center gap-3 rounded-[10px] p-1.5 transition hover:bg-white">
                     <span className="h-[42px] w-[56px] shrink-0 overflow-hidden rounded-[8px]">
                       <CoverArt seed={p.slug} src={p.cover_url} aspect="4 / 3" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-semibold">{p.title}</span>
-                      <span className="block truncate text-[11.5px] text-[#677084]">{p.display_name}</span>
+                      <span className="block truncate text-[13px] font-semibold text-[#0f1419]">{p.title}</span>
+                      <span className="block truncate text-[11.5px] text-[#536471]">{p.display_name}</span>
                     </span>
                   </Link>
                 ))}
@@ -408,7 +321,7 @@ function Composer({
           setFocused(false);
         }
       }}
-      className="surface-panel mt-5 overflow-hidden transition-shadow focus-within:shadow-[var(--shadow-lift)]"
+      className="mt-4 border-b border-[#eff3f4] overflow-hidden"
     >
       <div className="flex items-start gap-3 px-4 pt-4">
         <Avatar name={me.display_name} src={me.avatar_url} size={36} />
@@ -496,33 +409,6 @@ function Composer({
         </button>
       </div>
     </fetcher.Form>
-  );
-}
-
-function TabLink({
-  id: _id,
-  to,
-  active,
-  children,
-  ...rest
-}: {
-  id: string;
-  to: string;
-  active: boolean;
-  children: React.ReactNode;
-  [key: string]: unknown;
-}) {
-  return (
-    <Link
-      {...rest}
-      to={to}
-      preventScrollReset
-      className={`relative rounded-full px-3.5 py-1.5 text-[13.5px] font-medium transition ${
-        active ? "text-[var(--color-ink)]" : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
-      }`}
-    >
-      <span className="relative z-10">{children}</span>
-    </Link>
   );
 }
 

@@ -150,7 +150,6 @@ export default function SettingsProfile({
       )}
 
       <PageHead
-        label="Settings"
         title="编辑主页"
         description="别人看到的这一页，就是这里填的东西。"
         actions={
@@ -289,7 +288,7 @@ export default function SettingsProfile({
         <p className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
           实时预览 · 别人看到的
         </p>
-        <div data-testid="profile-preview" className="overflow-hidden rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
+        <div data-testid="profile-preview" className="overflow-hidden rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white">
           <CoverArt
             seed={`${me.handle}-cover`}
             src={live.cover_url || null}

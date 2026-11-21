@@ -124,7 +124,7 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
                   {isActive && (
                     <motion.span
                       layoutId="rail-active-pill"
-                      className="absolute inset-0 rounded-[10px] border border-[var(--hairline)] bg-white shadow-[var(--shadow-card)]"
+                      className="absolute inset-0 rounded-[10px] border border-[var(--hairline)] bg-white"
                       transition={{ type: "spring", stiffness: 480, damping: 36 }}
                     />
                   )}
@@ -160,7 +160,7 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
 
           <NavLink
             to="/new/project"
-            className="mt-auto hidden rounded-[14px] border border-[var(--hairline)] bg-white p-3.5 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-lift)] lg:block"
+            className="mt-auto hidden rounded-[14px] border border-[var(--hairline)] bg-white p-3.5 transition hover:border-[#0f1419] lg:block"
           >
             <p className="text-[13.5px] font-semibold leading-snug">把作品放上来</p>
             <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-ink-soft)]">
@@ -238,7 +238,7 @@ function RailLink({
           {isActive && (
             <motion.span
               layoutId="rail-active-pill"
-              className="absolute inset-0 rounded-[10px] border border-[var(--hairline)] bg-white shadow-[var(--shadow-card)]"
+              className="absolute inset-0 rounded-[10px] border border-[var(--hairline)] bg-white"
               transition={{ type: "spring", stiffness: 480, damping: 36 }}
             />
           )}

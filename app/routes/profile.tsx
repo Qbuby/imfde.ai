@@ -2,8 +2,6 @@ import type { Route } from "./+types/profile";
 import { useState } from "react";
 import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { AnimatedBackground } from "~/components/motion/animated-background";
-import { BorderBeam } from "~/components/magicui/border-beam";
 import { getMe, normalizeHandle } from "~/lib/session.server";
 import { many, one } from "~/lib/db.server";
 import { Avatar, CoverArt } from "~/components/media";
@@ -139,7 +137,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
     <div className="mx-auto max-w-[1180px]">
       <div className="grid gap-8 lg:grid-cols-[310px_minmax(0,1fr)]">
         <aside className="min-w-0">
-          <div className="surface-panel lg:sticky lg:top-8 overflow-hidden">
+          <div className="lg:sticky lg:top-8 overflow-hidden rounded-[16px] border border-[#eff3f4] bg-white">
             <div className="relative h-[92px] overflow-hidden">
               <CoverArt seed={`${user.handle}-cover`} src={user.cover_url} aspect="4 / 1" photo={false} />
             </div>
@@ -175,15 +173,9 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                 <CopyLinkButton path={`/@${user.handle}`} label="复制主页链接" className="btn btn-ghost btn-sm" />
               </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[12px] border border-[var(--color-line)] bg-[var(--color-line-soft)]">
-                {stats.map((x) => (
-                  <div key={x.label} className="bg-white px-4 py-3">
-                    <p className="font-mono text-[19px] font-medium leading-none text-[var(--color-ink)] tabular-nums">{compact(x.n)}</p>
-                    <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">{x.label}</p>
-                  </div>
-                ))}
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[#eff3f4] pt-3 font-mono text-[11.5px] text-[#536471] tabular-nums">
+                {stats.map((x) => <span key={x.label}>{compact(x.n)} {x.label}</span>)}
               </div>
-              <p className="mt-1.5 text-[10.5px] text-[var(--color-faint)]">原始计数，不合成任何评分</p>
 
               {links.length > 0 && (
                 <div className="mt-5 flex flex-wrap gap-1.5">
@@ -224,22 +216,15 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
         </aside>
 
         <div className="min-w-0">
-          <div className="flex items-center gap-6 border-b border-[var(--color-line)]">
-            <AnimatedBackground
-              defaultValue={tab}
-              onValueChange={(id) => id && setTab(id as typeof tab)}
-              className="rounded-t-full border-b-2 border-[var(--color-ink)] bg-transparent"
-            >
-              {([["work", "作品集"], ["posts", "动态"], ["about", "关于"]] as const).map(([id, label]) => (
-                <button key={id} data-id={id} type="button"
-                  className={`pb-3 pt-1 text-[14px] font-medium transition ${
-                    tab === id ? "text-[var(--color-ink)]" : "text-[var(--color-muted)] hover:text-[var(--color-ink)]"
-                  }`}>
-                  {label}
-                </button>
-              ))}
-            </AnimatedBackground>
-            <span className="ml-auto font-mono text-[11px] text-[var(--color-faint)] tabular-nums">
+          <div className="flex items-center gap-6 border-b border-[#eff3f4]">
+            {([["work", "作品集"], ["posts", "动态"], ["about", "关于"]] as const).map(([id, label]) => (
+              <button key={id} type="button" onClick={() => setTab(id)}
+                className={`relative pb-3 pt-1 text-[14px] font-medium transition ${tab === id ? "text-[#0f1419]" : "text-[#536471] hover:text-[#0f1419]"}`}>
+                {label}
+                {tab === id && <motion.span layoutId="profile-tab-underline" className="absolute inset-x-0 bottom-0 h-[2px] rounded bg-[#0f1419]" transition={{ type: "spring", stiffness: 500, damping: 38 }} />}
+              </button>
+            ))}
+            <span className="ml-auto font-mono text-[11px] text-[#8b93a3] tabular-nums">
               {projects.length} 作品 · {posts.length} 动态
             </span>
           </div>
@@ -250,7 +235,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
               transition={{ duration: 0.18 }} className="pt-6">
               {tab === "work" && (
                 shown.length === 0 ? (
-                  <div className="surface-panel py-16 text-center">
+                  <div className="py-16 text-center">
                     <p className="text-[14px] text-[var(--color-ink-soft)]">还没有公开作品。</p>
                     {isSelf && <Link to="/new/project" className="btn btn-primary btn-sm mt-4">上传第一个</Link>}
                   </div>
@@ -260,7 +245,6 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                       const hero = i === 0 && p.featured === 1;
                       return (
                         <div key={p.id} className={`relative ${hero ? "col-span-full" : ""}`}>
-                          {hero && <BorderBeam size={120} duration={10} colorFrom="#f59e0b" colorTo="#6ca3e0" borderWidth={1.2} />}
                           <ProjectCard project={p} viewerId={me?.id ?? null} hero={hero} />
                         </div>
                       );
@@ -270,17 +254,17 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
               )}
               {tab === "posts" && (
                 posts.length === 0 ? (
-                  <div className="surface-panel py-16 text-center">
+                  <div className="py-16 text-center">
                     <p className="text-[14px] text-[var(--color-ink-soft)]">还没有公开动态。</p>
                   </div>
                 ) : (
-                  <div className="surface-panel divide-y divide-[var(--color-line-soft)] px-4">
+                  <div className="divide-y divide-[#eff3f4]">
                     {posts.slice(0, 12).map((p) => <FeedCard key={p.id} post={p} viewerId={me?.id ?? null} showFollow={false} />)}
                   </div>
                 )
               )}
               {tab === "about" && (
-                <div className="surface-panel p-6">
+                <div className="border-t border-[#eff3f4] pt-6">
                   {user.about ? (
                     <p className="whitespace-pre-wrap text-[14.5px] leading-[1.9] text-[var(--color-ink-2)]">{user.about}</p>
                   ) : (

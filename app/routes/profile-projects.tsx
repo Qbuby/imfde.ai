@@ -55,7 +55,6 @@ export default function ProfileProjects({ loaderData }: Route.ComponentProps) {
 
       <div className="mt-7">
         <PageHead
-          label="Work"
           title="全部作品"
           description={`${user.display_name} 公开的 ${projects.length} 件作品。`}
         />

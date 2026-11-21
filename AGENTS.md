@@ -9,13 +9,15 @@
   不要引入 `@cloudflare/vite-plugin`——它和 `react-router build` 的输出目录会打架。
 - **Cloudflare D1（SQLite）**：所有查询走 `app/lib/db.server.ts` 的 `one/many/run/stmt/batch`。
   迁移文件在 `migrations/`，只增不改旧文件。
-- **Tailwind CSS v4** + `app/app.css` 中的 `@theme` token。不要新增颜色变量，
-  除非它确实属于现有体系（`--color-canvas / paper / sunken / ink / ink-soft / muted / faint / line`）。
+- **Tailwind CSS v4** + `app/app.css` 中的 `@theme` token。配色只有 X + Contra 两套：
+  `--color-canvas(#fff) / --color-surface-subtle(#f7f9f9) / --color-hairline(#eff3f4) /
+  --color-border(#e2e5ea) / --color-ink(#0f1419) / --color-ink-soft(#536471) / --color-faint(#8b93a3)`
+  与语义互动色（like/repost/link）。不要新增装饰性颜色变量。
 - **lucide-react** 图标（`strokeWidth={1.65}`）、**sonner** Toast、**Radix**（popover / dialog / hover-card）、
   **motion**（`motion/react`，根节点 `MotionConfig reducedMotion="user"`）、
   **clsx + tailwind-merge**（`app/lib/cn.ts`）。
-  Motion Primitives 在 `app/components/motion/`，Magic UI 在 `app/components/magicui/`，均从官方仓库源码集成。
-  除此之外不加 UI 依赖，尤其不加图表库或特效库。
+  `app/components/motion/` 只保留 `sliding-number.tsx`、`morphing-dialog.tsx` 与工具 `use-click-outside.ts`；
+  `app/components/magicui/` 已清空。除此之外不加 UI 依赖，尤其不加图表库或特效库。
 
 ## 四条产品红线
 
@@ -29,11 +31,13 @@
 
 ## 前端视觉与交互规范
 
-- **材质**：白底 / 浅灰 / 深墨为底，细边框 `#e3e5ea`。允许且鼓励：
-  高对比暗黑展示区（Obsidian Band，如 `#0e1117`）、精致微玻璃态（`.frost`）、
-  清晰的鼠标跟随聚光（`Spotlight`）、流动描边（`BorderBeam`）、活体交互演示卡、
-  多层弥散柔影。禁止的只是廉价赛博朋克、刺眼霓虹与大面积高饱和紫蓝渐变。
-  动效要服务交互反馈，不能干扰阅读。
+- **材质**：只有两种语言。X（`/feed`、`/posts/:id`、`/notifications`）：纯白底、
+  `1px #eff3f4` 线条网格、3px 滑动下划线 Tab、`#f7f9f9` 无边框无阴影右栏、轻量语义互动反馈。
+  Contra（`/`、`/discover*`、`/@handle`、`/projects/:slug`、`/join`、`/login`）：纯白画布、
+  零阴影 1px 细线卡片、单层扁平筛选条、干净空状态。
+  **禁止**：大块黑底营销区、`Spotlight`/`BorderBeam`/`Tilt`/`Marquee`/`dot-grid`/`hero-glow`/`sweep`、
+  胶囊套胶囊筛选栏、全大写英文装饰标、普通内容卡片的 `box-shadow`、虚线空占位大框。
+  阴影仅允许：首页主搜索栏、Popover/Dialog/HoverCard 浮层、Toast。动效只服务交互反馈。
 - **状态完整**：每个可交互元素要有 Default / Hover / Focus-visible / Active /
   Pending(disabled) 五态。异步提交必须显式禁用并给出"发布中…"一类文案。
 - **数字不跳**：所有计数（赞、评论、转发、关注者、作品数）用 `tabular-nums`。

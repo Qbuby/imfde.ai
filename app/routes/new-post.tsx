@@ -60,7 +60,6 @@ export default function NewPost({ loaderData }: Route.ComponentProps) {
   return (
     <div className="max-w-[760px]">
       <PageHead
-        label="Create"
         title="发一条动态"
         description={`以 @${me.handle} 的身份发布。发布后所有人可见。`}
         actions={

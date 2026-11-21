@@ -19,36 +19,36 @@
    ───────────────────────────────────────────────────────────────────── */
 
 @theme {
-  /* Three surfaces: a warm canvas, a pure-white panel, and a raised sheet.
-     The warm canvas gives white panels an edge without adding a border. */
+  /* X + Contra: white canvas, one subtle grey surface, hairline grid.
+     No raised white cards, no blurred shadows on ordinary content. */
   --color-canvas: #ffffff;
-  --color-canvas-warm: #f7f7f9;
+  --color-canvas-warm: #f7f9f9;
   --color-surface: #ffffff;
-  --color-paper: #f6f6f6;
-  --color-sunken: #f2f2f2;
-  --color-sunken-deep: #e9eaec;
-  --color-ink: #14171f;
-  --color-ink-2: #222834;
-  --color-ink-soft: #4a5264;
-  --color-muted: #677084;
+  --color-surface-subtle: #f7f9f9;
+  --color-paper: #f7f9f9;
+  --color-sunken: #f7f9f9;
+  --color-sunken-deep: #e9eef2;
+  --color-ink: #0f1419;
+  --color-ink-2: #0f1419;
+  --color-ink-soft: #536471;
+  --color-muted: #536471;
   --color-faint: #8b93a3;
-  --color-line: #e3e5ea;
-  --color-line-soft: #eef0f2;
-  --color-accent: #222834;
+  --color-line: #e2e5ea;
+  --color-line-soft: #eff3f4;
+  --color-accent: #0f1419;
   --color-accent-soft: #f2f4f7;
   --color-butter: #f2c94c;
   --color-watermelon: #ff5a5e;
   --color-lilac: #8f6fdb;
   --color-sky: #6ca3e0;
 
-  /* Semantic interaction colours: used only on icon states and micro-feedback,
-     never as large fills. Paired with a 10% halo on hover. */
-  --color-like: #f43f5e;
-  --color-like-halo: rgba(244, 63, 94, 0.1);
-  --color-repost: #10b981;
-  --color-repost-halo: rgba(16, 185, 129, 0.1);
-  --color-link: #0ea5e9;
-  --color-link-halo: rgba(14, 165, 233, 0.1);
+  /* Semantic interaction colours — icon states only, with 10% halo. */
+  --color-like: #f91880;
+  --color-like-halo: rgba(249, 24, 128, 0.10);
+  --color-repost: #00ba7c;
+  --color-repost-halo: rgba(0, 186, 124, 0.10);
+  --color-link: #1d9bf0;
+  --color-link-halo: rgba(29, 155, 240, 0.10);
   --color-featured: #f59e0b;
 
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
@@ -63,23 +63,10 @@
   --radius-search: 20px;
   --radius-pill: 999px;
 
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.04);
-  --shadow-lift: 0 2px 4px rgba(16, 24, 40, 0.05), 0 18px 40px rgba(16, 24, 40, 0.1);
-  --hairline: 1px solid rgba(20, 23, 31, 0.07);
-
-  /* Magic UI marquee: Tailwind v4 reads --animate-* from @theme. Without
-     these, `animate-marquee` generates nothing and four copies sit still. */
-  --animate-marquee: marquee var(--duration, 36s) linear infinite;
-  --animate-marquee-vertical: marquee-vertical var(--duration, 36s) linear infinite;
-}
-
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(calc(-100% - var(--gap, 1rem))); }
-}
-@keyframes marquee-vertical {
-  from { transform: translateY(0); }
-  to   { transform: translateY(calc(-100% - var(--gap, 1rem))); }
+  /* Shadows only for real overlays: hero search, popover/dialog, toast. */
+  --shadow-card: 0 6px 24px rgba(15, 20, 25, 0.06);
+  --shadow-lift: 0 10px 30px rgba(15, 20, 25, 0.10);
+  --hairline: 1px solid #eff3f4;
 }
 
 @layer base {
@@ -157,100 +144,12 @@
   z-index: 10;
 }
 
-/* Engineering dot grid: barely-there, used only behind the hero copy. */
-.dot-grid::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(rgba(20, 23, 31, 0.07) 0.8px, transparent 0.8px);
-  background-size: 20px 20px;
-  mask-image: linear-gradient(90deg, rgba(0,0,0,0.7), transparent 70%);
-  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0.7), transparent 70%);
-}
-
-/* Light sweep on the primary CTA, CSS-only and motion-reduced safe. */
-.sweep {
-  position: relative;
-  overflow: hidden;
-}
-.sweep::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  transform: translateX(-100%);
-  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.22) 50%, transparent 80%);
-  transition: transform 550ms cubic-bezier(0.2, 0.7, 0.2, 1);
-  pointer-events: none;
-}
-.sweep:hover::after {
-  transform: translateX(100%);
-}
 
 
 
-/* Real work shown inside the obsidian band: invert ink for dark ground. */
-.on-dark h3,
-.on-dark p,
-.on-dark a,
-.on-dark span {
-  color: rgba(255, 255, 255, 0.86) !important;
-}
-.on-dark .chip {
-  background: rgba(15, 19, 26, 0.7) !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
-  color: rgba(255, 255, 255, 0.82) !important;
-}
-.on-dark .chip span {
-  color: rgba(255, 255, 255, 0.82) !important;
-}
-.on-dark .avatar span {
-  color: #14171f !important;
-}
 
-/* Obsidian gallery band: a high-contrast dark theatre between light sections. */
-.obsidian-band {
-  background: #0e1117;
-  isolation: isolate;
-}
-.obsidian-band::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(60% 40% at 50% -10%, rgba(99, 102, 241, 0.16), transparent 70%),
-    radial-gradient(35% 30% at 90% 100%, rgba(16, 185, 129, 0.1), transparent 70%),
-    radial-gradient(rgba(255, 255, 255, 0.05) 0.8px, transparent 0.8px);
-  background-size: auto, auto, 18px 18px;
-}
 
-/* Editorial-gallery hero glow: three very low-saturation light sources,
-   held in a single layer so it never competes with the type above it. */
-.hero-glow {
-  position: relative;
-  isolation: isolate;
-}
-.hero-glow::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: -10% -5% 0;
-  pointer-events: none;
-  background:
-    radial-gradient(46% 42% at 18% 22%, rgba(226, 240, 236, 0.7), transparent 70%),
-    radial-gradient(40% 38% at 82% 12%, rgba(244, 236, 222, 0.65), transparent 72%),
-    radial-gradient(36% 40% at 62% 70%, rgba(232, 231, 244, 0.45), transparent 74%);
-  filter: blur(8px);
-  opacity: 0.9;
-}
 
-/* Fine inner stroke for gallery covers — lighter than the outer hairline. */
-.cover-inner-stroke {
-  box-shadow: inset 0 0 0 1px rgba(20, 23, 31, 0.06);
-}
 
 @media (prefers-reduced-motion: reduce) {
     html {
@@ -311,16 +210,13 @@
   .card {
     background: var(--color-surface);
     border-radius: var(--radius-card);
-    box-shadow: var(--shadow-card);
     border: var(--hairline);
   }
 
-  /* Raised panel: the gallery surface that sits on the warm canvas. */
+  /* Quiet content panel: no shadow anywhere in the reading flow. */
   .surface-panel {
     background: var(--color-surface);
-    border: var(--hairline);
-    box-shadow: var(--shadow-card);
-    border-radius: 18px;
+    border-radius: 14px;
   }
 
   /* Frosted surface used for sticky bars, corner badges and hover bars. */
@@ -376,13 +272,10 @@
   }
 
   .card-link {
-    transition:
-      transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      box-shadow 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition: border-color 200ms ease;
   }
   .card-link:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lift);
+    border-color: var(--color-line);
   }
 
   .btn {
@@ -447,9 +340,7 @@
     border: 1px solid var(--color-line);
     background: var(--color-surface);
     font-size: 16px;
-    transition:
-      border-color 150ms ease,
-      box-shadow 150ms ease;
+    transition: border-color 150ms ease;
   }
   .field::placeholder {
     color: var(--color-faint);
@@ -457,7 +348,7 @@
   .field:focus {
     outline: none;
     border-color: var(--color-ink-soft);
-    box-shadow: 0 0 0 3px rgba(34, 40, 52, 0.08);
+    box-shadow: none;
   }
   .field-area {
     height: auto;
@@ -506,8 +397,9 @@
     white-space: nowrap;
   }
   .chip-dark {
-    background: var(--color-ink-2);
-    color: #fff;
+    background: var(--color-surface-subtle);
+    color: var(--color-ink-soft);
+    font-weight: 500;
   }
   .chip-outline {
     background: transparent;

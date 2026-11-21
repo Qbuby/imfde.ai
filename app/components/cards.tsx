@@ -17,7 +17,6 @@ import { compact } from "~/lib/format";
 import { extractTags } from "~/lib/tags";
 import { fireLikeBurst } from "~/lib/burst";
 import { AuthorHoverCard } from "./author-hover-card";
-import { Spotlight } from "./motion/spotlight";
 import { SlidingNumber } from "./motion/sliding-number";
 import { FollowButton } from "./follow-button";
 import type { FeedPostRow, PersonRow, ProjectCardRow } from "~/lib/queries.server";
@@ -97,11 +96,10 @@ export function ProjectCard({
     <article className={`group ${hero ? "col-span-full" : ""}`}>
       <Link to={href} className="block">
         <div
-          className={`cover-inner-stroke relative overflow-hidden rounded-[16px] border border-[var(--hairline)] ${
+          className={`relative overflow-hidden rounded-[12px] border border-[rgba(0,0,0,0.06)] ${
             hero ? "aspect-[16/9]" : "aspect-[4/3]"
           }`}
         >
-          <Spotlight size={260} className="text-white/25" />
           <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-[1.05]">
             <CoverArt seed={project.slug} src={project.cover_url} aspect={hero ? "16 / 9" : "4 / 3"} />
           </div>
@@ -308,7 +306,7 @@ export function FeedCard({
   return (
     <article
       onClick={cardClick}
-      className={`group grid grid-cols-[42px_minmax(0,1fr)] gap-3 border-b border-[var(--color-line-soft)] px-2 py-4 transition-colors hover:bg-[#fafafa] last:border-b-0 ${className}`}
+      className={`group grid grid-cols-[40px_minmax(0,1fr)] gap-3 transition-colors ${className}`}
     >
       {/* a pure repost announces the source above everything, X-style */}
       {post.repost && post.body.trim() === "" && (
@@ -349,7 +347,7 @@ export function FeedCard({
           </AuthorHoverCard>
           <span className="micro-mono hidden truncate sm:inline">@{post.handle}</span>
           <span className="micro-mono shrink-0">· {post.time_label}</span>
-          <span className="chip chip-dark ml-auto shrink-0 !h-[22px] !text-[10.5px]">
+          <span className="ml-auto shrink-0 rounded-[6px] bg-[#f7f9f9] px-2 py-0.5 text-[11.5px] font-medium text-[#536471]">
             {POST_KIND_LABEL[post.kind] ?? post.kind}
           </span>
         </header>
