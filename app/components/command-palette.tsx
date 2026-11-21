@@ -97,7 +97,7 @@ export function CommandPalette({
             e.preventDefault();
             document.getElementById(inputId)?.focus();
           }}
-          className="frost fixed left-1/2 top-[14vh] z-50 w-[min(94vw,560px)] -translate-x-1/2 overflow-hidden rounded-[16px] border border-[var(--hairline)] bg-white/96 shadow-[var(--shadow-lift)]"
+          className="frost fixed left-1/2 top-[14vh] z-50 w-[min(94vw,560px)] -translate-x-1/2 overflow-hidden rounded-[16px] border border-[#e2e5ea] bg-white/96 shadow-[var(--shadow-lift)]"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10, filter: "blur(6px)" }}

@@ -122,6 +122,8 @@ export default function SettingsProfile({
     about: p.about ?? "",
     avatar_url: p.avatar_url ?? "",
     cover_url: p.cover_url ?? "",
+    location: p.location ?? "",
+    timezone: p.timezone ?? "",
     skills,
   });
   const bind = (key: keyof typeof live) => ({
@@ -216,7 +218,7 @@ export default function SettingsProfile({
             <input
               name="location"
               maxLength={80}
-              defaultValue={p.location ?? ""}
+              {...bind("location")}
               placeholder="上海"
               className="field"
             />
@@ -225,7 +227,7 @@ export default function SettingsProfile({
             <input
               name="timezone"
               maxLength={60}
-              defaultValue={p.timezone ?? ""}
+              {...bind("timezone")}
               placeholder="UTC+8"
               className="field"
             />
@@ -298,7 +300,12 @@ export default function SettingsProfile({
           <div className="-mt-8 px-4 pb-4">
             <Avatar name={live.display_name} src={live.avatar_url || null} size={56} ring />
             <p className="mt-2 text-[15px] font-semibold">{live.display_name}</p>
-            <p className="font-mono text-[11px] text-[var(--color-faint)]">@{me.handle}</p>
+            <p className="font-sans text-[11px] text-[var(--color-faint)]">@{me.handle}</p>
+            {[live.location, live.timezone].filter(Boolean).length > 0 && (
+              <p className="mt-0.5 font-sans text-[11.5px] text-[#8b93a3]">
+                {[live.location, live.timezone].filter(Boolean).join(" · ")}
+              </p>
+            )}
             <p className={`mt-2 text-[12.5px] leading-relaxed ${live.headline ? "text-[#4a5264]" : "text-[#8b93a3]"}`}>
               {live.headline || "一句话介绍自己"}
             </p>

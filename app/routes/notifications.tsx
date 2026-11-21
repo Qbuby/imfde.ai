@@ -91,28 +91,28 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
         }
       />
 
-      <div className="mt-5 flex border-b border-[#eff3f4]">
+      <div className="mt-5 flex items-center gap-6 border-b border-[#eff3f4]">
         <button type="button" onClick={() => setFilter("all")}
-          className={`relative flex h-[44px] flex-1 items-center justify-center text-[14px] transition hover:bg-[#f7f9f9] ${filter === "all" ? "font-bold text-[#0f1419]" : "font-medium text-[#536471]"}`}>
+          className={`relative pb-3 text-[14px] transition ${filter === "all" ? "font-bold text-[#0f1419]" : "font-medium text-[#536471] hover:text-[#0f1419]"}`}>
           全部
-          {filter === "all" && <span className="absolute bottom-0 h-[3px] w-14 rounded-full bg-[#0f1419]" />}
+          {filter === "all" && <span className="absolute inset-x-0 bottom-0 h-[2.5px] rounded bg-[#0f1419]" />}
         </button>
         <button type="button" onClick={() => setFilter("unread")}
-          className={`relative flex h-[44px] flex-1 items-center justify-center text-[14px] transition hover:bg-[#f7f9f9] ${filter === "unread" ? "font-bold text-[#0f1419]" : "font-medium text-[#536471]"}`}>
+          className={`relative pb-3 text-[14px] transition ${filter === "unread" ? "font-bold text-[#0f1419]" : "font-medium text-[#536471] hover:text-[#0f1419]"}`}>
           未读 · {unread}
-          {filter === "unread" && <span className="absolute bottom-0 h-[3px] w-14 rounded-full bg-[#0f1419]" />}
+          {filter === "unread" && <span className="absolute inset-x-0 bottom-0 h-[2.5px] rounded bg-[#0f1419]" />}
         </button>
       </div>
 
       {shown.length === 0 ? (
-        <div className="mt-8 border-t border-[var(--color-line-soft)] py-16">
+        <div className="py-16">
           <p className="text-[16px] font-semibold">还没有通知</p>
           <p className="mt-1.5 text-[13.5px] text-[var(--color-ink-soft)]">
             有人关注你、赞你的作品或评论你的动态时，会出现在这里。
           </p>
         </div>
       ) : (
-        <div className="mt-8 divide-y divide-[var(--color-line-soft)] border-t border-[var(--color-line-soft)]">
+        <div className="divide-y divide-[#eff3f4]">
           {shown.map((n) => {
             const href =
               n.post_id
@@ -151,7 +151,7 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
                       {n.post_excerpt || n.project_title}
                     </p>
                   )}
-                  <p className="font-mono text-[10.5px] text-[var(--color-faint)]">
+                  <p className="font-sans text-[10.5px] text-[var(--color-faint)]">
                     {n.time_label}
                   </p>
                 </div>

@@ -118,7 +118,7 @@ export function ProjectCard({
       </p>
       {hero && (
         <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-[var(--color-muted)]">
-          {project.description || "由作者本人填写的作品说明。"}
+          {(project.description || "由作者本人填写的作品说明。").replace(/\s*\n+\s*/g, " ")}
         </p>
       )}
 
@@ -319,39 +319,39 @@ export function FeedCard({
       <div className="min-w-0">
         {/* header */}
         <header className="flex items-center gap-2">
-          <AuthorHoverCard
-            author={author}
-            handle={post.handle}
-            displayName={post.display_name}
-            avatarUrl={post.avatar_url}
-            signedIn={signedIn}
-            following={Boolean(post.author_following)}
-          >
-            <Link to={`/@${post.handle}`} className="max-w-[180px] truncate text-[14.5px] font-semibold hover:opacity-70">
-              {post.display_name}
-            </Link>
-          </AuthorHoverCard>
-          <span className="micro-mono hidden truncate sm:inline">@{post.handle}</span>
-          <span className="micro-mono shrink-0">· {post.time_label}</span>
-          {(() => { const b = badgeFor(POST_KIND_STYLE, post.kind); return (
-          <span className={`ml-auto inline-flex h-[22px] shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-medium ${b.bg} ${b.text}`}>
-            <span className={`h-[5px] w-[5px] rounded-full ${b.dot}`} />{b.label}
-          </span>
-          ); })()}
-        </header>
-
-        {/* compact follow next to the name */}
-        {showFollow && signedIn && !isSelf && (
-          <div className="mt-1">
-            <FollowButton
-              targetId={post.author_id}
+          <div className="flex min-w-0 items-center gap-1.5">
+            <AuthorHoverCard
+              author={author}
+              handle={post.handle}
+              displayName={post.display_name}
+              avatarUrl={post.avatar_url}
+              signedIn={signedIn}
               following={Boolean(post.author_following)}
-              signedIn
-              size="sm"
-              tone="quiet"
-            />
+            >
+              <Link to={`/@${post.handle}`} className="max-w-[180px] truncate text-[14.5px] font-semibold hover:opacity-70">
+                {post.display_name}
+              </Link>
+            </AuthorHoverCard>
+            <span className="micro-mono hidden truncate sm:inline">@{post.handle}</span>
+            <span className="micro-mono shrink-0">· {post.time_label}</span>
           </div>
-        )}
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {showFollow && signedIn && !isSelf && (
+              <FollowButton
+                targetId={post.author_id}
+                following={Boolean(post.author_following)}
+                signedIn
+                size="sm"
+                tone="quiet"
+              />
+            )}
+            {(() => { const b = badgeFor(POST_KIND_STYLE, post.kind); return (
+            <span className={`inline-flex h-[22px] items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-medium ${b.bg} ${b.text}`}>
+              <span className={`h-[5px] w-[5px] rounded-full ${b.dot}`} />{b.label}
+            </span>
+            ); })()}
+          </div>
+        </header>
 
         {post.body.trim() !== "" && (
           <PostBody

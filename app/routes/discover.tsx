@@ -99,7 +99,7 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
               #{sk}
             </Link>
           ))}
-          <span className="ml-2 flex items-center gap-1">
+          <span className="flex items-center gap-1 sm:ml-auto">
             {SORTS.map((so) => (
               <Link key={so.v || "followers"} to={withParam("sort", so.v)} preventScrollReset
                 className={`px-2 py-1 text-[12px] transition ${sort === so.v ? "font-semibold text-[#0f1419]" : "text-[#8b93a3] hover:text-[#0f1419]"}`}>
@@ -139,7 +139,7 @@ function TalentCard({ person, viewerId }: { person: PersonRow; viewerId: string 
               <p className="truncate text-[15px] font-semibold text-[#0f1419]">{person.display_name}</p>
               {person.kind === "team" && <span className="rounded-[6px] bg-[#f7f9f9] px-2 py-0.5 text-[11px] text-[#536471]">团队</span>}
             </div>
-            <p className="truncate font-mono text-[11.5px] text-[#8b93a3]">@{person.handle}{person.location ? ` · ${person.location}` : ""}</p>
+            <p className="truncate font-sans text-[11.5px] text-[#8b93a3]">@{person.handle}{person.location ? ` · ${person.location}` : ""}</p>
           </div>
         </Link>
         {viewerId !== person.id && (
@@ -157,7 +157,7 @@ function TalentCard({ person, viewerId }: { person: PersonRow; viewerId: string 
       {works.length > 0 && (
         <div className="mt-4 grid grid-cols-2 gap-2">
           {works.map((w) => (
-            <Link key={w.id} to={`/projects/${w.slug}`} className="group/thumb relative block aspect-[16/10] overflow-hidden rounded-[10px] border border-[rgba(0,0,0,0.06)]">
+            <Link key={w.id} to={`/projects/${w.slug}`} className={`group/thumb relative block aspect-[16/10] overflow-hidden rounded-[10px] border border-[rgba(0,0,0,0.06)] ${works.length === 1 ? 'col-span-2' : ''}`}>
               <CoverArt seed={w.slug} src={w.cover_url} aspect="16 / 10"
                 className="h-full w-full transition-transform duration-500 ease-out group-hover/thumb:scale-[1.03]" />
               <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 via-black/30 to-transparent px-2 pb-1.5 pt-4 text-[11px] font-medium text-white">{w.title}</span>
@@ -166,7 +166,7 @@ function TalentCard({ person, viewerId }: { person: PersonRow; viewerId: string 
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-between border-t border-[#eff3f4] pt-3 font-mono text-[11.5px] text-[#536471] tabular-nums">
+      <div className="mt-4 flex items-center justify-between border-t border-[#eff3f4] pt-3 font-sans text-[11.5px] text-[#536471] tabular-nums">
         <span>{person.projects} 作品{person.hide_follows ? "" : ` · ${compact(person.followers)} 关注者`}</span>
         <Link to={`/@${person.handle}`} className="font-sans text-[12px] font-medium text-[#0f1419] hover:underline">查看主页 →</Link>
       </div>

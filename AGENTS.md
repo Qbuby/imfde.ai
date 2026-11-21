@@ -21,9 +21,12 @@
 
 ## 字体约束
 
-- 全站展示体与正文字体统一为 **Onest Variable**（`@fontsource-variable/onest`），
-  由 Vite 打包进 `build/client/assets`，经 Cloudflare Static Assets 自托管。
-  **禁止**改回 Inter / Instrument Sans，禁止引入 Google Fonts 或任何外部字体 CDN。
+- 字体为 **Onest Variable**（英文/数字/符号，`@fontsource-variable/onest`，Vite 打包）
+  \+ **OPPO Sans 4.0**（中文，自托管分片于 `public/fonts/oppo-sans/`，经 `result.css` 的
+  `unicode-range` 按需加载，可变字重 100-700）。两者都经 Cloudflare Static Assets 自托管。
+  **禁止**改回 Inter / Instrument Sans / Microsoft YaHei 回退，禁止引入 Google Fonts 或任何外部字体 CDN，
+  禁止把未切片的完整 `.ttf` 放进 `public/`。真实代码片段与 ⌘K / ESC 快捷键才用 `font-mono`；
+  handle、时间戳、计数用 `font-sans tabular-nums`。
 - 中文回退顺序：`PingFang SC` → `Hiragino Sans GB` → `Microsoft YaHei`；
   计数、时间戳与 `@handle` 必须保留 `font-variant-numeric: tabular-nums`。
 

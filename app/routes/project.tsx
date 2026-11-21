@@ -128,7 +128,7 @@ export default function Project({ loaderData }: Route.ComponentProps) {
 
   return (
     <article className="max-w-[1060px]">
-      <div className="overflow-hidden rounded-[16px] border border-[var(--hairline)] cover-inner-stroke">
+      <div className="overflow-hidden rounded-[16px] border border-[#e2e5ea] cover-inner-stroke">
         {project.cover_url ? (
           <GalleryLightbox
             src={project.cover_url}

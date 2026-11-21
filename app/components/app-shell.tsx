@@ -44,7 +44,7 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
   return (
     <div className="min-h-dvh bg-[var(--color-canvas-warm)]">
       {/* ── mobile top bar ─────────────────────────────────────────── */}
-      <div className="frost flex items-center gap-3 border-b border-[var(--hairline)] px-4 py-3 md:hidden">
+      <div className="frost flex items-center gap-3 border-b border-[#eff3f4] px-4 py-3 md:hidden">
         <NavLink to="/" className="display text-[22px]">
           ImFDE
         </NavLink>
@@ -124,7 +124,7 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
                   {isActive && (
                     <motion.span
                       layoutId="rail-active-pill"
-                      className="absolute inset-0 rounded-[10px] border border-[var(--hairline)] bg-white"
+                      className="absolute inset-0 rounded-[10px] border border-[#e2e5ea] bg-white"
                       transition={{ type: "spring", stiffness: 480, damping: 36 }}
                     />
                   )}
@@ -132,7 +132,7 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
                   <span className="relative z-10 hidden truncate lg:inline">
                     {setupDone === 4 ? "主页已完整" : "完成设置"}
                   </span>
-                  <span className="relative z-10 ml-auto hidden font-mono text-[12px] text-[var(--color-faint)] tabular-nums lg:inline">
+                  <span className="relative z-10 ml-auto hidden font-sans text-[12px] text-[var(--color-faint)] tabular-nums lg:inline">
                     {setupDone}/4
                   </span>
                 </>
@@ -160,7 +160,7 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
 
           <NavLink
             to="/new/project"
-            className="mt-auto hidden rounded-[14px] border border-[var(--hairline)] bg-white p-3.5 transition hover:border-[#0f1419] lg:block"
+            className="mt-auto hidden rounded-[14px] border border-[#e2e5ea] bg-white p-3.5 transition hover:border-[#0f1419] lg:block"
           >
             <p className="text-[13.5px] font-semibold leading-snug">把作品放上来</p>
             <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-ink-soft)]">
@@ -191,7 +191,7 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
                 >
                   {item.label}
                   {item.icon === "messages" && unreadCount > 0 && (
-                    <span className="ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#f43f5e] px-1 font-mono text-[11px] font-semibold text-white tabular-nums">
+                    <span className="ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#f43f5e] px-1 font-sans text-[11px] font-semibold text-white tabular-nums">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
@@ -238,7 +238,7 @@ function RailLink({
           {isActive && (
             <motion.span
               layoutId="rail-active-pill"
-              className="absolute inset-0 rounded-[10px] border border-[var(--hairline)] bg-white"
+              className="absolute inset-0 rounded-[10px] border border-[#e2e5ea] bg-white"
               transition={{ type: "spring", stiffness: 480, damping: 36 }}
             />
           )}
@@ -250,7 +250,7 @@ function RailLink({
           />
           <span className="relative z-10 hidden truncate lg:inline">{label}</span>
           {unread > 0 && (
-            <span className="relative z-10 ml-auto hidden min-w-[18px] items-center justify-center rounded-full bg-[#f43f5e] px-1 font-mono text-[11px] font-semibold leading-[18px] text-white tabular-nums lg:inline-flex">
+            <span className="relative z-10 ml-auto hidden min-w-[18px] items-center justify-center rounded-full bg-[#f43f5e] px-1 font-sans text-[11px] font-semibold leading-[18px] text-white tabular-nums lg:inline-flex">
               {unread > 99 ? "99+" : unread}
             </span>
           )}

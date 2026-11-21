@@ -213,7 +213,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
         {(page > 1 || hasMore) && (
           <nav className="flex items-center justify-between gap-3 border-t border-[#eff3f4] px-4 py-3">
             {page > 1 ? <Link to={href({ page: String(page - 1) })} className="text-[13px] text-[#536471] hover:text-[#0f1419]">← 上一页</Link> : <span />}
-            <span className="font-mono text-[11.5px] text-[#8b93a3] tabular-nums">第 {page} 页</span>
+            <span className="font-sans text-[11.5px] text-[#8b93a3] tabular-nums">第 {page} 页</span>
             {hasMore ? <Link to={href({ page: String(page + 1) })} className="text-[13px] text-[#536471] hover:text-[#0f1419]">下一页 →</Link> : <span />}
           </nav>
         )}
@@ -228,7 +228,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
                 {tags.map((t) => (
                   <Link key={t.tag} to={`/feed?tag=${encodeURIComponent(t.tag)}`} className="flex items-center justify-between rounded-[8px] px-2 py-1.5 text-[13.5px] transition hover:bg-white">
                     <span className="font-medium text-[#0f1419]">#{t.tag}</span>
-                    <span className="font-mono text-[11.5px] text-[#8b93a3] tabular-nums">{t.n}</span>
+                    <span className="font-sans text-[11.5px] text-[#8b93a3] tabular-nums">{t.n}</span>
                   </Link>
                 ))}
               </div>

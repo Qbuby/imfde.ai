@@ -94,7 +94,7 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
             {a.label}
           </Link>
         ))}
-        <span className="ml-2 flex items-center gap-1">
+        <span className="flex items-center gap-1 sm:ml-auto">
           {[{v:"new",label:"最新"},{v:"likes",label:"赞最多"}].map((so) => (
             <Link key={so.v} to={withParam("sort", so.v === "new" ? "" : so.v)} preventScrollReset
               className={`px-2 py-1 text-[12px] transition ${(sort || "new") === so.v ? "font-semibold text-[#0f1419]" : "text-[#8b93a3] hover:text-[#0f1419]"}`}>

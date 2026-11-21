@@ -36,7 +36,7 @@ export function AuthorHoverCard({
           side="bottom"
           align="start"
           sideOffset={8}
-          className="frost grain z-50 w-[288px] rounded-[14px] border border-[var(--hairline)] p-4 shadow-[var(--shadow-lift)]"
+          className="frost grain z-50 w-[288px] rounded-[14px] border border-[#e2e5ea] p-4 shadow-[var(--shadow-lift)]"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}

@@ -52,9 +52,9 @@
   --color-link-halo: rgba(29, 155, 240, 0.10);
   --color-featured: #f59e0b;
 
-  --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+  --font-sans: "Onest Variable", "OPPO Sans 4.0", ui-sans-serif, system-ui, -apple-system,
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-display: "Onest Variable", ui-sans-serif, system-ui, -apple-system,
+  --font-display: "Onest Variable", "OPPO Sans 4.0", ui-sans-serif, system-ui, -apple-system,
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
@@ -67,7 +67,7 @@
   /* Shadows only for real overlays: hero search, popover/dialog, toast. */
   --shadow-card: 0 6px 24px rgba(15, 20, 25, 0.06);
   --shadow-lift: 0 10px 30px rgba(15, 20, 25, 0.10);
-  --hairline: 1px solid #eff3f4;
+  --hairline: #e2e5ea;
 }
 
 /* Micro-interaction keyframes: only animate on hover/focus, never on first paint. */
@@ -228,7 +228,7 @@
   .card {
     background: var(--color-surface);
     border-radius: var(--radius-card);
-    border: var(--hairline);
+    border: 1px solid var(--hairline);
   }
 
   /* Quiet content panel: no shadow anywhere in the reading flow. */
@@ -280,11 +280,11 @@
     background: var(--color-link-halo);
   }
 
-  /* Mono micro-label for handles, timestamps and codes. */
+  /* Micro-label for handles, timestamps and codes — now in the site font. */
   .micro-mono {
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: 11px;
-    letter-spacing: 0.03em;
+    letter-spacing: 0;
     color: var(--color-faint);
     font-variant-numeric: tabular-nums;
   }

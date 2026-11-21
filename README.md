@@ -22,7 +22,7 @@ FDE 做的事通常散在 GitHub、LinkedIn、demo 视频和聊天记录里。Im
 - **D1** 存数据，SQLite 语法
 - **React Router v7** framework mode，服务端渲染 + 类型化路由
 - **Tailwind CSS v4**，设计 token 写在 `app/app.css`
-- 字体自托管（Onest Variable），不依赖外部 CDN
+- 字体自托管（Onest Variable + 自托管分片 OPPO Sans 4.0），不依赖外部 CDN
 
 ## 本地跑起来
 

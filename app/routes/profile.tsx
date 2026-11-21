@@ -173,7 +173,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                 <CopyLinkButton path={`/@${user.handle}`} label="复制主页链接" className="btn btn-ghost btn-sm" />
               </div>
 
-              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[#eff3f4] pt-3 font-mono text-[11.5px] text-[#536471] tabular-nums">
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[#eff3f4] pt-3 font-sans text-[11.5px] text-[#536471] tabular-nums">
                 {stats.map((x) => <span key={x.label}>{compact(x.n)} {x.label}</span>)}
               </div>
 
@@ -203,8 +203,10 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                 </div>
               )}
 
-              <details className="group mt-5 border-t border-[var(--color-line-soft)] py-3">
-                <summary className="cursor-pointer font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">信息从哪里来 · 展开</summary>
+              <details className="group mt-5 border-t border-[#eff3f4] py-3">
+                <summary className="cursor-pointer font-sans text-[11px] text-[#536471]">
+                  信息从哪里来 · <span className="group-open:hidden">展开</span><span className="hidden group-open:inline">收起</span>
+                </summary>
                 <dl className="mt-3 grid gap-2 text-[11.5px] leading-relaxed text-[var(--color-muted)]">
                   <div><dt className="font-medium text-[var(--color-ink)]">本人自述</dt><dd>简介、方向、作品说明。平台不核实。</dd></div>
                   <div><dt className="font-medium text-[var(--color-ink)]">外部链接</dt><dd>跳到站外，内容由对方负责。</dd></div>
@@ -224,7 +226,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                 {tab === id && <motion.span layoutId="profile-tab-underline" className="absolute inset-x-0 bottom-0 h-[2px] rounded bg-[#0f1419]" transition={{ type: "spring", stiffness: 500, damping: 38 }} />}
               </button>
             ))}
-            <span className="ml-auto font-mono text-[11px] text-[#8b93a3] tabular-nums">
+            <span className="ml-auto font-sans text-[11px] text-[#8b93a3] tabular-nums">
               {projects.length} 作品 · {posts.length} 动态
             </span>
           </div>
