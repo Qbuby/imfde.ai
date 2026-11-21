@@ -2,9 +2,19 @@ import type { Route } from "./+types/notifications";
 import { Link, redirect } from "react-router";
 import { requireMe } from "~/lib/session.server";
 import { many, run } from "~/lib/db.server";
-import { Avatar } from "~/components/media";
+import { useState } from "react";
+import { AnimatedBackground } from "~/components/motion/animated-background";
+import { Heart, Repeat2, MessageCircle, UserPlus, AtSign, Bell } from "lucide-react";
 import { relativeTime } from "~/lib/format";
 import { PageHead } from "~/components/page-head";
+
+const NOTIF_ICON: Record<string, { icon: typeof Heart; cls: string }> = {
+  like: { icon: Heart, cls: "bg-[#fff1f2] text-[#f43f5e]" },
+  repost: { icon: Repeat2, cls: "bg-[#ecfdf5] text-[#10b981]" },
+  comment: { icon: MessageCircle, cls: "bg-[#f0f9ff] text-[#0ea5e9]" },
+  follow: { icon: UserPlus, cls: "bg-[#f5f3ff] text-[#7c3aed]" },
+  mention: { icon: AtSign, cls: "bg-[#fffbeb] text-[#d97706]" },
+};
 
 const TEXT: Record<string, string> = {
   follow: "关注了你",
@@ -28,12 +38,15 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     actor_avatar: string | null;
     post_id: string | null;
     project_slug: string | null;
+    post_excerpt: string | null;
+    project_title: string | null;
   }>(
     context,
     `SELECT n.id, n.type, n.target_type, n.target_id, n.read_at, n.created_at,
             u.handle AS actor_handle, p.display_name AS actor_name,
             p.avatar_url AS actor_avatar,
-            po.id AS post_id, pr.slug AS project_slug
+            po.id AS post_id, pr.slug AS project_slug,
+            substr(po.body, 1, 90) AS post_excerpt, pr.title AS project_title
        FROM notifications n
        LEFT JOIN users u    ON u.id = n.actor_id
        LEFT JOIN profiles p ON p.user_id = n.actor_id
@@ -63,6 +76,8 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 export default function Notifications({ loaderData }: Route.ComponentProps) {
   const { items, unread } = loaderData;
+  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const shown = filter === "unread" ? items.filter((n) => !n.read_at) : items;
 
   return (
     <div>
@@ -78,7 +93,19 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
         }
       />
 
-      {items.length === 0 ? (
+      <div className="mt-5 inline-flex items-center rounded-full border border-[#e3e5ea] bg-[#f7f7f9] p-1">
+        <AnimatedBackground
+          defaultValue="all"
+          onValueChange={(id) => id && setFilter(id as typeof filter)}
+          className="rounded-full bg-[#14171f]"
+          transition={{ type: "spring", stiffness: 460, damping: 34 }}
+        >
+          <button data-id="all" type="button" className="rounded-full px-3 py-1 text-[12.5px] text-[#4a5264] data-[checked=true]:text-white">全部</button>
+          <button data-id="unread" type="button" className="rounded-full px-3 py-1 text-[12.5px] text-[#4a5264] data-[checked=true]:text-white">未读 · {unread}</button>
+        </AnimatedBackground>
+      </div>
+
+      {shown.length === 0 ? (
         <div className="mt-8 border-t border-[var(--color-line-soft)] py-16">
           <p className="text-[16px] font-semibold">还没有通知</p>
           <p className="mt-1.5 text-[13.5px] text-[var(--color-ink-soft)]">
@@ -87,7 +114,7 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
         </div>
       ) : (
         <div className="mt-8 divide-y divide-[var(--color-line-soft)] border-t border-[var(--color-line-soft)]">
-          {items.map((n) => {
+          {shown.map((n) => {
             const href =
               n.post_id
                 ? `/posts/${n.post_id}`
@@ -105,14 +132,14 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
                   n.read_at ? "opacity-55" : ""
                 }`}
               >
-                {!n.read_at && (
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-ink-soft)]" />
-                )}
-                <Avatar
-                  name={n.actor_name ?? "?"}
-                  src={n.actor_avatar}
-                  size={34}
-                />
+                <span
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${NOTIF_ICON[n.type]?.cls ?? "bg-[#f7f7f9] text-[#677084]"}`}
+                >
+                  {(() => {
+                    const Icon = NOTIF_ICON[n.type]?.icon ?? Bell;
+                    return <Icon size={15} strokeWidth={1.7} aria-hidden />;
+                  })()}
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px]">
                     <span className="font-medium">{n.actor_name ?? "某人"}</span>{" "}
@@ -120,6 +147,11 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
                       {TEXT[n.type] ?? n.type}
                     </span>
                   </p>
+                  {(n.post_excerpt || n.project_title) && (
+                    <p className="mt-1 truncate rounded-[8px] bg-[#f7f7f9] px-2.5 py-1.5 text-[12.5px] text-[#4a5264]">
+                      {n.post_excerpt || n.project_title}
+                    </p>
+                  )}
                   <p className="font-mono text-[10.5px] text-[var(--color-faint)]">
                     {n.time_label}
                   </p>

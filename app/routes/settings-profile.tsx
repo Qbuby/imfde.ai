@@ -5,6 +5,8 @@ import { many, one, stmt, batch } from "~/lib/db.server";
 import { cleanUrl, clamp } from "~/lib/validate";
 import { Avatar, CoverArt } from "~/components/media";
 import { PageHead } from "~/components/page-head";
+import { SettingsTabs } from "~/components/settings-tabs";
+import { useState } from "react";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await requireMe(context, request);
@@ -112,8 +114,30 @@ export default function SettingsProfile({
   const { me, profile, skills, welcome } = loaderData;
   const p = profile!;
 
+  // Live preview state: SSR renders the persisted values (visible first paint),
+  // typing updates the card on the right without a round trip.
+  const [live, setLive] = useState({
+    display_name: p.display_name,
+    headline: p.headline ?? "",
+    about: p.about ?? "",
+    avatar_url: p.avatar_url ?? "",
+    cover_url: p.cover_url ?? "",
+    skills,
+  });
+  const bind = (key: keyof typeof live) => ({
+    value: live[key],
+    onChange: (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    ) => setLive((v) => ({ ...v, [key]: e.target.value })),
+  });
+  const previewSkills = live.skills
+    .split(/[,，、]/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .slice(0, 6);
+
   return (
-    <div className="max-w-[900px]">
+    <div className="max-w-[1080px]">
       {welcome && (
         <div className="mb-6 rounded-[var(--radius-panel)] border border-[var(--color-ink-soft)] bg-[var(--color-accent-soft)] px-4 py-3.5">
           <p className="text-[13.5px] font-medium text-[#0a6772]">
@@ -130,37 +154,15 @@ export default function SettingsProfile({
         title="编辑主页"
         description="别人看到的这一页，就是这里填的东西。"
         actions={
-          <>
-            <Link to={`/@${me.handle}`} className="btn btn-ghost btn-sm">
-              看主页
-            </Link>
-            <Link to="/settings/accounts" className="btn btn-ghost btn-sm">
-              外部账号
-            </Link>
-          </>
+          <Link to={`/@${me.handle}`} className="btn btn-ghost btn-sm">
+            看主页
+          </Link>
         }
       />
+      <div className="mt-5"><SettingsTabs /></div>
 
-      {/* live preview header */}
-      <div className="mt-7 overflow-hidden rounded-[12px] border border-[var(--color-line-soft)]">
-        <CoverArt
-          seed={`${me.handle}-cover`}
-          src={p.cover_url}
-          aspect="16 / 5"
-          photo={false}
-        />
-        <div className="-mt-9 flex items-end gap-3 px-4 pb-4">
-          <Avatar name={p.display_name} src={p.avatar_url} size={64} ring />
-          <div className="pb-0.5">
-            <p className="text-[15px] font-medium">{p.display_name}</p>
-            <p className="font-mono text-[11px] text-[var(--color-faint)]">
-              @{me.handle}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <Form method="post" className="mt-8 space-y-5">
+      <div className="mt-7 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <Form method="post" className="space-y-5">
         {/* privacy toggle lives here because it is about the page itself */}
         <label className="flex items-center justify-between gap-4 rounded-[var(--radius-field)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3.5">
           <span>
@@ -184,7 +186,7 @@ export default function SettingsProfile({
             name="display_name"
             required
             maxLength={60}
-            defaultValue={p.display_name}
+            {...bind("display_name")}
             className="field"
           />
         </Field>
@@ -193,7 +195,7 @@ export default function SettingsProfile({
           <input
             name="headline"
             maxLength={140}
-            defaultValue={p.headline ?? ""}
+            {...bind("headline")}
             placeholder="比如：把企业系统接到大模型上的 FDE，专做语音与工单"
             className="field"
           />
@@ -204,7 +206,7 @@ export default function SettingsProfile({
             name="about"
             rows={6}
             maxLength={4000}
-            defaultValue={p.about ?? ""}
+            {...bind("about")}
             placeholder="你的背景、擅长的场景、怎么工作。写成给同行和潜在客户看的样子。"
             className="field field-area !min-h-[140px]"
           />
@@ -234,7 +236,7 @@ export default function SettingsProfile({
         <Field label="方向标签" hint="逗号分隔，最多 12 个">
           <input
             name="skills"
-            defaultValue={skills}
+            {...bind("skills")}
             placeholder="Agent 编排, RAG, 语音转写, 私有部署"
             className="field"
           />
@@ -248,7 +250,7 @@ export default function SettingsProfile({
           >
             <input
               name="avatar_url"
-              defaultValue={p.avatar_url ?? ""}
+              {...bind("avatar_url")}
               placeholder="https://…"
               className="field"
             />
@@ -260,7 +262,7 @@ export default function SettingsProfile({
           >
             <input
               name="cover_url"
-              defaultValue={p.cover_url ?? ""}
+              {...bind("cover_url")}
               placeholder="https://…"
               className="field"
             />
@@ -281,6 +283,47 @@ export default function SettingsProfile({
           <button className="btn btn-primary">保存</button>
         </div>
       </Form>
+
+      {/* live gallery-card preview */}
+      <aside className="xl:sticky xl:top-6">
+        <p className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+          实时预览 · 别人看到的
+        </p>
+        <div data-testid="profile-preview" className="overflow-hidden rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
+          <CoverArt
+            seed={`${me.handle}-cover`}
+            src={live.cover_url || null}
+            aspect="16 / 6"
+            photo={false}
+          />
+          <div className="-mt-8 px-4 pb-4">
+            <Avatar name={live.display_name} src={live.avatar_url || null} size={56} ring />
+            <p className="mt-2 text-[15px] font-semibold">{live.display_name}</p>
+            <p className="font-mono text-[11px] text-[var(--color-faint)]">@{me.handle}</p>
+            <p className={`mt-2 text-[12.5px] leading-relaxed ${live.headline ? "text-[#4a5264]" : "text-[#8b93a3]"}`}>
+              {live.headline || "一句话介绍自己"}
+            </p>
+            {previewSkills.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {previewSkills.map((x) => (
+                  <span key={x} className="rounded-full bg-[#f4f5f7] px-2 py-0.5 text-[11px] text-[#4a5264]">
+                    {x}
+                  </span>
+                ))}
+              </div>
+            )}
+            {live.about && (
+              <p className="mt-3 line-clamp-4 border-t border-[#eef0f2] pt-3 text-[12px] leading-relaxed text-[#677084]">
+                {live.about}
+              </p>
+            )}
+          </div>
+        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-[var(--color-faint)]">
+          标签仅在本平台显示；外部链接会标注「外部链接」，我们不核实其内容。
+        </p>
+      </aside>
+      </div>
     </div>
   );
 }

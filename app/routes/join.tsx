@@ -4,6 +4,7 @@ import { hashPassword, createSessionCookie } from "~/lib/auth.server";
 import { one, stmt, batch } from "~/lib/db.server";
 import { checkDisplayName, checkEmail, checkHandle, checkPassword } from "~/lib/validate";
 import { getMe } from "~/lib/session.server";
+import { BorderBeam } from "~/components/magicui/border-beam";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
@@ -89,6 +90,7 @@ export default function Join({ actionData }: Route.ComponentProps) {
 
   return (
     <AuthShell
+      dark
       title="建你的主页"
       subtitle="两分钟。不需要认证，不需要审核。"
       side={{
@@ -224,11 +226,13 @@ export function AuthShell({
   title,
   subtitle,
   side,
+  dark = false,
   children,
 }: {
   title: string;
   subtitle: string;
   side: { title: string; points: string[] };
+  dark?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -244,31 +248,72 @@ export function AuthShell({
         </div>
 
         <aside className="hidden lg:block">
-          <div
-            className="relative overflow-hidden rounded-[24px] border border-[var(--color-line)] px-9 py-12"
-            style={{
-              backgroundImage:
-                "radial-gradient(80% 90% at 10% 0%, #f0e9ff 0%, transparent 60%), radial-gradient(70% 80% at 95% 10%, #e3f2f3 0%, transparent 62%), radial-gradient(90% 90% at 50% 110%, #fdf4d8 0%, transparent 66%)",
-              backgroundColor: "var(--color-surface)",
-            }}
-          >
-            <p className="display text-[clamp(22px,2.4vw,30px)] leading-[1.25]">
-              {side.title}
-            </p>
-            <ul className="mt-7 space-y-3.5">
-              {side.points.map((p) => (
-                <li key={p} className="flex items-start gap-2.5 text-[13.5px] text-[var(--color-ink-soft)]">
-                  <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[var(--color-ink-2)] text-[10px] text-white">
-                    ✓
-                  </span>
-                  {p}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-9 font-mono text-[10.5px] tracking-[0.12em] text-[var(--color-faint)] uppercase">
-              No credit scores · No escrow · No ranking
-            </p>
-          </div>
+          {dark ? (
+            <div className="relative min-h-[440px] overflow-hidden rounded-[24px] border border-white/10 bg-[#14171f] px-9 py-12 shadow-[0_18px_36px_rgba(16,24,40,0.09)]">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 opacity-[0.16]"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.5) 1px, transparent 0)",
+                  backgroundSize: "18px 18px",
+                }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-24 -top-24 h-[320px] w-[320px] rounded-full bg-sky-500/20 blur-[90px]"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -bottom-24 -left-16 h-[300px] w-[300px] rounded-full bg-violet-500/20 blur-[90px]"
+              />
+              <BorderBeam size={140} duration={8} borderWidth={1.5} colorFrom="#0ea5e9" colorTo="#f59e0b" />
+              <div className="relative z-10">
+                <p className="display text-[clamp(22px,2.4vw,30px)] leading-[1.25] text-white">
+                  {side.title}
+                </p>
+                <ul className="mt-7 space-y-3.5">
+                  {side.points.map((p) => (
+                    <li key={p} className="flex items-start gap-2.5 text-[13.5px] text-white/80">
+                      <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[#10b981] text-[10px] font-bold text-[#14171f]">
+                        ✓
+                      </span>
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-9 font-mono text-[10.5px] tracking-[0.12em] text-white/45 uppercase">
+                  No credit scores · No escrow · No ranking
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="relative overflow-hidden rounded-[24px] border border-[var(--color-line)] px-9 py-12"
+              style={{
+                backgroundImage:
+                  "radial-gradient(80% 90% at 10% 0%, #f0e9ff 0%, transparent 60%), radial-gradient(70% 80% at 95% 10%, #e3f2f3 0%, transparent 62%), radial-gradient(90% 90% at 50% 110%, #fdf4d8 0%, transparent 66%)",
+                backgroundColor: "var(--color-surface)",
+              }}
+            >
+              <p className="display text-[clamp(22px,2.4vw,30px)] leading-[1.25]">
+                {side.title}
+              </p>
+              <ul className="mt-7 space-y-3.5">
+                {side.points.map((p) => (
+                  <li key={p} className="flex items-start gap-2.5 text-[13.5px] text-[var(--color-ink-soft)]">
+                    <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[var(--color-ink-2)] text-[10px] text-white">
+                      ✓
+                    </span>
+                    {p}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-9 font-mono text-[10.5px] tracking-[0.12em] text-[var(--color-faint)] uppercase">
+                No credit scores · No escrow · No ranking
+              </p>
+            </div>
+          )}
         </aside>
       </div>
     </div>

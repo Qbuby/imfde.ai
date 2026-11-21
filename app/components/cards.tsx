@@ -15,7 +15,7 @@ import {
 import { Avatar, CoverArt } from "./media";
 import { compact } from "~/lib/format";
 import { extractTags } from "~/lib/tags";
-import { fireLikeBurst } from "~/lib/like-burst";
+import { fireLikeBurst } from "~/lib/burst";
 import { AuthorHoverCard } from "./author-hover-card";
 import { Spotlight } from "./motion/spotlight";
 import { SlidingNumber } from "./motion/sliding-number";
@@ -253,17 +253,27 @@ export function FeedCard({
     : Boolean(post.bookmarked);
 
   const repostFetcher = useFetcher();
+  const quoteFetcher = useFetcher();
   const [repostOpen, setRepostOpen] = useState(false);
-  const lastReposted = useRef<string | null>(null);
-  const repostCount = post.reposts + (repostFetcher.state !== "idle" ? 1 : 0);
+  const [reposted, setReposted] = useState(Boolean(post.reposted));
+  const repostCount = post.reposts + (repostFetcher.state !== "idle" && !reposted ? 1 : 0);
 
   useEffect(() => {
-    const data = repostFetcher.data as { ok?: boolean; id?: string } | undefined;
-    if (!data?.ok || !data.id || lastReposted.current === data.id) return;
-    lastReposted.current = data.id;
+    const data = repostFetcher.data as
+      | { ok?: boolean; id?: string; reposted?: boolean }
+      | undefined;
+    if (!data?.ok) return;
+    setReposted(Boolean(data.reposted));
     setRepostOpen(false);
-    toast.success("已转发到广场");
+    toast.success(data.reposted ? "已转发到广场" : "已取消转发");
   }, [repostFetcher.data]);
+
+  useEffect(() => {
+    const data = quoteFetcher.data as { ok?: boolean } | undefined;
+    if (!data?.ok) return;
+    setRepostOpen(false);
+    toast.success("引用已发布");
+  }, [quoteFetcher.data]);
 
   const [copied, setCopied] = useState(false);
   async function copyLink() {
@@ -452,7 +462,9 @@ export function FeedCard({
                   <button
                     aria-label="转发"
                     onClick={popRepost}
-                    className="action-btn action-repost data-[state=open]:text-[var(--color-repost)]"
+                    className={`action-btn action-repost data-[state=open]:text-[var(--color-repost)] ${
+                      reposted ? "bg-[rgba(16,185,129,0.10)] text-[#10b981]" : ""
+                    }`}
                   >
                     <motion.span animate={repostControls} className="grid place-items-center">
                       <Repeat2 size={17} strokeWidth={1.65} aria-hidden />
@@ -465,27 +477,47 @@ export function FeedCard({
                     side="bottom"
                     align="start"
                     sideOffset={6}
-                    className="pop-in grain z-50 w-[320px] rounded-[12px] border border-[var(--hairline)] bg-white p-3 shadow-[var(--shadow-lift)]"
+                    className="pop-in z-50 w-[320px] outline-none"
                   >
-                    <repostFetcher.Form method="post" action="/actions/repost" className="space-y-2">
-                      <input type="hidden" name="post_id" value={post.id} />
-                      <textarea
-                        name="body"
-                        rows={3}
-                        maxLength={2000}
-                        placeholder="加一句你的看法，或留空直接转发"
-                        className="field field-area !min-h-[72px] !text-[13px]"
-                      />
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11.5px] text-[var(--color-faint)]">留空即纯转发</span>
-                        <button
-                          disabled={repostFetcher.state !== "idle"}
-                          className="btn btn-primary btn-sm disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {repostFetcher.state !== "idle" ? "转发中…" : "转发"}
-                        </button>
+                    <div className="w-[320px] rounded-[14px] border border-[rgba(20,23,31,0.10)] bg-white p-3 shadow-[0_12px_32px_rgba(16,24,40,0.12)]">
+                      <div className="mb-2.5 flex items-center justify-between border-b border-[#eef0f2] pb-2.5">
+                        <span className="text-[12px] font-medium">转发到广场</span>
+                        <repostFetcher.Form method="post" action="/actions/repost">
+                          <input type="hidden" name="post_id" value={post.id} />
+                          <input type="hidden" name="body" value="" />
+                          <input type="hidden" name="intent" value={reposted ? "unrepost" : "repost"} />
+                          <button
+                            disabled={repostFetcher.state !== "idle"}
+                            className={`rounded-full px-3 py-1 text-[12px] font-medium transition disabled:opacity-50 ${
+                              reposted
+                                ? "text-[#10b981] hover:bg-[rgba(16,185,129,0.10)]"
+                                : "text-[var(--color-ink-soft)] hover:bg-[var(--color-paper)]"
+                            }`}
+                          >
+                            {reposted ? "取消转发" : "直接转发"}
+                          </button>
+                        </repostFetcher.Form>
                       </div>
-                    </repostFetcher.Form>
+                      <quoteFetcher.Form method="post" action="/actions/repost" className="space-y-2">
+                        <input type="hidden" name="post_id" value={post.id} />
+                        <input type="hidden" name="intent" value="repost" />
+                        <textarea
+                          name="body"
+                          rows={2}
+                          maxLength={2000}
+                          placeholder="加一句你的看法进行引用…"
+                          className="field field-area !min-h-[64px] !text-[13px]"
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            disabled={quoteFetcher.state !== "idle"}
+                            className="btn btn-primary btn-sm disabled:opacity-50"
+                          >
+                            {quoteFetcher.state !== "idle" ? "发布中…" : "引用转发"}
+                          </button>
+                        </div>
+                      </quoteFetcher.Form>
+                    </div>
                   </Popover.Content>
                 </Popover.Portal>
               </Popover.Root>

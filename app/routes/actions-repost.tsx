@@ -11,6 +11,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const form = await request.formData();
   const postId = String(form.get("post_id") ?? "");
   const body = String(form.get("body") ?? "").trim().slice(0, 2000);
+  const intent = String(form.get("intent") ?? "repost");
 
   const original = await one<{
     id: string;
@@ -74,6 +75,35 @@ export async function action({ request, context }: Route.ActionArgs) {
     target = parent;
   }
 
+  const repostTargetId = target.id;
+
+  if (intent === "unrepost") {
+    await run(
+      context,
+      `UPDATE posts SET deleted_at = ?1, updated_at = ?1
+        WHERE author_id = ?2 AND repost_of_id = ?3 AND body = '' AND deleted_at IS NULL`,
+      Date.now(),
+      me.id,
+      repostTargetId,
+    );
+    return Response.json({ ok: true, reposted: false });
+  }
+
+  // Never stack two bare reposts of the same post for the same author.
+  if (body === "") {
+    const existing = await one<{ id: string }>(
+      context,
+      `SELECT id FROM posts
+        WHERE author_id = ?1 AND repost_of_id = ?2 AND body = '' AND deleted_at IS NULL
+        LIMIT 1`,
+      me.id,
+      repostTargetId,
+    );
+    if (existing) {
+      return Response.json({ ok: true, id: existing.id, reposted: true, duplicate: true });
+    }
+  }
+
   // a bare repost keeps the original's kind so the chip still reads correctly
   const kind = KINDS.includes(target.kind) ? target.kind : "thought";
 
@@ -81,7 +111,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     authorId: me.id,
     kind,
     body,
-    repostOfId: target.id,
+    repostOfId: repostTargetId,
     tags: extractTags(body),
   });
 
@@ -95,10 +125,10 @@ export async function action({ request, context }: Route.ActionArgs) {
       crypto.randomUUID(),
       target.author_id,
       me.id,
-      target.id,
+      repostTargetId,
       Date.now(),
     );
   }
 
-  return Response.json({ ok: true, id });
+  return Response.json({ ok: true, id, reposted: true });
 }

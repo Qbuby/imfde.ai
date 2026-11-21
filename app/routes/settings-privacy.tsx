@@ -1,11 +1,12 @@
 import type { Route } from "./+types/settings-privacy";
-import { data, Form, Link, redirect } from "react-router";
+import { data, Form, redirect } from "react-router";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "~/components/confirm-dialog";
 import { requireMe } from "~/lib/session.server";
 import { one, run } from "~/lib/db.server";
 import { PageHead } from "~/components/page-head";
+import { SettingsTabs } from "~/components/settings-tabs";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await requireMe(context, request);
@@ -65,12 +66,8 @@ export default function SettingsPrivacy({
         label="Settings"
         title="隐私"
         description="这些开关只影响别人看到什么，不影响数据本身。"
-        actions={
-          <Link to="/settings/profile" className="btn btn-ghost btn-sm">
-            编辑主页
-          </Link>
-        }
       />
+      <div className="mt-5"><SettingsTabs /></div>
 
       {saved && (
         <p className="mt-5 rounded-[10px] border border-[var(--color-line)] bg-[var(--color-paper)] px-4 py-2.5 text-[12.5px] text-[var(--color-ink-soft)]">

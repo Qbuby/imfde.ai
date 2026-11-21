@@ -29,6 +29,14 @@ export interface ProjectCardRow extends AuthorCardRow {
 
 export interface PersonRow {
   id: string;
+  skills: string[];
+  preview_projects: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    cover_url: string | null;
+    kind: string;
+  }>;
   handle: string;
   kind: string;
   display_name: string;
@@ -128,6 +136,8 @@ export interface FeedPostRow extends AuthorCardRow {
   bookmarked: number;
   /** 1 when the viewer already follows this post's author. */
   author_following: number;
+  /** 1 when the viewer already has a live bare repost of this post. */
+  reposted: number;
   repost_of_id: string | null;
   tags: string[];
   /** Non-null when the original is still readable; null means it is gone. */
@@ -168,6 +178,9 @@ const FEED_SELECT = (viewerSlot: number) => `
              AND b.target_id = po.id) AS bookmarked,
          (SELECT COUNT(*) FROM follows f
            WHERE f.follower_id = ?${viewerSlot} AND f.followed_id = po.author_id) AS author_following,
+         (SELECT COUNT(*) FROM posts myrp
+           WHERE myrp.repost_of_id = po.id AND myrp.author_id = ?${viewerSlot}
+             AND myrp.body = '' AND myrp.deleted_at IS NULL) AS reposted,
          op.id AS r_id, op.kind AS r_kind, op.body AS r_body,
          op.created_at AS r_created_at,
          ou.handle AS r_handle, opf.display_name AS r_display_name,
@@ -430,16 +443,89 @@ const personSelect = (viewerSlot: number) => `
    WHERE u.status = 'active' AND p.visibility = 'public'
 `;
 
+/** Batch-fetch skills for a set of people: one query, never one per card. */
+export async function skillsForUsers(
+  context: AppLoadContext,
+  userIds: string[],
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (!userIds.length) return out;
+  const ph = userIds.map((_, n) => `?${n + 1}`).join(",");
+  const rows = await many<{ user_id: string; skill_name: string }>(
+    context,
+    `SELECT user_id, skill_name FROM profile_skills WHERE user_id IN (${ph}) ORDER BY position`,
+    ...userIds,
+  );
+  for (const r of rows) {
+    const list = out.get(r.user_id) ?? [];
+    if (list.length < 3) list.push(r.skill_name);
+    out.set(r.user_id, list);
+  }
+  return out;
+}
+
+/** Batch-fetch up to two public preview works per person. */
+export async function previewProjectsForUsers(
+  context: AppLoadContext,
+  userIds: string[],
+): Promise<Map<string, PersonRow["preview_projects"]>> {
+  const out = new Map<string, PersonRow["preview_projects"]>();
+  if (!userIds.length) return out;
+  const ph = userIds.map((_, n) => `?${n + 1}`).join(",");
+  const rows = await many<{
+    id: string; owner_id: string; slug: string; title: string;
+    cover_url: string | null; kind: string;
+  }>(
+    context,
+    `SELECT id, owner_id, slug, title, cover_url, kind FROM projects
+      WHERE owner_id IN (${ph}) AND visibility = 'public'
+      ORDER BY featured DESC, created_at DESC`,
+    ...userIds,
+  );
+  for (const r of rows) {
+    const list = out.get(r.owner_id) ?? [];
+    if (list.length < 2) {
+      list.push({
+        id: r.id, slug: r.slug, title: r.title,
+        cover_url: r.cover_url, kind: r.kind,
+      });
+      out.set(r.owner_id, list);
+    }
+  }
+  return out;
+}
+
+/** Attach both batch lookups to a list of people with two extra queries. */
+export async function hydratePeople(
+  context: AppLoadContext,
+  rows: PersonRow[],
+): Promise<PersonRow[]> {
+  if (!rows.length) return rows;
+  const ids = rows.map((r) => r.id);
+  const [skills, projects] = await Promise.all([
+    skillsForUsers(context, ids),
+    previewProjectsForUsers(context, ids),
+  ]);
+  return rows.map((r) => ({
+    ...r,
+    skills: skills.get(r.id) ?? [],
+    preview_projects: projects.get(r.id) ?? [],
+  }));
+}
+
 export async function featuredPeople(
   context: AppLoadContext,
   viewerId: string | null,
   limit = 6,
 ): Promise<PersonRow[]> {
-  return many<PersonRow>(
+  return hydratePeople(
     context,
-    `${personSelect(1)} ORDER BY followers DESC, projects DESC, p.updated_at DESC LIMIT ?2`,
-    viewerId ?? "·none·",
-    limit,
+    await many<PersonRow>(
+      context,
+      `${personSelect(1)} ORDER BY followers DESC, projects DESC, p.updated_at DESC LIMIT ?2`,
+      viewerId ?? "·none·",
+      limit,
+    ),
   );
 }
 
@@ -448,13 +534,16 @@ export async function recommendedPeople(
   viewerId: string,
   limit = 4,
 ): Promise<PersonRow[]> {
-  return many<PersonRow>(
+  return hydratePeople(
     context,
-    `${personSelect(1)} AND u.id <> ?1
-       AND u.id NOT IN (SELECT followed_id FROM follows WHERE follower_id = ?1)
-      ORDER BY followers DESC, projects DESC LIMIT ?2`,
-    viewerId,
-    limit,
+    await many<PersonRow>(
+      context,
+      `${personSelect(1)} AND u.id <> ?1
+         AND u.id NOT IN (SELECT followed_id FROM follows WHERE follower_id = ?1)
+        ORDER BY followers DESC, projects DESC LIMIT ?2`,
+      viewerId,
+      limit,
+    ),
   );
 }
 
@@ -488,13 +577,14 @@ export async function searchPeople(
   if (opts.skill) {
     // partial skill names should find people: "RAG" matches "RAG 检索",
     // "语音" matches "语音交互". Also scan the one-line headline.
-    params.push(`%${opts.skill}%`, `%${opts.skill}%`);
+    const skillPattern = `%${opts.skill}%`;
+    params.push(skillPattern);
     clauses.push(
       `(u.id IN (SELECT user_id FROM profile_skills
-                  WHERE skill_name LIKE ?${i} OR skill_name LIKE ?${i + 1})
-        OR p.headline LIKE ?${i} OR p.headline LIKE ?${i + 1})`,
+                  WHERE skill_name LIKE ?${i} COLLATE NOCASE)
+        OR p.headline LIKE ?${i} COLLATE NOCASE)`,
     );
-    i += 2;
+    i += 1;
   }
 
   const where = clauses.length ? ` AND ${clauses.join(" AND ")}` : "";
@@ -506,10 +596,13 @@ export async function searchPeople(
         : "followers DESC, projects DESC";
 
   params.push(opts.limit ?? 24);
-  return many<PersonRow>(
+  return hydratePeople(
     context,
-    `${personSelect(1)}${where} ORDER BY ${order} LIMIT ?${i}`,
-    ...params,
+    await many<PersonRow>(
+      context,
+      `${personSelect(1)}${where} ORDER BY ${order} LIMIT ?${i}`,
+      ...params,
+    ),
   );
 }
 
@@ -521,6 +614,7 @@ export async function searchProjects(
     sort?: string;
     limit?: number;
     viewerId?: string | null;
+    accessMode?: string;
   },
 ): Promise<ProjectCardRow[]> {
   const clauses: string[] = [];
@@ -535,6 +629,11 @@ export async function searchProjects(
   if (opts.kind && opts.kind !== "all") {
     params.push(opts.kind);
     clauses.push(`pr.kind = ?${i}`);
+    i++;
+  }
+  if (opts.accessMode && opts.accessMode !== "all") {
+    params.push(opts.accessMode);
+    clauses.push(`pr.access_mode = ?${i}`);
     i++;
   }
 

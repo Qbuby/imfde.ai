@@ -6,6 +6,8 @@ import { cleanUrl, clamp } from "~/lib/validate";
 import { slugify } from "~/lib/format";
 import { insertPost } from "~/lib/queries.server";
 import { PageHead } from "~/components/page-head";
+import { CoverArt } from "~/components/media";
+import { useState } from "react";
 
 const ACCESS_MODES = [
   { v: "", t: "不标注" },
@@ -144,9 +146,22 @@ ${summary}`,
 
 export default function NewProject({ actionData }: Route.ComponentProps) {
   const errors = actionData?.errors ?? {};
+  const [live, setLive] = useState({
+    title: "",
+    summary: "",
+    kind: "project",
+    cover_url: "",
+    access_mode: "",
+  });
+  const bind = (key: keyof typeof live) => ({
+    value: live[key],
+    onChange: (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    ) => setLive((v) => ({ ...v, [key]: e.target.value })),
+  });
 
   return (
-    <div className="max-w-[900px]">
+    <div className="max-w-[1080px]">
       <PageHead
         label="Create"
         title="上传一个作品"
@@ -158,7 +173,8 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
         }
       />
 
-      <Form method="post" className="mt-8 space-y-5">
+      <div className="mt-8 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <Form method="post" className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_200px]">
           <label className="block">
             <span className="mb-1.5 flex gap-2 text-[12.5px] font-medium">
@@ -169,13 +185,14 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
               name="title"
               required
               maxLength={90}
+              {...bind("title")}
               placeholder="比如：把客服工单自动归档的 Agent"
               className="field"
             />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-[12.5px] font-medium">类型</span>
-            <select name="kind" className="field cursor-pointer">
+            <select name="kind" {...bind("kind")} className="field cursor-pointer">
               {KINDS.map((k) => (
                 <option key={k.v} value={k.v}>
                   {k.t}
@@ -194,6 +211,7 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
             name="summary"
             required
             maxLength={220}
+            {...bind("summary")}
             placeholder="它解决什么问题，为谁解决"
             className="field"
           />
@@ -274,7 +292,7 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
             <span className="mb-1.5 block text-[12.5px] font-medium">
               访问方式 <span className="font-normal text-[var(--color-faint)]">可选</span>
             </span>
-            <select name="access_mode" className="field cursor-pointer">
+            <select name="access_mode" {...bind("access_mode")} className="field cursor-pointer">
               {ACCESS_MODES.map((m) => (
                 <option key={m.v || "none"} value={m.v}>
                   {m.t}
@@ -307,7 +325,7 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
                 封面图片 URL
                 {errors.cover_url && <span className="text-[#c0392b]">{errors.cover_url}</span>}
               </span>
-              <input name="cover_url" placeholder="https://…" className="field !h-[42px]" />
+              <input name="cover_url" {...bind("cover_url")} placeholder="https://…" className="field !h-[42px]" />
             </label>
             <label className="block">
               <span className="mb-1.5 flex gap-2 text-[12px] text-[var(--color-ink-soft)]">
@@ -358,6 +376,35 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
           <button className="btn btn-primary">发布作品</button>
         </div>
       </Form>
+
+      <aside className="xl:sticky xl:top-6">
+        <p className="mb-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
+          实时预览 · 作品卡片
+        </p>
+        <div data-testid="project-preview" className="overflow-hidden rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
+          <CoverArt seed="preview-work" src={live.cover_url || null} aspect="16 / 10" photo={false} />
+          <div className="p-4">
+            <div className="flex items-center gap-2">
+              <span className="chip chip-outline">{live.kind}</span>
+              {live.access_mode && (
+                <span className="rounded-full bg-[rgba(16,185,129,0.10)] px-2 py-0.5 text-[11px] text-[#10b981]">
+                  {live.access_mode}
+                </span>
+              )}
+            </div>
+            <p className={`mt-2 text-[15px] font-semibold ${live.title ? "" : "text-[#8b93a3]"}`}>
+              {live.title || "作品标题"}
+            </p>
+            <p className={`mt-1 line-clamp-2 text-[12.5px] leading-relaxed ${live.summary ? "text-[#4a5264]" : "text-[#8b93a3]"}`}>
+              {live.summary || "一句话说明它解决什么问题"}
+            </p>
+          </div>
+        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-[var(--color-faint)]">
+          外部链接与本人自述会在作品页分开标注，平台不核实、不排名。
+        </p>
+      </aside>
+      </div>
     </div>
   );
 }

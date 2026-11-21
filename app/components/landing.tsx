@@ -40,7 +40,7 @@ import {
 import { Marquee } from "./magicui/marquee";
 import { BorderBeam } from "./magicui/border-beam";
 import { Terminal, TypingAnimation, AnimatedSpan } from "./magicui/terminal";
-import { fireLikeBurst } from "~/lib/like-burst";
+import { fireLikeBurst } from "~/lib/burst";
 import type { FeedPostRow, PersonRow, ProjectCardRow } from "~/lib/queries.server";
 
 const DIRECTIONS = [

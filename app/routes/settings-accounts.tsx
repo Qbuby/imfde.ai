@@ -1,9 +1,10 @@
 import type { Route } from "./+types/settings-accounts";
-import { data, Form, Link, redirect } from "react-router";
+import { data, Form, redirect } from "react-router";
 import { requireMe } from "~/lib/session.server";
 import { many, run } from "~/lib/db.server";
 import { cleanUrl } from "~/lib/validate";
 import { PageHead } from "~/components/page-head";
+import { SettingsTabs } from "~/components/settings-tabs";
 
 const PROVIDERS = [
   { v: "github", t: "GitHub", ph: "https://github.com/yourname" },
@@ -97,12 +98,8 @@ export default function SettingsAccounts({
         label="Settings"
         title="外部账号"
         description="加 GitHub、LinkedIn 这些链接，会显示在主页上，并标注为「外部链接」——意思是我们不核实那边的内容，访问者点过去自己看。"
-        actions={
-          <Link to="/settings/profile" className="btn btn-ghost btn-sm">
-            编辑主页
-          </Link>
-        }
       />
+      <div className="mt-5"><SettingsTabs /></div>
 
       {accounts.length > 0 && (
         <div className="mt-7 divide-y divide-[var(--color-line-soft)] border-y border-[var(--color-line-soft)]">

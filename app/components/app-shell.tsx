@@ -40,7 +40,7 @@ export const RAIL_ITEMS = [
   { icon: "messages", label: "消息", to: "/notifications", end: false },
 ] as const;
 
-export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
+export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone: number; unreadCount?: number }) {
   return (
     <div className="min-h-dvh bg-[var(--color-canvas-warm)]">
       {/* ── mobile top bar ─────────────────────────────────────────── */}
@@ -107,7 +107,7 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
 
           <nav className="mt-4 space-y-1">
             {RAIL_ITEMS.map((item) => (
-              <RailLink key={item.to} {...item} />
+              <RailLink key={item.to} {...item} unread={item.icon === "messages" ? unreadCount : 0} />
             ))}
             <NavLink
               to="/settings/profile"
@@ -119,13 +119,24 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
                 }`
               }
             >
-              <SlidersHorizontal size={17} strokeWidth={1.65} className="shrink-0" aria-hidden />
-              <span className="hidden truncate lg:inline">
-                {setupDone === 4 ? "主页已完整" : "完成设置"}
-              </span>
-              <span className="ml-auto hidden font-mono text-[12px] text-[var(--color-faint)] tabular-nums lg:inline">
-                {setupDone}/4
-              </span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.span
+                      layoutId="rail-active-pill"
+                      className="absolute inset-0 rounded-[10px] border border-[var(--hairline)] bg-white shadow-[var(--shadow-card)]"
+                      transition={{ type: "spring", stiffness: 480, damping: 36 }}
+                    />
+                  )}
+                  <SlidersHorizontal size={17} strokeWidth={1.65} className="relative z-10 shrink-0" aria-hidden />
+                  <span className="relative z-10 hidden truncate lg:inline">
+                    {setupDone === 4 ? "主页已完整" : "完成设置"}
+                  </span>
+                  <span className="relative z-10 ml-auto hidden font-mono text-[12px] text-[var(--color-faint)] tabular-nums lg:inline">
+                    {setupDone}/4
+                  </span>
+                </>
+              )}
             </NavLink>
           </nav>
 
@@ -179,6 +190,11 @@ export function AppShell({ me, setupDone }: { me: Me; setupDone: number }) {
                   }
                 >
                   {item.label}
+                  {item.icon === "messages" && unreadCount > 0 && (
+                    <span className="ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#f43f5e] px-1 font-mono text-[11px] font-semibold text-white tabular-nums">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -195,11 +211,13 @@ function RailLink({
   label,
   to,
   end = false,
+  unread = 0,
 }: {
   icon?: keyof typeof RAIL_ICONS;
   label: string;
   to: string;
   end?: boolean;
+  unread?: number;
 }) {
   const Icon = RAIL_ICONS[icon ?? "home"];
   return (
@@ -231,6 +249,14 @@ function RailLink({
             aria-hidden
           />
           <span className="relative z-10 hidden truncate lg:inline">{label}</span>
+          {unread > 0 && (
+            <span className="relative z-10 ml-auto hidden min-w-[18px] items-center justify-center rounded-full bg-[#f43f5e] px-1 font-mono text-[11px] font-semibold leading-[18px] text-white tabular-nums lg:inline-flex">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          )}
+          {unread > 0 && icon === "messages" && (
+            <span className="absolute right-[11px] top-[9px] z-10 h-2 w-2 rounded-full bg-[#f43f5e] ring-2 ring-[var(--color-canvas-warm)] lg:hidden" />
+          )}
         </>
       )}
     </NavLink>

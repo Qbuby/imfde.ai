@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from "react-router";
 import { getMe } from "~/lib/session.server";
 import { one } from "~/lib/db.server";
 import { AppShell } from "~/components/app-shell";
+import { Search } from "lucide-react";
 
 /**
  * Four things make a profile useful to a stranger: a headline, a face, one
@@ -11,13 +12,14 @@ import { AppShell } from "~/components/app-shell";
  */
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
-  if (!me) return { me: null, setupDone: 0 };
+  if (!me) return { me: null, setupDone: 0, unreadCount: 0 };
 
   const row = await one<{
     headline: number;
     avatar_url: number;
     projects: number;
     links: number;
+    unread: number;
   }>(
     context,
     `SELECT
@@ -26,7 +28,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
        (SELECT COUNT(*) FROM profiles
          WHERE user_id = ?1 AND avatar_url IS NOT NULL AND length(avatar_url) > 0) AS avatar_url,
        (SELECT COUNT(*) FROM projects WHERE owner_id = ?1 AND visibility = 'public') AS projects,
-       (SELECT COUNT(*) FROM external_accounts WHERE user_id = ?1) AS links`,
+       (SELECT COUNT(*) FROM external_accounts WHERE user_id = ?1) AS links,
+       (SELECT COUNT(*) FROM notifications
+         WHERE recipient_id = ?1 AND read_at IS NULL) AS unread`,
     me.id,
   );
 
@@ -34,7 +38,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     ? Number(row.headline > 0) + Number(row.avatar_url > 0) + Number(row.projects > 0) + Number(row.links > 0)
     : 0;
 
-  return { me, setupDone };
+  return { me, setupDone, unreadCount: row?.unread ?? 0 };
 }
 
 const GUEST_NAV = [
@@ -83,6 +87,13 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
               aria-label="搜索"
             >
               <SearchIcon />
+            </Link>
+            <Link
+              to="/discover"
+              className="hidden md:inline-flex h-10 items-center gap-2 rounded-full border border-[#e3e5ea] bg-[#f7f7f9] px-3.5 text-[13px] text-[#677084] transition hover:border-[#4a5264] hover:text-[#14171f]"
+            >
+              <Search size={14} strokeWidth={1.65} aria-hidden />
+              <span>搜 FDE 或作品…</span>
             </Link>
             <Link to="/login" className="btn btn-ghost hidden sm:inline-flex">
               登录

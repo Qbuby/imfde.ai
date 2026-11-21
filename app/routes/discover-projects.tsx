@@ -5,6 +5,17 @@ import { searchProjects } from "~/lib/queries.server";
 import { getMe } from "~/lib/session.server";
 import { ProjectCard } from "~/components/cards";
 import { PageHead } from "~/components/page-head";
+import { AnimatedBackground } from "~/components/motion/animated-background";
+import { BorderBeam } from "~/components/magicui/border-beam";
+import { InView } from "~/components/motion/in-view";
+
+const ACCESS_MODES = [
+  { v: "all", label: "全部" },
+  { v: "在线体验", label: "在线体验" },
+  { v: "开源代码", label: "开源代码" },
+  { v: "私有部署", label: "私有部署" },
+  { v: "仅 Demo 展示", label: "仅 Demo" },
+];
 
 const KINDS = [
   { v: "all", label: "全部" },
@@ -21,6 +32,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const q = url.searchParams.get("q")?.trim() || undefined;
   const kind = url.searchParams.get("kind") || "all";
   const sort = url.searchParams.get("sort") || undefined;
+  const accessMode = url.searchParams.get("access") || "all";
 
   const me = await getMe(context, request);
   const projects = await searchProjects(context, {
@@ -29,12 +41,13 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     sort,
     limit: 30,
     viewerId: me?.id ?? null,
+    accessMode,
   });
-  return { projects, q: q ?? "", kind, sort: sort ?? "" };
+  return { projects, q: q ?? "", kind, sort: sort ?? "", accessMode };
 }
 
 export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
-  const { projects, q, kind, sort } = loaderData;
+  const { projects, q, kind, sort, accessMode } = loaderData;
   const [params] = useSearchParams();
 
   const withParam = (key: string, value: string) => {
@@ -53,62 +66,82 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
         description="项目、Agent、自动化流程。每一条都由作者自己写，链接指向他们愿意公开的地方。"
       />
 
-      <form method="get" className="mt-7 flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[240px] flex-1">
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="搜作品标题或简介"
-            className="field !h-[46px] pl-10"
-            aria-label="搜索作品"
-          />
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-faint)]">
-            <Search size={16} strokeWidth={1.65} aria-hidden />
+      <form method="get" className="mt-6 max-w-[720px]">
+        <div className="search-shell">
+          <span className="text-[var(--color-faint)]" aria-hidden>
+            <Search size={18} strokeWidth={1.65} />
           </span>
+          <input name="q" defaultValue={q} placeholder="搜作品标题或简介" aria-label="搜索作品" />
+          <input type="hidden" name="kind" value={kind} />
+          <input type="hidden" name="access" value={accessMode} />
+          {sort && <input type="hidden" name="sort" value={sort} />}
+          <button className="btn btn-primary btn-sm !h-[42px] !px-5 shrink-0">搜索</button>
         </div>
-        <input type="hidden" name="kind" value={kind} />
-        {sort && <input type="hidden" name="sort" value={sort} />}
-        <button className="btn btn-primary">搜索</button>
       </form>
 
-      <div className="mt-5 flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 font-mono text-[11px] tracking-[0.1em] text-[var(--color-faint)] uppercase">
-          类型
-        </span>
-        {KINDS.map((k) => (
-          <Link
-            key={k.v}
-            to={withParam("kind", k.v === "all" ? "" : k.v)}
-            preventScrollReset
-            className={`chip transition ${
-              kind === k.v
-                ? "!bg-[var(--color-ink)] !text-white"
-                : "hover:!bg-[var(--color-sunken-deep)]"
-            }`}
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <span className="font-mono text-[11px] tracking-[0.1em] text-[var(--color-faint)] uppercase">类型</span>
+        <span className="inline-flex items-center rounded-full border border-[#e3e5ea] bg-[#f7f7f9] p-1">
+          <AnimatedBackground
+            defaultValue={kind}
+            className="rounded-full bg-[#14171f]"
+            transition={{ type: "spring", stiffness: 460, damping: 34 }}
           >
-            {k.label}
-          </Link>
-        ))}
-        <span className="ml-3 mr-1 font-mono text-[11px] tracking-[0.1em] text-[var(--color-faint)] uppercase">
-          排序
+            {KINDS.map((k) => (
+              <Link
+                key={k.v}
+                data-id={k.v}
+                to={withParam("kind", k.v === "all" ? "" : k.v)}
+                preventScrollReset
+                className="rounded-full px-2.5 py-1 text-[12px] text-[#4a5264] data-[checked=true]:text-white"
+              >
+                {k.label}
+              </Link>
+            ))}
+          </AnimatedBackground>
         </span>
-        {[
-          { v: "", label: "最新" },
-          { v: "likes", label: "赞最多" },
-        ].map((s) => (
-          <Link
-            key={s.v || "new"}
-            to={withParam("sort", s.v)}
-            preventScrollReset
-            className={`chip transition ${
-              sort === s.v
-                ? "!bg-[var(--color-ink)] !text-white"
-                : "hover:!bg-[var(--color-sunken-deep)]"
-            }`}
+        <span className="font-mono text-[11px] tracking-[0.1em] text-[var(--color-faint)] uppercase">访问方式</span>
+        <span className="inline-flex items-center rounded-full border border-[#e3e5ea] bg-[#f7f7f9] p-1">
+          <AnimatedBackground
+            defaultValue={accessMode}
+            className="rounded-full bg-[#14171f]"
+            transition={{ type: "spring", stiffness: 460, damping: 34 }}
           >
-            {s.label}
-          </Link>
-        ))}
+            {ACCESS_MODES.map((a) => (
+              <Link
+                key={a.v}
+                data-id={a.v}
+                to={withParam("access", a.v === "all" ? "" : a.v)}
+                preventScrollReset
+                className="rounded-full px-2.5 py-1 text-[12px] text-[#4a5264] data-[checked=true]:text-white"
+              >
+                {a.label}
+              </Link>
+            ))}
+          </AnimatedBackground>
+        </span>
+        <span className="inline-flex items-center rounded-full border border-[#e3e5ea] bg-[#f7f7f9] p-1">
+          <AnimatedBackground
+            defaultValue={sort || "new"}
+            className="rounded-full bg-[#14171f]"
+            transition={{ type: "spring", stiffness: 460, damping: 34 }}
+          >
+            {[
+              { v: "new", label: "最新" },
+              { v: "likes", label: "赞最多" },
+            ].map((s) => (
+              <Link
+                key={s.v}
+                data-id={s.v}
+                to={withParam("sort", s.v === "new" ? "" : s.v)}
+                preventScrollReset
+                className="rounded-full px-2.5 py-1 text-[12px] text-[#4a5264] data-[checked=true]:text-white"
+              >
+                {s.label}
+              </Link>
+            ))}
+          </AnimatedBackground>
+        </span>
       </div>
 
       <div className="mt-8 border-t border-[var(--color-line-soft)]">
@@ -131,10 +164,21 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-x-6 gap-y-8 pt-5 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((p) => (
-              <ProjectCard key={p.id} project={p} />
-            ))}
+          <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((p, i) => {
+              const hero =
+                !q && kind === "all" && accessMode === "all" && projects.length >= 2 && i === 0 && p.featured === 1;
+              return (
+                <InView key={p.id} once viewOptions={{ amount: 0.15 }}>
+                  <div className={hero ? "relative sm:col-span-2 overflow-hidden rounded-[18px]" : ""}>
+                    {hero && (
+                      <BorderBeam size={140} duration={8} borderWidth={1.5} colorFrom="#0ea5e9" colorTo="#f59e0b" />
+                    )}
+                    <ProjectCard project={p} hero={hero} />
+                  </div>
+                </InView>
+              );
+            })}
           </div>
         )}
       </div>

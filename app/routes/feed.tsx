@@ -1,17 +1,24 @@
 import type { Route } from "./+types/feed";
 import { Link, useFetcher, useSearchParams } from "react-router";
 import { motion } from "motion/react";
+import { Avatar } from "~/components/media";
 import { AnimatedBackground } from "~/components/motion/animated-background";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Flame, History, Bookmark as BookmarkIcon } from "lucide-react";
+import { Flame, History } from "lucide-react";
 import { getMe, requireMe } from "~/lib/session.server";
+import type { Me } from "~/lib/session.server";
 import {
   feedPosts,
+  featuredPeople,
   hotTags,
   insertPost,
+  latestProjects,
   projectsForComposer,
+  recommendedPeople,
 } from "~/lib/queries.server";
+import { FollowButton } from "~/components/cards";
+import { CoverArt } from "~/components/media";
 import { PageHead } from "~/components/page-head";
 import { FeedCard } from "~/components/cards";
 import { extractTags } from "~/lib/tags";
@@ -44,7 +51,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const sort = url.searchParams.get("sort") === "active" ? "active" : "latest";
   const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
 
-  const [feed, tags, myProjects] = await Promise.all([
+  const [feed, tags, myProjects, sidePeople, sideProjects] = await Promise.all([
     feedPosts(context, {
       viewerId: me?.id ?? null,
       scope: tab,
@@ -56,6 +63,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     }),
     hotTags(context, 8),
     me ? projectsForComposer(context, me.id) : Promise.resolve([]),
+    me ? recommendedPeople(context, me.id, 3) : featuredPeople(context, null, 3),
+    latestProjects(context, me?.id ?? null, 2),
   ]);
 
   return {
@@ -69,6 +78,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     hasMore: feed.hasMore,
     hotTags: tags,
     myProjects,
+    sidePeople,
+    sideProjects,
   };
 }
 
@@ -103,8 +114,20 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 export default function Feed({ loaderData }: Route.ComponentProps) {
-  const { me, tab, kind, tag, sort, page, posts, hasMore, hotTags: tags, myProjects } =
-    loaderData;
+  const {
+    me,
+    tab,
+    kind,
+    tag,
+    sort,
+    page,
+    posts,
+    hasMore,
+    hotTags: tags,
+    myProjects,
+    sidePeople,
+    sideProjects,
+  } = loaderData;
   const [params] = useSearchParams();
   const viewerId = me?.id ?? null;
 
@@ -120,7 +143,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
   };
 
   return (
-    <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_248px]">
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0">
         <PageHead
           label="Square"
@@ -145,7 +168,20 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           </AnimatedBackground>
         </div>
 
-        {me ? <Composer myProjects={myProjects} /> : null}
+        {!me && (
+          <div className="relative mt-5 flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-[#f7f7f9] p-4">
+            <div>
+              <p className="text-[14px] font-semibold text-[#14171f]">加入 FDE 广场</p>
+              <p className="mt-1 text-[12.5px] text-[#677084]">发动态、收藏作品、关注同行，无需认证。</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link to="/login?next=%2Ffeed" className="btn btn-ghost btn-sm">登录</Link>
+              <Link to="/join" className="btn btn-primary btn-sm">免费建主页</Link>
+            </div>
+          </div>
+        )}
+
+        {me ? <Composer me={me} myProjects={myProjects} /> : null}
 
         <div className="mt-5 flex flex-wrap items-center gap-1.5">
           {KINDS.map((k) => (
@@ -256,51 +292,73 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
       </div>
 
       <aside className="hidden xl:block">
-        <div className="sticky top-6 space-y-6">
-          <div>
-            <p className="mb-2.5 flex items-center gap-2 font-mono text-[10px] tracking-[1.2px] text-[var(--color-ink-soft)] uppercase">
-              热门话题
-              <span className="h-px flex-1 bg-[var(--color-line-soft)]" />
-            </p>
-            {tags.length === 0 ? (
-              <p className="text-[12.5px] text-[var(--color-faint)]">
-                还没有标签。发帖时写 #话题 就会出现在这里。
-              </p>
-            ) : (
-              <div className="space-y-1">
-                {tags.map((t) => (
+        <div className="sticky top-6 space-y-5">
+          <section className="rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#677084]">热门话题</h2>
+            <div className="mt-2">
+              {tags.length === 0 ? (
+                <p className="text-[12.5px] text-[var(--color-faint)]">还没有标签。发帖时写 #话题 就会出现在这里。</p>
+              ) : (
+                tags.map((t) => (
                   <Link
                     key={t.tag}
                     to={`/feed?tag=${encodeURIComponent(t.tag)}`}
-                    className="flex items-baseline gap-2 py-1 text-[14px] transition hover:opacity-70"
+                    className="flex items-center justify-between rounded-[8px] px-2 py-1.5 text-[13.5px] transition hover:bg-[#f6f6f6]"
                   >
-                    <span className="font-medium">#{t.tag}</span>
-                    <span className="ml-auto font-mono text-[11px] text-[var(--color-faint)] tabular-nums">
-                      {t.n}
+                    <span className="font-medium text-[#14171f]">#{t.tag}</span>
+                    <span className="font-mono text-[11.5px] text-[#8b93a3] tabular-nums">{t.n}</span>
+                  </Link>
+                ))
+              )}
+            </div>
+          </section>
+
+          {sidePeople.length > 0 && (
+            <section className="rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
+              <h2 className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#677084]">正在现场的 FDE</h2>
+              <div className="mt-2">
+                {sidePeople.slice(0, 3).map((p) => (
+                  <div key={p.id} className="flex items-center gap-2.5 py-2">
+                    <Avatar name={p.display_name} src={p.avatar_url} size={34} />
+                    <div className="min-w-0 flex-1">
+                      <Link to={`/@${p.handle}`} className="block truncate text-[13.5px] font-semibold hover:opacity-70">{p.display_name}</Link>
+                      <p className="truncate text-[12px] text-[#677084]">{p.headline || `@${p.handle}`}</p>
+                    </div>
+                    {me?.id !== p.id && (
+                      <FollowButton
+                        targetId={p.id}
+                        following={Boolean(p.following)}
+                        signedIn={Boolean(me)}
+                        size="sm"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {sideProjects.length > 0 && (
+            <section className="rounded-[16px] border border-[rgba(20,23,31,0.08)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]">
+              <h2 className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#677084]">最新公开作品</h2>
+              <div className="mt-2">
+                {sideProjects.slice(0, 2).map((p) => (
+                  <Link
+                    key={p.id}
+                    to={`/projects/${p.slug}`}
+                    className="-mx-1.5 flex items-center gap-3 rounded-[10px] p-1.5 transition hover:bg-[#f6f6f6]"
+                  >
+                    <span className="h-[42px] w-[56px] shrink-0 overflow-hidden rounded-[8px]">
+                      <CoverArt seed={p.slug} src={p.cover_url} aspect="4 / 3" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-semibold">{p.title}</span>
+                      <span className="block truncate text-[11.5px] text-[#677084]">{p.display_name}</span>
                     </span>
                   </Link>
                 ))}
               </div>
-            )}
-          </div>
-
-          {me && (
-            <Link
-              to={href({ tab: "bookmarks" })}
-              className="flex items-center gap-2 text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
-            >
-              <BookmarkIcon size={14} strokeWidth={1.65} aria-hidden />
-              我的收藏
-            </Link>
-          )}
-
-          {(kind !== "all" || tag || sort !== "latest") && (
-            <Link
-              to="/feed"
-              className="block text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
-            >
-              清除筛选，看全部 →
-            </Link>
+            </section>
           )}
         </div>
       </aside>
@@ -312,7 +370,13 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
  * Composer. Uses a fetcher so the submit does not navigate away, and clears
  * itself once the write lands — the feed below revalidates in place.
  */
-function Composer({ myProjects }: { myProjects: Array<{ id: string; title: string }> }) {
+function Composer({
+  me,
+  myProjects,
+}: {
+  me: Me;
+  myProjects: Array<{ id: string; title: string }>;
+}) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -338,17 +402,22 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
     <fetcher.Form
       ref={formRef}
       method="post"
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null) && length === 0) {
+          setFocused(false);
+        }
+      }}
       className="surface-panel mt-5 overflow-hidden transition-shadow focus-within:shadow-[var(--shadow-lift)]"
     >
-      <div className="flex items-start gap-3 px-4 pt-3.5">
+      <div className="flex items-start gap-3 px-4 pt-4">
+        <Avatar name={me.display_name} src={me.avatar_url} size={36} />
         <textarea
           ref={textareaRef}
           name="body"
           required
           maxLength={4000}
           rows={2}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
           onChange={(e) => setLength(e.currentTarget.value.length)}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -361,7 +430,10 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
         />
       </div>
       <motion.div
-        animate={{ height: focused ? "auto" : 0, opacity: focused ? 1 : 0 }}
+        animate={{
+          height: focused || length > 0 ? "auto" : 0,
+          opacity: focused || length > 0 ? 1 : 0,
+        }}
         initial={false}
         transition={{ type: "spring", stiffness: 380, damping: 34 }}
         className="overflow-hidden"
@@ -386,7 +458,7 @@ function Composer({ myProjects }: { myProjects: Array<{ id: string; title: strin
         </div>
       </motion.div>
       <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[var(--color-line-soft)] px-4 py-2.5">
-        {!focused && <span className="chip !h-[24px] !text-[10.5px]">{KINDS.find((k) => k.v === kind)?.t}</span>}
+        {!(focused || length > 0) && <span className="chip !h-[24px] !text-[10.5px]">{KINDS.find((k) => k.v === kind)?.t}</span>}
         <select
           name="project_id"
           aria-label="关联作品"
