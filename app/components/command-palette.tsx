@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate } from "react-router";
+import { motion } from "motion/react";
 import { Search, Compass, Layers, Home, MessageSquareText, Plus, User } from "lucide-react";
 import type { Me } from "~/lib/session.server";
 
@@ -98,6 +99,11 @@ export function CommandPalette({
           }}
           className="frost fixed left-1/2 top-[14vh] z-50 w-[min(94vw,560px)] -translate-x-1/2 overflow-hidden rounded-[16px] border border-[var(--hairline)] bg-white/96 shadow-[var(--shadow-lift)]"
         >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10, filter: "blur(6px)" }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ type: "spring", stiffness: 440, damping: 32 }}
+          >
           <Dialog.Title className="sr-only">快捷命令</Dialog.Title>
           <div className="flex items-center gap-3 border-b border-[var(--color-line-soft)] px-4">
             <Search size={17} strokeWidth={1.65} className="text-[var(--color-faint)]" aria-hidden />
@@ -139,13 +145,18 @@ export function CommandPalette({
                     type="button"
                     onMouseEnter={() => setCursor(i)}
                     onClick={() => go(cmd.to)}
-                    className={`flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left transition ${
-                      i === cursor ? "bg-[var(--color-paper)]" : ""
-                    }`}
+                    className="relative flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left"
                   >
-                    <Icon size={16} strokeWidth={1.65} className="text-[var(--color-ink-soft)]" aria-hidden />
-                    <span className="min-w-0 flex-1 truncate text-[13.5px]">{cmd.label}</span>
-                    <span className="micro-mono shrink-0">{cmd.hint}</span>
+                    {i === cursor && (
+                      <motion.span
+                        layoutId="cmdk-active-row"
+                        className="absolute inset-0 rounded-[10px] bg-[#f1f3f5]"
+                        transition={{ type: "spring", stiffness: 540, damping: 38 }}
+                      />
+                    )}
+                    <Icon size={16} strokeWidth={1.65} className="relative z-10 text-[var(--color-ink-soft)]" aria-hidden />
+                    <span className="relative z-10 min-w-0 flex-1 truncate text-[13.5px]">{cmd.label}</span>
+                    <span className="micro-mono relative z-10 shrink-0">{cmd.hint}</span>
                   </button>
                 );
               })
@@ -156,6 +167,7 @@ export function CommandPalette({
             <span>↵ 打开</span>
             <span className="ml-auto">ImFDE 快捷面板</span>
           </div>
+          </motion.div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

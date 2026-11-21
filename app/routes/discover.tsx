@@ -130,8 +130,10 @@ function TalentCard({ person, viewerId }: { person: PersonRow; viewerId: string 
   return (
     <article className="rounded-[14px] border border-[#e6e8ec] bg-white p-4 transition-colors hover:border-[#c8cdd5]">
       <div className="flex items-start gap-3">
-        <Link to={`/@${person.handle}`} className="flex min-w-0 flex-1 items-center gap-3">
-          <Avatar name={person.display_name} src={person.avatar_url} size={44} />
+        <Link to={`/@${person.handle}`} className="group/avatar flex min-w-0 flex-1 items-center gap-3">
+          <span className="block transition-transform duration-200 ease-out group-hover/avatar:scale-[1.07] group-hover/avatar:-rotate-3">
+            <Avatar name={person.display_name} src={person.avatar_url} size={44} />
+          </span>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <p className="truncate text-[15px] font-semibold text-[#0f1419]">{person.display_name}</p>

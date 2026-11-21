@@ -22,8 +22,12 @@ export function Landing({
         <p className="mx-auto mt-4 max-w-[520px] text-[17px] leading-[1.6] text-[#536471]">
           FDE 的主页、作品集与专业广场。只展示可观察的事实，不做信用分，不经手交易。
         </p>
-        <form action="/discover" method="get" className="mt-8">
-          <div className="mx-auto flex h-[58px] max-w-[600px] items-center gap-2 rounded-full border border-[#e2e5ea] bg-white pl-5 pr-2 shadow-[0_6px_24px_rgba(15,20,25,0.06)] transition focus-within:border-[#0f1419]">
+        <form action="/discover" method="get" className="group/search relative mx-auto mt-8 max-w-[600px]">
+          {/* focus-only aura: never visible on first paint */}
+          <span className="pointer-events-none absolute -inset-[3px] -z-10 overflow-hidden rounded-full opacity-0 blur-[10px] transition-opacity duration-300 group-focus-within/search:opacity-75" aria-hidden>
+            <span className="absolute -inset-[100%] animate-[aura-spin_8s_linear_infinite] bg-[conic-gradient(from_0deg,#38bdf8,#a78bfa,#fb7185,#fbbf24,#38bdf8)]" />
+          </span>
+          <div className="relative flex h-[58px] items-center gap-2 rounded-full border border-[#e2e5ea] bg-white pl-5 pr-2 shadow-[0_6px_24px_rgba(15,20,25,0.06)] transition focus-within:border-[#0f1419]">
             <Search size={18} className="shrink-0 text-[#536471]" strokeWidth={1.65} aria-hidden />
             <input
               name="q"
@@ -38,18 +42,19 @@ export function Landing({
         </form>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           {[
-            ["Agent 编排", "/discover?skill=Agent"],
-            ["RAG", "/discover?skill=RAG"],
-            ["语音交互", "/discover?skill=语音"],
-            ["私有部署", "/discover?skill=私有部署"],
-            ["开源工具", "/discover?skill=开源"],
-            ["逛广场 →", "/feed"],
-          ].map(([label, to]) => (
+            ["Agent 编排", "/discover?skill=Agent", "bg-[#8b5cf6]"],
+            ["RAG", "/discover?skill=RAG", "bg-[#0ea5e9]"],
+            ["语音交互", "/discover?skill=语音", "bg-[#f59e0b]"],
+            ["私有部署", "/discover?skill=私有部署", "bg-[#10b981]"],
+            ["开源工具", "/discover?skill=开源", "bg-[#f43f5e]"],
+            ["逛广场 →", "/feed", "bg-[#6b7280]"],
+          ].map(([label, to, dot]) => (
             <Link
               key={label}
               to={to}
-              className="rounded-full border border-[#eff3f4] bg-[#f7f9f9] px-3 py-1 text-[12.5px] text-[#536471] transition hover:border-[#d0d5dd] hover:text-[#0f1419]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#eff3f4] bg-[#f7f9f9] px-3 py-1 text-[12.5px] text-[#536471] transition hover:-translate-y-[1px] hover:border-[#d0d5dd] hover:bg-white hover:text-[#0f1419]"
             >
+              <span className={`h-[6px] w-[6px] rounded-full ${dot}`} />
               {label}
             </Link>
           ))}

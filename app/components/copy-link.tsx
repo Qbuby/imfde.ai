@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Check, Link2 } from "lucide-react";
 import { toast } from "sonner";
 
 /**
  * "One shareable address" is the product's whole promise, so copying the
- * canonical URL gets a first-class button. `path` is relative; the absolute
- * URL is built at click time so it works on any origin (prod, preview, local).
+ * canonical URL gets a first-class button with a tiny icon morph.
  */
 export function CopyLinkButton({
   path,
@@ -32,12 +32,22 @@ export function CopyLinkButton({
 
   return (
     <button type="button" onClick={copy} className={className} aria-label={label}>
-      {copied ? (
-        <Check size={15} strokeWidth={1.65} aria-hidden />
-      ) : (
-        <Link2 size={15} strokeWidth={1.65} aria-hidden />
-      )}
-      {copied ? "已复制" : label}
+      <AnimatePresence mode="wait" initial={false}>
+        {copied ? (
+          <motion.span key="check" initial={{ scale: 0.5, rotate: -35, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }} className="inline-flex">
+            <Check size={15} strokeWidth={2} className="text-[#10b981]" aria-hidden />
+          </motion.span>
+        ) : (
+          <motion.span key="link" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ scale: 0.5, rotate: -35, opacity: 0 }} transition={{ duration: 0.16 }} className="inline-flex">
+            <Link2 size={15} strokeWidth={1.65} aria-hidden />
+          </motion.span>
+        )}
+      </AnimatePresence>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span key={copied ? "done" : "idle"} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -3 }} transition={{ duration: 0.14 }}>
+          {copied ? "已复制" : label}
+        </motion.span>
+      </AnimatePresence>
     </button>
   );
 }

@@ -52,7 +52,12 @@ export function QuickPostModal({
       ) : null}
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[rgba(20,23,31,0.32)] backdrop-blur-[3px] data-[state=open]:animate-[fade-in_.15s_ease-out]" />
-        <Dialog.Content className="frost grain fixed left-1/2 top-[12vh] z-50 w-[min(94vw,600px)] -translate-x-1/2 rounded-[18px] border border-[var(--hairline)] bg-white/95 p-5 shadow-[var(--shadow-lift)] data-[state=open]:animate-[pop-in_.2s_cubic-bezier(.2,.8,.2,1)]">
+        <Dialog.Content className="frost grain fixed left-1/2 top-[12vh] z-50 w-[min(94vw,600px)] -translate-x-1/2 rounded-[18px] border border-[var(--hairline)] bg-white/95 p-5 shadow-[var(--shadow-lift)] ring-1 ring-inset ring-white/60">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 12, filter: "blur(6px)" }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+          >
           <div className="flex items-center justify-between">
             <Dialog.Title className="text-[16px] font-semibold tracking-[-0.01em]">
               写点什么
@@ -127,6 +132,7 @@ export function QuickPostModal({
               </span>
             </div>
           </fetcher.Form>
+          </motion.div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -23,13 +23,7 @@ import {
 } from "lucide-react";
 import { relativeTime } from "~/lib/format";
 import { PostBody } from "~/components/post-body";
-
-const KIND_LABEL: Record<string, string> = {
-  show: "Show Work",
-  build: "Build in Public",
-  thought: "Thoughts",
-  discussion: "Discussion",
-};
+import { badgeFor, POST_KIND_STYLE } from "~/lib/badges";
 
 interface PostDetail {
   id: string;
@@ -186,6 +180,8 @@ export default function Post({ loaderData }: Route.ComponentProps) {
   const commentFetcher = useFetcher();
   const heartRef = useRef<HTMLButtonElement>(null);
   const heartControls = useAnimationControls();
+  const repostControls = useAnimationControls();
+  const bookmarkControls = useAnimationControls();
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const [reposted, setReposted] = useState(Boolean(post.reposted));
   const [repostOpen, setRepostOpen] = useState(false);
@@ -207,6 +203,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
     if (!data?.ok) return;
     setReposted(Boolean(data.reposted));
     setRepostOpen(false);
+    if (data.reposted) repostControls.start({ rotate: 180, transition: { type: "spring", stiffness: 380, damping: 22 } });
     toast.success(data.reposted ? "已转发到广场" : "已取消转发");
   }, [repostFetcher.data]);
 
@@ -221,6 +218,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
     const data = bookmarkFetcher.data as { ok?: boolean; bookmarked?: boolean } | undefined;
     if (!data?.ok) return;
     setBookmarked(Boolean(data.bookmarked));
+    if (data.bookmarked) bookmarkControls.start({ scaleY: [1, 1.28, 0.88, 1], transition: { duration: 0.32 } });
     toast.success(data.bookmarked ? "已加入收藏" : "已取消收藏");
   }, [bookmarkFetcher.data]);
 
@@ -251,8 +249,8 @@ export default function Post({ loaderData }: Route.ComponentProps) {
   function like() {
     if (!isLiked) {
       heartControls.start({
-        scale: [1, 1.35, 0.9, 1],
-        transition: { duration: 0.34, times: [0, 0.35, 0.7, 1] },
+        scale: [1, 1.38, 0.88, 1],
+        transition: { type: "spring", stiffness: 520, damping: 16 },
       });
       fireLikeBurst(heartRef.current);
     }
@@ -314,8 +312,10 @@ export default function Post({ loaderData }: Route.ComponentProps) {
           signedIn={Boolean(me)}
           following={Boolean(post.author_following)}
         >
-          <Link to={`/@${post.handle}`} className="flex min-w-0 items-center gap-3 transition hover:opacity-80">
-            <Avatar name={post.display_name} src={post.avatar_url} size={44} />
+          <Link to={`/@${post.handle}`} className="group/avatar flex min-w-0 items-center gap-3 transition hover:opacity-80">
+            <span className="block transition-transform duration-200 ease-out group-hover/avatar:scale-[1.07] group-hover/avatar:-rotate-3">
+              <Avatar name={post.display_name} src={post.avatar_url} size={44} />
+            </span>
             <div>
               <p className="text-[15px] font-medium">{post.display_name}</p>
               <p className="font-mono text-[11.5px] tracking-wide text-[var(--color-faint)]">
@@ -334,7 +334,11 @@ export default function Post({ loaderData }: Route.ComponentProps) {
               tone="quiet"
             />
           )}
-          <span className="chip chip-teal !h-[26px]">{KIND_LABEL[post.kind] ?? post.kind}</span>
+          {(() => { const b = badgeFor(POST_KIND_STYLE, post.kind); return (
+          <span className={`inline-flex h-[22px] items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-medium ${b.bg} ${b.text}`}>
+            <span className={`h-[5px] w-[5px] rounded-full ${b.dot}`} />{b.label}
+          </span>
+          ); })()}
         </span>
       </div>
 
@@ -384,8 +388,10 @@ export default function Post({ loaderData }: Route.ComponentProps) {
 
         <Popover.Root open={repostOpen} onOpenChange={setRepostOpen}>
           <Popover.Trigger asChild>
-            <button aria-label="转发" className={`action-btn action-repost ${reposted ? "bg-[rgba(16,185,129,0.10)] text-[#10b981]" : ""}`}>
-              <Repeat2 size={16} strokeWidth={1.65} aria-hidden />
+            <button aria-label="转发" className={`action-btn action-repost ${reposted ? "bg-[rgba(0,186,124,0.10)] text-[#00ba7c]" : ""}`}>
+              <motion.span animate={repostControls} className="grid place-items-center">
+                <Repeat2 size={16} strokeWidth={1.65} aria-hidden />
+              </motion.span>
               <SlidingNumber value={post.reposts + (reposted ? 1 : 0)} />
             </button>
           </Popover.Trigger>
@@ -398,7 +404,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
                     <input type="hidden" name="post_id" value={post.id} />
                     <input type="hidden" name="body" value="" />
                     <input type="hidden" name="intent" value={reposted ? "unrepost" : "repost"} />
-                    <button disabled={repostFetcher.state !== "idle"} className={`rounded-full px-3 py-1 text-[12px] font-medium transition disabled:opacity-50 ${reposted ? "text-[#10b981] hover:bg-[rgba(16,185,129,0.10)]" : "text-[var(--color-ink-soft)] hover:bg-[var(--color-paper)]"}`}>
+                    <button disabled={repostFetcher.state !== "idle"} className={`rounded-full px-3 py-1 text-[12px] font-medium transition disabled:opacity-50 ${reposted ? "text-[#00ba7c] hover:bg-[rgba(0,186,124,0.10)]" : "text-[var(--color-ink-soft)] hover:bg-[var(--color-paper)]"}`}>
                       {reposted ? "取消转发" : "直接转发"}
                     </button>
                   </repostFetcher.Form>
@@ -431,7 +437,7 @@ export default function Post({ loaderData }: Route.ComponentProps) {
               onClick={like}
               aria-pressed={isLiked}
               aria-label={isLiked ? "取消赞" : "赞"}
-              className={`action-btn action-like ${isLiked ? "text-[#f43f5e]" : ""}`}
+              className={`action-btn action-like ${isLiked ? "text-[#f91880]" : ""}`}
             >
               <motion.span animate={heartControls} className="grid place-items-center">
                 <Heart size={16} strokeWidth={1.65} fill={isLiked ? "currentColor" : "none"} aria-hidden />
@@ -451,8 +457,10 @@ export default function Post({ loaderData }: Route.ComponentProps) {
             <input type="hidden" name="target_type" value="post" />
             <input type="hidden" name="target_id" value={post.id} />
             <input type="hidden" name="intent" value={bookmarked ? "unbookmark" : "bookmark"} />
-            <button aria-pressed={bookmarked} aria-label={bookmarked ? "取消收藏" : "收藏"} className={`action-btn action-link ${bookmarked ? "text-[var(--color-link)]" : ""}`}>
-              <Bookmark size={16} strokeWidth={1.65} fill={bookmarked ? "currentColor" : "none"} aria-hidden />
+            <button aria-pressed={bookmarked} aria-label={bookmarked ? "取消收藏" : "收藏"} className={`action-btn action-link ${bookmarked ? "text-[#1d9bf0]" : ""}`}>
+              <motion.span animate={bookmarkControls} className="grid place-items-center">
+                <Bookmark size={16} strokeWidth={1.65} fill={bookmarked ? "currentColor" : "none"} aria-hidden />
+              </motion.span>
             </button>
           </bookmarkFetcher.Form>
         ) : (

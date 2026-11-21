@@ -62,8 +62,8 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
         <QuickPostModal
           me={me}
           trigger={
-            <button className="btn btn-primary btn-sm !h-9">
-              <Plus size={15} strokeWidth={1.8} aria-hidden />
+            <button className="btn btn-primary btn-sm !h-9 group">
+              <Plus size={15} strokeWidth={1.8} className="transition-transform duration-200 ease-out group-hover:rotate-90" aria-hidden />
               写点什么
             </button>
           }
@@ -98,8 +98,8 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
           <QuickPostModal
             me={me}
             trigger={
-              <button className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-[24px] bg-[var(--color-ink-2)] text-[14px] font-semibold text-white transition hover:bg-[#2f3746] active:scale-[0.985]">
-                <Plus size={16} strokeWidth={1.8} aria-hidden />
+              <button className="group mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-[24px] bg-[var(--color-ink-2)] text-[14px] font-semibold text-white transition hover:bg-[#2f3746] active:scale-[0.96]">
+                <Plus size={16} strokeWidth={1.8} className="transition-transform duration-200 ease-out group-hover:rotate-90" aria-hidden />
                 <span className="hidden lg:inline">写点什么</span>
               </button>
             }
@@ -226,7 +226,7 @@ function RailLink({
       end={end}
       title={label}
       className={({ isActive }) =>
-        `relative flex h-10 items-center gap-3 rounded-[10px] px-3 text-[14px] transition ${
+        `group relative flex h-10 items-center gap-3 rounded-[10px] px-3 text-[14px] transition ${
           isActive
             ? "font-medium text-[var(--color-ink)]"
             : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
@@ -245,7 +245,7 @@ function RailLink({
           <Icon
             size={17}
             strokeWidth={1.65}
-            className="relative z-10 shrink-0"
+            className={`relative z-10 shrink-0 ${icon === "messages" ? "group-hover:animate-[bell-wiggle_420ms_ease-in-out]" : ""}`}
             aria-hidden
           />
           <span className="relative z-10 hidden truncate lg:inline">{label}</span>

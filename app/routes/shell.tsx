@@ -3,6 +3,8 @@ import { Link, NavLink, Outlet } from "react-router";
 import { getMe } from "~/lib/session.server";
 import { one } from "~/lib/db.server";
 import { AppShell } from "~/components/app-shell";
+import { useState } from "react";
+import { motion } from "motion/react";
 import { Search } from "lucide-react";
 
 /**
@@ -49,6 +51,7 @@ const GUEST_NAV = [
 
 export default function Shell({ loaderData }: Route.ComponentProps) {
   const me = loaderData?.me ?? null;
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
   // Signed in: Contra's app view (rail + panel). Signed out: marketing chrome.
   if (me) return <AppShell me={me} setupDone={loaderData.setupDone} />;
@@ -61,21 +64,33 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
             <span className="display text-[24px] tracking-[-0.02em]">ImFDE</span>
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-1 md:flex" onMouseLeave={() => setHoveredNav(null)}>
             {GUEST_NAV.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                onMouseEnter={() => setHoveredNav(item.to)}
                 className={({ isActive }) =>
-                  `rounded-full px-3 py-2 text-[16px] font-semibold transition ${
+                  `relative rounded-full px-3 py-2 text-[16px] font-semibold transition ${
                     isActive
                       ? "text-[var(--color-ink)]"
                       : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
                   }`
                 }
               >
-                {item.label}
+                {({ isActive }) => (
+                  <>
+                    {(hoveredNav === item.to || isActive) && (
+                      <motion.span
+                        layoutId="guest-nav-pill"
+                        className="absolute inset-0 rounded-full bg-[#f3f4f6]"
+                        transition={{ type: "spring", stiffness: 520, damping: 36 }}
+                      />
+                    )}
+                    <span className="relative z-10">{item.label}</span>
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>

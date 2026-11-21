@@ -8,15 +8,7 @@ import { CopyLinkButton } from "~/components/copy-link";
 import { GalleryLightbox } from "~/components/gallery-lightbox";
 import { Heart, ArrowUpRight } from "lucide-react";
 import { absoluteDate, compact } from "~/lib/format";
-
-const KIND_LABEL: Record<string, string> = {
-  project: "项目",
-  agent: "Agent",
-  tool: "工具",
-  automation: "自动化流程",
-  case: "案例",
-  oss: "开源项目",
-};
+import { badgeFor, PROJECT_KIND_STYLE } from "~/lib/badges";
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
   // `me` first: the like state below is viewer-dependent, so it cannot be
@@ -153,7 +145,11 @@ export default function Project({ loaderData }: Route.ComponentProps) {
       </div>
 
       <header className="mt-7 flex flex-wrap items-center gap-2">
-        <span className="chip chip-teal">{KIND_LABEL[project.kind] ?? project.kind}</span>
+        {(() => { const b = badgeFor(PROJECT_KIND_STYLE, project.kind); return (
+        <span className={`inline-flex h-[22px] items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-medium ${b.bg} ${b.text}`}>
+          <span className={`h-[5px] w-[5px] rounded-full ${b.dot}`} />{b.label}
+        </span>
+        ); })()}
         {project.stage && <span className="chip">{project.stage}</span>}
         {project.access_mode && (
           <span className="chip chip-outline">{project.access_mode}</span>

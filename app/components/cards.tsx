@@ -21,24 +21,9 @@ import { SlidingNumber } from "./motion/sliding-number";
 import { FollowButton } from "./follow-button";
 import type { FeedPostRow, PersonRow, ProjectCardRow } from "~/lib/queries.server";
 import { PostBody, TagLinks } from "./post-body";
+import { badgeFor, POST_KIND_STYLE, PROJECT_KIND_STYLE } from "~/lib/badges";
 
 export { FollowButton } from "./follow-button";
-
-const KIND_LABEL: Record<string, string> = {
-  project: "项目",
-  agent: "Agent",
-  tool: "工具",
-  automation: "自动化",
-  case: "案例",
-  oss: "开源",
-};
-
-const POST_KIND_LABEL: Record<string, string> = {
-  show: "Show Work",
-  build: "Build in Public",
-  thought: "Thoughts",
-  discussion: "Discussion",
-};
 
 /* ── ProjectCard: Contra gallery card ────────────────────────────────── */
 
@@ -81,7 +66,7 @@ export function ProjectCard({
           <span className="mt-1 flex items-center gap-2 text-[12px] text-[var(--color-faint)]">
             <span>{project.display_name}</span>
             <span>·</span>
-            <span>{KIND_LABEL[project.kind] ?? project.kind}</span>
+            <span>{badgeFor(PROJECT_KIND_STYLE, project.kind).label}</span>
             <span className="ml-auto flex items-center gap-1 tabular-nums">
               <Heart size={13} strokeWidth={1.65} aria-hidden />
               {compact(project.likes)}
@@ -96,25 +81,24 @@ export function ProjectCard({
     <article className={`group ${hero ? "col-span-full" : ""}`}>
       <Link to={href} className="block">
         <div
-          className={`relative overflow-hidden rounded-[12px] border border-[rgba(0,0,0,0.06)] ${
+          className={`group relative overflow-hidden rounded-[14px] border border-[rgba(15,20,25,0.07)] ${
             hero ? "aspect-[16/9]" : "aspect-[4/3]"
           }`}
         >
-          <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-[1.05]">
+          <div className="absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.045]">
             <CoverArt seed={project.slug} src={project.cover_url} aspect={hero ? "16 / 9" : "4 / 3"} />
           </div>
-          {/* bottom action bar slides up on hover */}
-          <div className="frost absolute inset-x-3 bottom-3 z-10 flex translate-y-3 items-center gap-2 rounded-[10px] border border-white/60 px-3 py-2 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-            <span className="text-[12px] font-medium">查看详情</span>
-            <ArrowUpRight size={13} strokeWidth={1.65} className="ml-auto" aria-hidden />
-          </div>
-          {/* frosted kind badge */}
-          <span className="frost absolute left-3 top-3 rounded-full border border-white/60 px-2.5 py-1 font-mono text-[10.5px] font-medium tracking-wide text-[var(--color-ink)] tabular-nums">
-            {KIND_LABEL[project.kind] ?? project.kind}
+          {/* glass sheen sweeps once on hover */}
+          <span className="pointer-events-none absolute inset-0 z-10 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent group-hover:animate-[sheen-sweep_700ms_cubic-bezier(0.22,1,0.36,1)]" />
+          {/* frosted semantic kind badge */}
+          {(() => { const b = badgeFor(PROJECT_KIND_STYLE, project.kind); return (
+          <span className={`absolute left-3 top-3 z-20 inline-flex h-[22px] items-center gap-1.5 rounded-full bg-white/88 px-2.5 text-[11.5px] font-medium backdrop-blur-md ${b.text}`}>
+            <span className={`h-[5px] w-[5px] rounded-full ${b.dot}`} />{b.label}
           </span>
-          {/* hover action */}
-          <span className="frost absolute right-3 top-3 flex items-center gap-1 rounded-full border border-white/60 px-2.5 py-1 text-[11px] font-medium text-[var(--color-ink)] opacity-0 transition group-hover:opacity-100">
-            查看详情 <ArrowUpRight size={12} strokeWidth={1.65} aria-hidden />
+          ); })()}
+          {/* single spring capsule */}
+          <span className="frost absolute bottom-3 right-3 z-20 flex translate-y-2 items-center gap-1 rounded-full border border-white/60 px-3 py-1.5 text-[11.5px] font-medium text-[var(--color-ink)] opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            查看详情 <ArrowUpRight size={13} strokeWidth={1.65} className="transition-transform duration-200 group-hover:translate-x-[1px] group-hover:-translate-y-[1px]" aria-hidden />
           </span>
         </div>
       </Link>
@@ -152,7 +136,7 @@ export function ProjectCard({
           </Link>
         </AuthorHoverCard>
         <span>·</span>
-        <span className="shrink-0">{KIND_LABEL[project.kind] ?? project.kind}</span>
+        <span className="shrink-0">{badgeFor(PROJECT_KIND_STYLE, project.kind).label}</span>
       </div>
     </article>
   );
@@ -234,14 +218,14 @@ export function FeedCard({
   const likeButtonRef = useRef<HTMLButtonElement>(null);
 
   function popLike() {
-    heartControls.start({ scale: [1, 1.32, 0.92, 1], transition: { duration: 0.42 } });
+    heartControls.start({ scale: [1, 1.38, 0.88, 1], transition: { type: "spring", stiffness: 520, damping: 16 } });
     fireLikeBurst(likeButtonRef.current);
   }
   function popRepost() {
-    repostControls.start({ rotate: [0, 180, 360], transition: { duration: 0.5 } });
+    repostControls.start({ rotate: 180, transition: { type: "spring", stiffness: 380, damping: 22 } });
   }
   function popBookmark() {
-    bookmarkControls.start({ scale: [1, 1.2, 0.94, 1], transition: { duration: 0.36 } });
+    bookmarkControls.start({ scaleY: [1, 1.28, 0.88, 1], transition: { duration: 0.32 } });
   }
 
   const bookmarkFetcher = useFetcher();
@@ -325,8 +309,10 @@ export function FeedCard({
         signedIn={signedIn}
         following={Boolean(post.author_following)}
       >
-        <Link to={`/@${post.handle}`} aria-label={`${post.display_name} 的主页`}>
-          <Avatar name={post.display_name} src={post.avatar_url} size={42} />
+        <Link to={`/@${post.handle}`} aria-label={`${post.display_name} 的主页`} className="group/avatar block">
+          <span className="block transition-transform duration-200 ease-out group-hover/avatar:scale-[1.07] group-hover/avatar:-rotate-3">
+            <Avatar name={post.display_name} src={post.avatar_url} size={42} />
+          </span>
         </Link>
       </AuthorHoverCard>
 
@@ -347,9 +333,11 @@ export function FeedCard({
           </AuthorHoverCard>
           <span className="micro-mono hidden truncate sm:inline">@{post.handle}</span>
           <span className="micro-mono shrink-0">· {post.time_label}</span>
-          <span className="ml-auto shrink-0 rounded-[6px] bg-[#f7f9f9] px-2 py-0.5 text-[11.5px] font-medium text-[#536471]">
-            {POST_KIND_LABEL[post.kind] ?? post.kind}
+          {(() => { const b = badgeFor(POST_KIND_STYLE, post.kind); return (
+          <span className={`ml-auto inline-flex h-[22px] shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-medium ${b.bg} ${b.text}`}>
+            <span className={`h-[5px] w-[5px] rounded-full ${b.dot}`} />{b.label}
           </span>
+          ); })()}
         </header>
 
         {/* compact follow next to the name */}
@@ -461,7 +449,7 @@ export function FeedCard({
                     aria-label="转发"
                     onClick={popRepost}
                     className={`action-btn action-repost data-[state=open]:text-[var(--color-repost)] ${
-                      reposted ? "bg-[rgba(16,185,129,0.10)] text-[#10b981]" : ""
+                      reposted ? "bg-[rgba(0,186,124,0.10)] text-[#00ba7c]" : ""
                     }`}
                   >
                     <motion.span animate={repostControls} className="grid place-items-center">
@@ -488,7 +476,7 @@ export function FeedCard({
                             disabled={repostFetcher.state !== "idle"}
                             className={`rounded-full px-3 py-1 text-[12px] font-medium transition disabled:opacity-50 ${
                               reposted
-                                ? "text-[#10b981] hover:bg-[rgba(16,185,129,0.10)]"
+                                ? "text-[#00ba7c] hover:bg-[rgba(0,186,124,0.10)]"
                                 : "text-[var(--color-ink-soft)] hover:bg-[var(--color-paper)]"
                             }`}
                           >

@@ -231,8 +231,10 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
 
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={tab}
-              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.18 }} className="pt-6">
+              initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -4, filter: "blur(2px)" }}
+              transition={{ duration: 0.17, ease: [0.22, 1, 0.36, 1] }} className="pt-6">
               {tab === "work" && (
                 shown.length === 0 ? (
                   <div className="py-16 text-center">

@@ -69,6 +69,22 @@
   --hairline: 1px solid #eff3f4;
 }
 
+/* Micro-interaction keyframes: only animate on hover/focus, never on first paint. */
+@keyframes bell-wiggle {
+  0%, 100% { rotate: 0deg; }
+  25% { rotate: 12deg; }
+  50% { rotate: -10deg; }
+  75% { rotate: 6deg; }
+}
+@keyframes sheen-sweep {
+  from { transform: translateX(-120%) skewX(-18deg); }
+  to   { transform: translateX(220%) skewX(-18deg); }
+}
+@keyframes aura-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 @layer base {
   *,
   *::before,
@@ -299,7 +315,7 @@
       transform 160ms ease;
   }
   .btn:active {
-    transform: scale(0.985);
+    transform: scale(0.96);
   }
   .btn-primary {
     background: var(--color-ink-2);
