@@ -12,10 +12,10 @@ const POSTER = "/videos/hero-01-poster.webp";
 const DURATION_MS = 5800;
 
 const MEDIA =
-  "absolute inset-0 h-full w-full object-cover scale-[1.06] blur-[5px] saturate-[0.72] brightness-[1.08] contrast-[0.94] transition-opacity duration-[1300ms] ease-in-out";
+  "absolute inset-0 h-full w-full object-cover scale-[1.03] blur-[1.5px] saturate-[0.88] brightness-[1.02] contrast-[1.02] transition-opacity duration-[1300ms] ease-in-out";
 
 /**
- * Progressive-enhancement hero backdrop. SSR emits a static blurred poster;
+ * Progressive-enhancement hero backdrop. SSR emits a static poster;
  * after hydration a single client component cross-fades two <video> slots so
  * at most two clips are ever requested. Honours reduced-motion and tab visibility.
  */
@@ -92,55 +92,48 @@ export function HeroVideoBg() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, reduced, showB]);
 
-  // SSR and reduced-motion: static blurred poster only, zero .mp4 requests.
-  if (!ready || reduced) {
-    return (
-      <div className="pointer-events-none absolute inset-0 overflow-hidden select-none" aria-hidden>
-        <img src={POSTER} alt="" className={`${MEDIA} opacity-[0.36]`} />
-        <div className="absolute inset-0 bg-white/35" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_50%_46%,rgba(255,255,255,0.68)_0%,rgba(255,255,255,0.18)_70%,rgba(255,255,255,0.55)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white via-white/85 to-transparent" />
-      </div>
-    );
-  }
-
-  // Source assignment: A lags one turn behind the visible slot's "next".
-  // At turn T: if showing A, A = S[T], B = S[T+1] (preload).
-  //            if showing B, B = S[T], A = S[T-1] is wrong — instead B = S[T+1]? Keep it simple:
-  // visible slot source = S[turn], hidden slot source = S[turn+1].
+  // Source assignment: visible slot holds `turn`, the other preloads next.
   const visibleSrc = SOURCES[turn % SOURCES.length];
   const hiddenSrc = SOURCES[(turn + 1) % SOURCES.length];
   const aSrc = showB ? hiddenSrc : visibleSrc;
   const bSrc = showB ? visibleSrc : hiddenSrc;
 
+  // SSR and reduced-motion: static poster only, zero .mp4 requests.
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden select-none" aria-hidden>
-      <img src={POSTER} alt="" className={`${MEDIA} opacity-[0.36]`} />
-      <video
-        key={`a-${aSrc}`}
-        ref={slotA}
-        src={aSrc}
-        muted
-        playsInline
-        loop={false}
-        preload="auto"
-        onEnded={advance}
-        className={`${MEDIA} ${showB ? "opacity-0" : "opacity-[0.36]"}`}
-      />
-      <video
-        key={`b-${bSrc}`}
-        ref={slotB}
-        src={bSrc}
-        muted
-        playsInline
-        loop={false}
-        preload="auto"
-        onEnded={advance}
-        className={`${MEDIA} ${showB ? "opacity-[0.36]" : "opacity-0"}`}
-      />
-      <div className="absolute inset-0 bg-white/35" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_50%_46%,rgba(255,255,255,0.68)_0%,rgba(255,255,255,0.18)_70%,rgba(255,255,255,0.55)_100%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white via-white/85 to-transparent" />
+      {/* Base image always paints, including SSR; videos fade in above it. */}
+      <img src={POSTER} alt="" className={`${MEDIA} ${ready && !reduced ? "opacity-[0.22]" : "opacity-[0.68]"}`} />
+      {ready && !reduced && (
+        <>
+          <video
+            key={`a-${aSrc}`}
+            ref={slotA}
+            src={aSrc}
+            muted
+            playsInline
+            loop={false}
+            preload="auto"
+            onEnded={advance}
+            className={`${MEDIA} ${showB ? "opacity-0" : "opacity-[0.68]"}`}
+          />
+          <video
+            key={`b-${bSrc}`}
+            ref={slotB}
+            src={bSrc}
+            muted
+            playsInline
+            loop={false}
+            preload="auto"
+            onEnded={advance}
+            className={`${MEDIA} ${showB ? "opacity-[0.68]" : "opacity-0"}`}
+          />
+        </>
+      )}
+      {/* Guard the transparent nav, keep the central headline legible, and
+          dissolve into the page over 288px so no rectangular edge is visible. */}
+      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/75 via-white/35 to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_52%_42%_at_50%_38%,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.22)_56%,rgba(255,255,255,0)_100%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-white via-white/85 via-35% to-transparent" />
     </div>
   );
 }

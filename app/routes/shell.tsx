@@ -1,9 +1,9 @@
 import type { Route } from "./+types/shell";
-import { Link, NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { getMe } from "~/lib/session.server";
 import { one } from "~/lib/db.server";
 import { AppShell } from "~/components/app-shell";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Search } from "lucide-react";
 
@@ -51,14 +51,33 @@ const GUEST_NAV = [
 
 export default function Shell({ loaderData }: Route.ComponentProps) {
   const me = loaderData?.me ?? null;
+  const location = useLocation();
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const transparentHome = !me && location.pathname === "/";
+
+  useEffect(() => {
+    if (!transparentHome) return;
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [transparentHome]);
 
   // Signed in: Contra's app view (rail + panel). Signed out: marketing chrome.
   if (me) return <AppShell me={me} setupDone={loaderData.setupDone} />;
 
+  const headerClass = transparentHome
+    ? `fixed inset-x-0 top-0 z-30 transition-colors duration-300 ${
+        scrolled
+          ? "border-b border-[#eff3f4] bg-white/85 backdrop-blur-md"
+          : "border-b border-transparent bg-transparent"
+      }`
+    : "sticky top-0 z-40 border-b border-[var(--color-line-soft)] bg-[color-mix(in_srgb,#fff_88%,transparent)] backdrop-blur-xl";
+
   return (
     <div className="min-h-dvh bg-[var(--color-canvas)]">
-      <header className="sticky top-0 z-40 border-b border-[var(--color-line-soft)] bg-[color-mix(in_srgb,#fff_88%,transparent)] backdrop-blur-xl">
+      <header className={headerClass}>
         <div className="frame flex h-[74px] items-center gap-1">
           <Link to="/" className="mr-6 shrink-0">
             <span className="display text-[24px] tracking-[-0.02em]">ImFDE</span>
@@ -105,15 +124,15 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
             </Link>
             <Link
               to="/discover"
-              className="hidden md:inline-flex h-10 items-center gap-2 rounded-full border border-[#e3e5ea] bg-[#f7f7f9] px-3.5 text-[13px] text-[#677084] transition hover:border-[#4a5264] hover:text-[#14171f]"
+              className="hidden md:inline-flex h-10 items-center gap-2 rounded-full border border-[#e2e5ea] bg-white/80 px-3.5 text-[13px] text-[#677084] backdrop-blur-sm transition hover:border-[#4a5264] hover:text-[#14171f]"
             >
               <Search size={14} strokeWidth={1.65} aria-hidden />
               <span>搜 FDE 或作品…</span>
             </Link>
-            <Link to="/login" className="btn btn-ghost hidden sm:inline-flex">
+            <Link to="/login" className="hidden sm:inline-flex h-10 items-center rounded-full border border-[#e2e5ea] bg-white/80 px-5 text-[14px] font-semibold text-[var(--color-ink)] backdrop-blur-sm transition hover:border-[#4a5264]">
               登录
             </Link>
-            <Link to="/join" className="btn btn-primary">
+            <Link to="/join" className="inline-flex h-10 items-center rounded-full bg-[#0f1419] px-5 text-[14px] font-semibold text-white transition hover:bg-[#272c30]">
               加入
             </Link>
           </div>
@@ -139,7 +158,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
         </div>
       </header>
 
-      <main className="frame pt-0 pb-28">
+      <main className={transparentHome ? "" : "frame pt-0 pb-28"}>
         <Outlet />
       </main>
 

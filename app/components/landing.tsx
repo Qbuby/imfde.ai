@@ -14,15 +14,18 @@ export function Landing({
   posts: FeedPostRow[];
 }) {
   return (
-    <div className="overflow-x-hidden pb-10">
-      {/* 1 · Centred Contra hero over a soft video backdrop */}
-      <section className="relative overflow-hidden pt-16 pb-16 sm:pt-24 sm:pb-20">
+    <div className="relative overflow-x-clip pb-10">
+      {/* Full-bleed video layer: top y=0, fades into the work section. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[660px] overflow-hidden sm:h-[740px]">
         <HeroVideoBg />
-        <div className="relative z-10 mx-auto max-w-[760px] px-5 text-center">
-        <h1 className="text-[clamp(38px,5vw,60px)] font-semibold leading-[1.08] tracking-[-0.03em] text-[#0f1419]">
+      </div>
+
+      {/* 1 · Centred Contra hero over the video backdrop */}
+      <section className="relative z-10 mx-auto max-w-[760px] px-5 pt-28 pb-14 text-center sm:pt-36 sm:pb-16">
+        <h1 className="text-[clamp(38px,5vw,60px)] font-semibold leading-[1.08] tracking-[-0.03em] text-[#0f1419] [text-shadow:0_2px_20px_rgba(255,255,255,0.9)]">
           FDE 的主页、作品与广场
         </h1>
-        <p className="mx-auto mt-4 max-w-[520px] text-[17px] leading-[1.6] text-[#536471]">
+        <p className="mx-auto mt-4 max-w-[520px] text-[17px] leading-[1.6] text-[#2c353d] [text-shadow:0_2px_20px_rgba(255,255,255,0.9)]">
           放上你做过的项目，看看同行最近在折腾什么。
         </p>
         <form action="/discover" method="get" className="group/search relative mx-auto mt-8 max-w-[600px]">
@@ -55,19 +58,18 @@ export function Landing({
             <Link
               key={label}
               to={to}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#e2e5ea] bg-white/85 px-3 py-1 text-[12.5px] text-[#536471] backdrop-blur-sm transition hover:-translate-y-[1px] hover:border-[#0f1419] hover:bg-white hover:text-[#0f1419]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#e2e5ea] bg-white/90 px-3 py-1 text-[12.5px] text-[#536471] shadow-[0_1px_4px_rgba(15,20,25,0.05)] backdrop-blur-md transition hover:-translate-y-[1px] hover:border-[#0f1419] hover:bg-white hover:text-[#0f1419]"
             >
               <span className={`h-[6px] w-[6px] rounded-full ${dot}`} />
               {label}
             </Link>
           ))}
         </div>
-        </div>
       </section>
 
       {/* 2 · Real work gallery, never fabricated samples */}
       {projects.length > 0 && (
-        <section className="mx-auto max-w-[1180px] px-5">
+        <section className="relative z-10 mx-auto max-w-[1180px] px-5">
           <div className="mb-5 flex items-baseline justify-between">
             <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[#0f1419]">最新作品</h2>
             <Link to="/discover/projects" className="text-[13px] text-[#536471] hover:text-[#0f1419]">全部作品 →</Link>
