@@ -139,7 +139,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
         </div>
       </header>
 
-      <main className="frame pb-28 pt-6">
+      <main className="frame pt-0 pb-28">
         <Outlet />
       </main>
 

@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { HeroVideoBg } from "./hero-video-bg";
 import { Search } from "lucide-react";
 import { ProjectCard, FeedCard, PersonCard } from "./cards";
 import type { FeedPostRow, PersonRow, ProjectCardRow } from "~/lib/queries.server";
@@ -14,8 +15,10 @@ export function Landing({
 }) {
   return (
     <div className="overflow-x-hidden pb-10">
-      {/* 1 · Centred Contra hero */}
-      <section className="mx-auto max-w-[760px] px-5 pt-14 pb-12 text-center sm:pt-20">
+      {/* 1 · Centred Contra hero over a soft video backdrop */}
+      <section className="relative overflow-hidden pt-16 pb-16 sm:pt-24 sm:pb-20">
+        <HeroVideoBg />
+        <div className="relative z-10 mx-auto max-w-[760px] px-5 text-center">
         <h1 className="text-[clamp(38px,5vw,60px)] font-semibold leading-[1.08] tracking-[-0.03em] text-[#0f1419]">
           FDE 的主页、作品与广场
         </h1>
@@ -52,12 +55,13 @@ export function Landing({
             <Link
               key={label}
               to={to}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#eff3f4] bg-[#f7f9f9] px-3 py-1 text-[12.5px] text-[#536471] transition hover:-translate-y-[1px] hover:border-[#d0d5dd] hover:bg-white hover:text-[#0f1419]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#e2e5ea] bg-white/85 px-3 py-1 text-[12.5px] text-[#536471] backdrop-blur-sm transition hover:-translate-y-[1px] hover:border-[#0f1419] hover:bg-white hover:text-[#0f1419]"
             >
               <span className={`h-[6px] w-[6px] rounded-full ${dot}`} />
               {label}
             </Link>
           ))}
+        </div>
         </div>
       </section>
 
