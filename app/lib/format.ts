@@ -86,30 +86,6 @@ export function coverPalette(seed: string): {
   return { ta: c[0], tb: c[1], mark: c[2] };
 }
 
-/**
- * Placeholder photography for work that has no cover of its own. Ten openly
- * licensed Unsplash shots (via picsum.photos), chosen for texture and
- * structure rather than subject, so a grid of them reads as a considered
- * series instead of stock filler. The palette above still tints each one, so
- * they stay in the same family as the generated covers.
- */
-const COVER_PHOTOS = [
-  "/covers/01.webp",
-  "/covers/02.webp",
-  "/covers/03.webp",
-  "/covers/04.webp",
-  "/covers/05.webp",
-  "/covers/06.webp",
-  "/covers/07.webp",
-  "/covers/08.webp",
-  "/covers/09.webp",
-  "/covers/10.webp",
-];
-
-export function coverPhoto(seed: string): string {
-  return COVER_PHOTOS[Math.floor(hash(seed) * COVER_PHOTOS.length)]!;
-}
-
 export function avatarTint(seed: string): string {
   return ACCENTS[Math.floor(hash(seed + "·avatar") * ACCENTS.length)]!;
 }

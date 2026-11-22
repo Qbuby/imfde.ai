@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { avatarTint, coverPalette, coverPhoto, initials } from "~/lib/format";
+import { avatarTint, coverPalette, initials } from "~/lib/format";
 
 export function Avatar({
   name,
@@ -71,6 +71,7 @@ export function CoverArt({
   videoMode?: "auto" | "hover";
 }) {
   const p = useMemo(() => coverPalette(seed), [seed]);
+  void photo; // kept in the public signature; no stock-photo fallback exists
 
   if (src) {
     const isVideo = /\.(mp4|webm)(?:[?#].*)?$/i.test(src);
@@ -98,39 +99,23 @@ export function CoverArt({
     );
   }
 
-  if (!photo) {
-    return (
-      <div
-        className={`cover-art ${className}`}
-        style={
-          {
-            aspectRatio: aspect,
-            "--ta": p.ta,
-            "--tb": p.tb,
-            "--mark": p.mark,
-          } as React.CSSProperties
-        }
-        aria-hidden="true"
-      >
-        <span className="cover-arc" />
-        <span className="cover-rule" />
-      </div>
-    );
-  }
-
+  // No source image always falls back to the deterministic geometric cover.
+  // `photo` is kept in the signature for callers, but never loads a stock photo.
   return (
     <div
-      className={`cover-photo ${className}`}
+      className={`cover-art ${className}`}
       style={
         {
           aspectRatio: aspect,
           "--ta": p.ta,
           "--tb": p.tb,
+          "--mark": p.mark,
         } as React.CSSProperties
       }
       aria-hidden="true"
     >
-      <img src={coverPhoto(seed)} alt="" loading="lazy" decoding="async" />
+      <span className="cover-arc" />
+      <span className="cover-rule" />
     </div>
   );
 }
