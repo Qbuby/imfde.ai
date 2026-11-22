@@ -8,7 +8,11 @@
   "observability": { "enabled": true },
   "assets": {
     "directory": "./build/client",
-    "not_found_handling": "none"
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    // Video needs byte-range responses (206) for Safari/iOS; every other
+    // static asset still serves directly from the CDN.
+    "run_worker_first": ["/videos/*"]
   },
   "d1_databases": [
     {
