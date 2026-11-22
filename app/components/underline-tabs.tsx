@@ -15,11 +15,13 @@ export function UnderlineTabs({
   active,
   className = "",
   sticky = false,
+  right,
 }: {
   items: TabItem[];
   active: string;
   className?: string;
   sticky?: boolean;
+  right?: React.ReactNode;
 }) {
   return (
     <div
@@ -41,6 +43,7 @@ export function UnderlineTabs({
             )}
           </Link>
         ))}
+        {right && <div className="ml-auto flex items-center text-[12.5px] text-[#8b93a3] tabular-nums">{right}</div>}
       </div>
     </div>
   );

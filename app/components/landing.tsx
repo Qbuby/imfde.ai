@@ -80,7 +80,7 @@ export function Landing({
       <section className="mx-auto mt-14 grid max-w-[1180px] grid-cols-1 gap-10 border-t border-[#eff3f4] px-5 pt-12 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-[19px] font-semibold text-[#0f1419]">最新现场动态</h2>
+            <h2 className="text-[19px] font-semibold text-[#0f1419]">最新动态</h2>
             <Link to="/feed" className="text-[13px] text-[#536471] hover:text-[#0f1419]">进入广场 →</Link>
           </div>
           {posts.length > 0 ? (
@@ -94,7 +94,7 @@ export function Landing({
           )}
         </div>
         <div>
-          <h2 className="mb-3 text-[19px] font-semibold text-[#0f1419]">正在现场的 FDE</h2>
+          <h2 className="mb-3 text-[19px] font-semibold text-[#0f1419]">活跃 FDE</h2>
           <div className="rounded-[16px] bg-[#f7f9f9] p-5">
             {people.length > 0 ? (
               <>

@@ -252,7 +252,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
 
           {sidePeople.length > 0 && (
             <section className="rounded-[16px] bg-[#f7f9f9] p-4">
-              <h2 className="text-[14px] font-bold text-[#0f1419]">正在现场的 FDE</h2>
+              <h2 className="text-[14px] font-bold text-[#0f1419]">活跃 FDE</h2>
               <div className="mt-2">
                 {sidePeople.slice(0, 3).map((p) => (
                   <div key={p.id} className="flex items-center gap-2.5 py-2">

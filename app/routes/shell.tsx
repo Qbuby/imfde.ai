@@ -147,9 +147,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
         <div className="frame flex flex-wrap items-center justify-between gap-4 py-10">
           <div>
             <p className="display text-[16px]">ImFDE</p>
-            <p className="mt-1.5 max-w-[440px] text-[14px] leading-relaxed text-[var(--color-muted)]">
-              展示可观察的信息，由访问者自行判断。平台不提供信用分、认证等级，也不经手任何交易。
-            </p>
+            <p className="mt-1.5 text-[12.5px] text-[var(--color-muted)]">FDE 作品集与交流社区</p>
           </div>
           <div className="flex flex-wrap items-center gap-5 text-[14px] text-[var(--color-muted)]">
             <Link to="/feed" className="hover:text-[var(--color-ink)]">

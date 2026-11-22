@@ -5,6 +5,7 @@ import { searchProjects } from "~/lib/queries.server";
 import { getMe } from "~/lib/session.server";
 import { ProjectCard } from "~/components/cards";
 import { PageHead } from "~/components/page-head";
+import { UnderlineTabs } from "~/components/underline-tabs";
 
 const ACCESS_MODES = [
   { v: "all", label: "全部" },
@@ -75,17 +76,12 @@ export default function DiscoverProjects({ loaderData }: Route.ComponentProps) {
       </form>
 
       {/* flat type tabs */}
-      <div className="mt-5 border-b border-[#eff3f4]">
-        <div className="flex flex-wrap items-center gap-1">
-          {KINDS.map((k) => (
-            <Link key={k.v} to={withParam("kind", k.v === "all" ? "" : k.v)} preventScrollReset
-              className={`relative px-3 py-2 text-[13px] font-medium transition ${kind === k.v ? "text-[#0f1419]" : "text-[#536471] hover:text-[#0f1419]"}`}>
-              {k.label}
-              {kind === k.v && <span className="absolute inset-x-3 bottom-0 h-[2px] rounded bg-[#0f1419]" />}
-            </Link>
-          ))}
-          <span className="ml-auto text-[12.5px] text-[#8b93a3] tabular-nums">{projects.length} 件</span>
-        </div>
+      <div className="mt-5">
+        <UnderlineTabs
+          items={KINDS.map((k) => ({ id: k.v, label: k.label, to: withParam("kind", k.v === "all" ? "" : k.v) }))}
+          active={kind}
+          right={`${projects.length} 件`}
+        />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         {ACCESS_MODES.map((a) => (

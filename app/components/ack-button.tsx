@@ -39,7 +39,7 @@ export function AckButton({
   const prevData = useRef(fetcher.data);
   const next = location.pathname + location.search;
   const isSelf = viewerId === authorId;
-  const active = optimistic ? acks + 1 : acks;
+  const active = acks + (optimistic && !acked ? 1 : !optimistic && acked ? -1 : 0);
 
   useEffect(() => {
     if (fetcher.data === prevData.current || !fetcher.data) return;

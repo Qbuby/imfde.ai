@@ -18,12 +18,12 @@ INSERT OR IGNORE INTO users (id, email, password_hash, handle, kind, status, cre
  ('seed_user_linyu','linyu@seed.imfde.invalid','locked$seed_account_disabled','linyu','individual','active', CAST((strftime('%s','now') - 604800) * 1000 AS INTEGER));
 
 INSERT OR IGNORE INTO profiles (user_id, display_name, avatar_url, cover_url, headline, about, location, timezone, visibility, hide_follows, updated_at) VALUES
- ('seed_user_kwu','吴凯',NULL,NULL,'专接制造业和物流的脏数据现场，最近在把老 ERP 和多模态 OCR 缝在一起','做了 7 年企业数据集成，这两年主要驻场把大模型接到客户现有的 SAP/金蝶和仓储系统里。比起新模型发版，更关心扫描件带红章怎么不丢字段、断网机房怎么稳住显存。','上海','UTC+8','public',0, CAST((strftime('%s','now') - 7200) * 1000 AS INTEGER)),
- ('seed_user_ming','Ming Chen',NULL,NULL,'Voice AI & telephony FDE. Cutting p95 barge-in latency on noisy real calls.','Previously built WebRTC infra, now deploying real-time voice agents for healthcare & logistics call centers. Most of my week is spent staring at VAD traces and weird carrier SIP headers.','旧金山','UTC-8','public',0, CAST((strftime('%s','now') - 14400) * 1000 AS INTEGER)),
- ('seed_user_siyu','郑思雨',NULL,NULL,'企业知识库检索与评测，偏爱混合检索、小模型重排和能跑进内网的东西','帮法务、合规和研发团队做带严格出处的文档问答。坚持先搭 200 条真实难例评测集再动 Prompt，不信没有基准线的调优。','深圳','UTC+8','public',1, CAST((strftime('%s','now') - 21600) * 1000 AS INTEGER)),
- ('seed_user_laok','老K',NULL,NULL,'以前写后端和运维，现在负责把 Agent 真正落到客户内网且半夜不报警','主要处理私有化交付的最后一公里：离线镜像、老旧 CentOS/麒麟兼容、vLLM 显存分配、调用链路追踪和成本告警。','北京','UTC+8','public',0, CAST((strftime('%s','now') - 28800) * 1000 AS INTEGER)),
- ('seed_user_fieldcraft','Fieldcraft Studio',NULL,NULL,'3 人 FDE 小团队，专注客服工单自动化、影子评测与内部 Ops Agent 交付','不做通用平台，只按具体业务流驻场交付可观测的自动化系统。所有上线流程默认先跑两周 Shadow Mode 对比人工回复，达标再灰度切流量。','杭州','UTC+8','public',0, CAST((strftime('%s','now') - 36000) * 1000 AS INTEGER)),
- ('seed_user_linyu','林予',NULL,NULL,'Building browser automation & ERP bridges for cross-border supply chain ops','一半时间写 Playwright 和状态机，一半时间和清关、货代操作员坐在一起看他们每天重复点哪些老网页。','新加坡','UTC+8','public',0, CAST((strftime('%s','now') - 43200) * 1000 AS INTEGER));
+ ('seed_user_kwu','吴凯',NULL,NULL,'做制造和物流系统集成，最近主要折腾 ERP + OCR','做了 7 年企业数据集成，这两年主要驻场把大模型接到客户现有的 SAP/金蝶和仓储系统里。比起新模型发版，更关心扫描件带红章怎么不丢字段、断网机房怎么稳住显存。','上海','UTC+8','public',0, CAST((strftime('%s','now') - 7200) * 1000 AS INTEGER)),
+ ('seed_user_ming','Ming Chen',NULL,NULL,'Voice AI & telephony. Mostly debugging WebRTC, SIP and noisy calls.','Previously built WebRTC infra, now deploying real-time voice agents for healthcare & logistics call centers. Most of my week is spent staring at VAD traces and weird carrier SIP headers.','旧金山','UTC-8','public',0, CAST((strftime('%s','now') - 14400) * 1000 AS INTEGER)),
+ ('seed_user_siyu','郑思雨',NULL,NULL,'企业文档检索和评测，偏重内网部署','帮法务、合规和研发团队做带严格出处的文档问答。坚持先搭 200 条真实难例评测集再动 Prompt，不信没有基准线的调优。','深圳','UTC+8','public',1, CAST((strftime('%s','now') - 21600) * 1000 AS INTEGER)),
+ ('seed_user_laok','老K',NULL,NULL,'后端转私有化交付，常年跟离线机房和显存打交道','主要处理私有化交付的最后一公里：离线镜像、老旧 CentOS/麒麟兼容、vLLM 显存分配、调用链路追踪和成本告警。','北京','UTC+8','public',0, CAST((strftime('%s','now') - 28800) * 1000 AS INTEGER)),
+ ('seed_user_fieldcraft','Fieldcraft Studio',NULL,NULL,'3 人小团队，做客服工单和内部运维自动化','不做通用平台，只按具体业务流驻场交付可观测的自动化系统。所有上线流程默认先跑两周 Shadow Mode 对比人工回复，达标再灰度切流量。','杭州','UTC+8','public',0, CAST((strftime('%s','now') - 36000) * 1000 AS INTEGER)),
+ ('seed_user_linyu','林予',NULL,NULL,'Browser automation & ERP glue for cross-border logistics','一半时间写 Playwright 和状态机，一半时间和清关、货代操作员坐在一起看他们每天重复点哪些老网页。','新加坡','UTC+8','public',0, CAST((strftime('%s','now') - 43200) * 1000 AS INTEGER));
 
 INSERT OR IGNORE INTO profile_skills (user_id, skill_name, position) VALUES
  ('seed_user_kwu','私有部署',0),('seed_user_kwu','多模态OCR',1),('seed_user_kwu','RAG',2),('seed_user_kwu','Python',3),('seed_user_kwu','PostgreSQL',4),

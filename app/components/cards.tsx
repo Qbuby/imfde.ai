@@ -424,32 +424,9 @@ export function FeedCard({
             <ArrowUpRight size={15} strokeWidth={1.65} className="shrink-0 text-[var(--color-faint)]" aria-hidden />
           </Link>
         )}
-        {post.project_slug && (
-          <Link to={`/projects/${post.project_slug}`} className="mt-2 inline-flex items-center gap-1 rounded-full border border-[#e2e5ea] px-3 py-1 text-[12px] font-medium text-[#0f1419] transition hover:border-[#0f1419]">
-            查看作品 ↗
-          </Link>
-        )}
-
-        {/* action bar: evenly distributed, semantic colours */}
+        {/* action bar: ACK → 评论 → 转发 → 赞 → 收藏 → 复制链接 */}
         <footer className="mt-3 flex max-w-[480px] items-center justify-between gap-1 text-[12.5px] text-[var(--color-muted)] tabular-nums">
           <AckButton postId={post.id} acks={post.acks} acked={Boolean(post.acked)} viewerId={viewerId} authorId={post.author_id} />
-          <likeFetcher.Form method="post" action="/actions/like">
-            <input type="hidden" name="target_type" value="post" />
-            <input type="hidden" name="target_id" value={post.id} />
-            <input type="hidden" name="intent" value={liked ? "unlike" : "like"} />
-            <button
-              ref={likeButtonRef}
-              aria-pressed={liked}
-              aria-label={liked ? "取消赞" : "赞"}
-              onClick={() => !liked && popLike()}
-              className={`action-btn action-like ${liked ? "text-[var(--color-like)]" : ""}`}
-            >
-              <motion.span animate={heartControls} className="grid place-items-center">
-                <Heart size={17} strokeWidth={1.65} fill={liked ? "currentColor" : "none"} aria-hidden />
-              </motion.span>
-              {likeCount > 0 ? <SlidingNumber value={likeCount} /> : ""}
-            </button>
-          </likeFetcher.Form>
 
           <Link to={`/posts/${post.id}`} aria-label="评论" className="action-btn action-link">
             <MessageCircle size={17} strokeWidth={1.65} aria-hidden />
@@ -457,102 +434,92 @@ export function FeedCard({
           </Link>
 
           {signedIn ? (
-            <>
-              <Popover.Root open={repostOpen} onOpenChange={setRepostOpen}>
-                <Popover.Trigger asChild>
-                  <button
-                    aria-label="转发"
-                    onClick={popRepost}
-                    className={`action-btn action-repost data-[state=open]:text-[var(--color-repost)] ${
-                      reposted ? "bg-[rgba(0,186,124,0.10)] text-[#00ba7c]" : ""
-                    }`}
-                  >
-                    <motion.span animate={repostControls} className="grid place-items-center">
-                      <Repeat2 size={17} strokeWidth={1.65} aria-hidden />
-                    </motion.span>
-                    {repostCount > 0 ? <SlidingNumber value={repostCount} /> : ""}
-                  </button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content
-                    side="bottom"
-                    align="start"
-                    sideOffset={6}
-                    className="pop-in z-50 w-[320px] outline-none"
-                  >
-                    <div className="w-[320px] rounded-[14px] border border-[rgba(20,23,31,0.10)] bg-white p-3 shadow-[0_12px_32px_rgba(16,24,40,0.12)]">
-                      <div className="mb-2.5 flex items-center justify-between border-b border-[#eef0f2] pb-2.5">
-                        <span className="text-[12px] font-medium">转发到广场</span>
-                        <repostFetcher.Form method="post" action="/actions/repost">
-                          <input type="hidden" name="post_id" value={post.id} />
-                          <input type="hidden" name="body" value="" />
-                          <input type="hidden" name="intent" value={reposted ? "unrepost" : "repost"} />
-                          <button
-                            disabled={repostFetcher.state !== "idle"}
-                            className={`rounded-full px-3 py-1 text-[12px] font-medium transition disabled:opacity-50 ${
-                              reposted
-                                ? "text-[#00ba7c] hover:bg-[rgba(0,186,124,0.10)]"
-                                : "text-[var(--color-ink-soft)] hover:bg-[var(--color-paper)]"
-                            }`}
-                          >
-                            {reposted ? "取消转发" : "直接转发"}
-                          </button>
-                        </repostFetcher.Form>
-                      </div>
-                      <quoteFetcher.Form method="post" action="/actions/repost" className="space-y-2">
-                        <input type="hidden" name="post_id" value={post.id} />
-                        <input type="hidden" name="intent" value="repost" />
-                        <textarea
-                          name="body"
-                          rows={2}
-                          maxLength={2000}
-                          placeholder="加一句你的看法进行引用…"
-                          className="field field-area !min-h-[64px] !text-[13px]"
-                        />
-                        <div className="flex justify-end">
-                          <button
-                            disabled={quoteFetcher.state !== "idle"}
-                            className="btn btn-primary btn-sm disabled:opacity-50"
-                          >
-                            {quoteFetcher.state !== "idle" ? "发布中…" : "引用转发"}
-                          </button>
-                        </div>
-                      </quoteFetcher.Form>
-                    </div>
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-
-              <bookmarkFetcher.Form method="post" action="/actions/bookmark">
-                <input type="hidden" name="target_type" value="post" />
-                <input type="hidden" name="target_id" value={post.id} />
-                <input type="hidden" name="intent" value={bookmarked ? "unbookmark" : "bookmark"} />
+            <Popover.Root open={repostOpen} onOpenChange={setRepostOpen}>
+              <Popover.Trigger asChild>
                 <button
-                  aria-pressed={bookmarked}
-                  aria-label={bookmarked ? "取消收藏" : "收藏"}
-                  onClick={popBookmark}
-                  className={`action-btn action-link ${bookmarked ? "text-[var(--color-link)]" : ""}`}
+                  aria-label="转发"
+                  onClick={popRepost}
+                  className={`action-btn action-repost data-[state=open]:text-[var(--color-repost)] ${
+                    reposted ? "bg-[rgba(0,186,124,0.10)] text-[#00ba7c]" : ""
+                  }`}
                 >
-                  <motion.span animate={bookmarkControls} className="grid place-items-center">
-                    <Bookmark size={17} strokeWidth={1.65} fill={bookmarked ? "currentColor" : "none"} aria-hidden />
+                  <motion.span animate={repostControls} className="grid place-items-center">
+                    <Repeat2 size={17} strokeWidth={1.65} aria-hidden />
                   </motion.span>
+                  {repostCount > 0 ? <SlidingNumber value={repostCount} /> : ""}
                 </button>
-              </bookmarkFetcher.Form>
-
-              <button
-                onClick={copyLink}
-                aria-label="复制链接"
-                className={`action-btn ${copied ? "text-[var(--color-repost)]" : ""}`}
-              >
-                {copied ? <Check size={17} strokeWidth={1.65} aria-hidden /> : <Link2 size={17} strokeWidth={1.65} aria-hidden />}
-              </button>
-            </>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content side="bottom" align="start" sideOffset={6} className="pop-in z-50 w-[320px] outline-none">
+                  <div className="w-[320px] rounded-[14px] border border-[rgba(20,23,31,0.10)] bg-white p-3 shadow-[0_12px_32px_rgba(16,24,40,0.12)]">
+                    <div className="mb-2.5 flex items-center justify-between border-b border-[#eef0f2] pb-2.5">
+                      <span className="text-[12px] font-medium">转发到广场</span>
+                      <repostFetcher.Form method="post" action="/actions/repost">
+                        <input type="hidden" name="post_id" value={post.id} />
+                        <input type="hidden" name="body" value="" />
+                        <input type="hidden" name="intent" value={reposted ? "unrepost" : "repost"} />
+                        <button disabled={repostFetcher.state !== "idle"} className={`rounded-full px-3 py-1 text-[12px] font-medium transition disabled:opacity-50 ${reposted ? "text-[#00ba7c] hover:bg-[rgba(0,186,124,0.10)]" : "text-[var(--color-ink-soft)] hover:bg-[var(--color-paper)]"}`}>
+                          {reposted ? "取消转发" : "直接转发"}
+                        </button>
+                      </repostFetcher.Form>
+                    </div>
+                    <quoteFetcher.Form method="post" action="/actions/repost" className="space-y-2">
+                      <input type="hidden" name="post_id" value={post.id} />
+                      <input type="hidden" name="intent" value="repost" />
+                      <textarea name="body" rows={2} maxLength={2000} placeholder="加一句你的看法进行引用…" className="field field-area !min-h-[64px] !text-[13px]" />
+                      <div className="flex justify-end">
+                        <button disabled={quoteFetcher.state !== "idle"} className="btn btn-primary btn-sm disabled:opacity-50">
+                          {quoteFetcher.state !== "idle" ? "发布中…" : "引用转发"}
+                        </button>
+                      </div>
+                    </quoteFetcher.Form>
+                  </div>
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
           ) : (
-            <>
-              <GuestAction icon="repost" label="登录后转发" count={post.reposts} />
-              <GuestAction icon="bookmark" label="登录后收藏" />
-            </>
+            <GuestAction icon="repost" label="登录后转发" count={post.reposts} />
           )}
+
+          {signedIn ? (
+            <likeFetcher.Form method="post" action="/actions/like">
+              <input type="hidden" name="target_type" value="post" />
+              <input type="hidden" name="target_id" value={post.id} />
+              <input type="hidden" name="intent" value={liked ? "unlike" : "like"} />
+              <button ref={likeButtonRef} type="submit" aria-pressed={liked} aria-label={liked ? "取消赞" : "赞"} onClick={() => !liked && popLike()}
+                className={`action-btn action-like ${liked ? "text-[var(--color-like)]" : ""}`}>
+                <motion.span animate={heartControls} className="grid place-items-center">
+                  <Heart size={17} strokeWidth={1.65} fill={liked ? "currentColor" : "none"} aria-hidden />
+                </motion.span>
+                {likeCount > 0 ? <SlidingNumber value={likeCount} /> : ""}
+              </button>
+            </likeFetcher.Form>
+          ) : (
+            <Link to={`/login?next=${encodeURIComponent(`/posts/${post.id}`)}`} aria-label="登录后点赞" className="action-btn action-like">
+              <Heart size={17} strokeWidth={1.65} aria-hidden />
+              {post.likes > 0 ? <SlidingNumber value={post.likes} /> : ""}
+            </Link>
+          )}
+
+          {signedIn ? (
+            <bookmarkFetcher.Form method="post" action="/actions/bookmark">
+              <input type="hidden" name="target_type" value="post" />
+              <input type="hidden" name="target_id" value={post.id} />
+              <input type="hidden" name="intent" value={bookmarked ? "unbookmark" : "bookmark"} />
+              <button aria-pressed={bookmarked} aria-label={bookmarked ? "取消收藏" : "收藏"} onClick={popBookmark}
+                className={`action-btn action-link ${bookmarked ? "text-[var(--color-link)]" : ""}`}>
+                <motion.span animate={bookmarkControls} className="grid place-items-center">
+                  <Bookmark size={17} strokeWidth={1.65} fill={bookmarked ? "currentColor" : "none"} aria-hidden />
+                </motion.span>
+              </button>
+            </bookmarkFetcher.Form>
+          ) : (
+            <GuestAction icon="bookmark" label="登录后收藏" />
+          )}
+
+          <button onClick={copyLink} aria-label="复制链接" className={`action-btn ${copied ? "text-[var(--color-repost)]" : ""}`}>
+            {copied ? <Check size={17} strokeWidth={1.65} aria-hidden /> : <Link2 size={17} strokeWidth={1.65} aria-hidden />}
+          </button>
         </footer>
 
         {showReplyPreview && post.preview_comment && (

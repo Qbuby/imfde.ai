@@ -420,9 +420,6 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
             </p>
           </div>
         </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-[var(--color-faint)]">
-          外部链接与本人自述会在作品页分开标注，平台不核实、不排名。
-        </p>
       </aside>
       </div>
     </div>

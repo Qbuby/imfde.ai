@@ -102,7 +102,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
         <div className="mt-8">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-[20px] font-semibold tracking-[-0.01em]">最新现场动态</h2>
+            <h2 className="text-[20px] font-semibold tracking-[-0.01em]">最新动态</h2>
             <Link
               to="/feed"
               className="text-[13px] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"

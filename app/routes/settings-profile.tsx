@@ -143,10 +143,7 @@ export default function SettingsProfile({
       {welcome && (
         <div className="mb-6 rounded-[var(--radius-panel)] border border-[var(--color-ink-soft)] bg-[var(--color-accent-soft)] px-4 py-3.5">
           <p className="text-[13.5px] font-medium text-[#0a6772]">
-            主页建好了。接着把它填完整——
-          </p>
-          <p className="mt-1 text-[12.5px] text-[#0a6772]/80">
-            写一句话介绍自己，贴一个作品，再连上 GitHub。三步之后别人就能看懂你是谁。
+            主页建好了，补充一下简介和方向吧。
           </p>
         </div>
       )}
@@ -325,9 +322,6 @@ export default function SettingsProfile({
             )}
           </div>
         </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-[var(--color-faint)]">
-          标签仅在本平台显示；外部链接会标注「外部链接」，我们不核实其内容。
-        </p>
       </aside>
       </div>
     </div>

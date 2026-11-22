@@ -2,7 +2,7 @@ import type { Route } from "./+types/new-post";
 import { Form, Link, redirect } from "react-router";
 import { requireMe } from "~/lib/session.server";
 import { many } from "~/lib/db.server";
-import { insertPost, projectsForComposer } from "~/lib/queries.server";
+import { activePrompts, insertPost, projectsForComposer } from "~/lib/queries.server";
 import { extractTags } from "~/lib/tags";
 import { PageHead } from "~/components/page-head";
 
@@ -15,14 +15,17 @@ const KINDS = [
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await requireMe(context, request);
-  const projects = await many<{ id: string; title: string }>(
-    context,
-    `SELECT id, title FROM projects
-      WHERE owner_id = ?1 AND visibility = 'public'
-      ORDER BY created_at DESC LIMIT 20`,
-    me.id,
-  );
-  return { me, projects };
+  const [projects, prompts] = await Promise.all([
+    many<{ id: string; title: string }>(
+      context,
+      `SELECT id, title FROM projects
+        WHERE owner_id = ?1 AND visibility = 'public'
+        ORDER BY created_at DESC LIMIT 20`,
+      me.id,
+    ),
+    activePrompts(context, 5),
+  ]);
+  return { me, projects, prompts };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -31,6 +34,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const kind = String(form.get("kind") ?? "build");
   const body = String(form.get("body") ?? "").trim();
   const projectId = String(form.get("project_id") ?? "");
+  const promptId = String(form.get("prompt_id") ?? "");
 
   if (!body || body.length > 4000) {
     return Response.json({ error: "内容不能为空，且不超过 4000 字" }, { status: 400 });
@@ -48,6 +52,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     kind: KINDS.some((k) => k.v === kind) ? kind : "build",
     body,
     projectId: attachable,
+    promptId: promptId || null,
     tags: extractTags(body),
   });
 
@@ -55,7 +60,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 export default function NewPost({ loaderData }: Route.ComponentProps) {
-  const { me, projects } = loaderData;
+  const { me, projects, prompts } = loaderData;
 
   return (
     <div className="max-w-[760px]">
@@ -119,6 +124,20 @@ export default function NewPost({ loaderData }: Route.ComponentProps) {
                 <option key={p.id} value={p.id}>
                   {p.title}
                 </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {prompts.length > 0 && (
+          <label className="block">
+            <span className="mb-1.5 block text-[12.5px] font-medium">
+              同题切磋 <span className="font-normal text-[var(--color-faint)]">（可选）</span>
+            </span>
+            <select name="prompt_id" className="field cursor-pointer">
+              <option value="">不参与命题</option>
+              {prompts.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
               ))}
             </select>
           </label>

@@ -83,12 +83,12 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
       </form>
 
       {/* single flat filter row, no pills-in-pills */}
-      <div className="mt-5 border-b border-[#eff3f4] pb-3">
+      <div className="mt-5">
         <UnderlineTabs
           items={KINDS.map((k) => ({ id: k.v || "all", label: k.label, to: withParam("kind", k.v) }))}
           active={kind || "all"}
+          right={`${people.length} 位`}
         />
-        <span className="block px-3 pb-1 text-[12.5px] text-[#8b93a3] tabular-nums">{people.length} 位</span>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {QUICK_SKILLS.map((sk) => (
             <Link key={sk} to={withParam("skill", skill === sk ? "" : sk)} preventScrollReset

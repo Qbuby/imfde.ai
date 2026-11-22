@@ -152,11 +152,6 @@ export default function SettingsAccounts({
           <button className="btn btn-primary btn-sm">添加</button>
         </div>
       </Form>
-
-      <p className="mt-5 text-[11.5px] leading-relaxed text-[var(--color-faint)]">
-        当前所有外部账号都是「手动链接」。OAuth 授权连接会在后续版本提供，
-        届时会额外标注「已连接账号」，同样不代表我们核实了你的履历。
-      </p>
     </div>
   );
 }
