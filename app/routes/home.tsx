@@ -13,7 +13,8 @@ import {
 import { FeedCard, PersonCard } from "~/components/cards";
 import { Avatar, CoverArt } from "~/components/media";
 import { RailTrio } from "~/components/feed-rail";
-import { ackQuotaToday } from "~/lib/queries.server";
+import { AdSlot } from "~/components/ad-slot";
+import { ackQuotaToday, activeAds } from "~/lib/queries.server";
 import { utc8DayKey } from "~/lib/format";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -21,7 +22,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const viewerId = me?.id ?? null;
 
   // all independent — run them together instead of six sequential awaits
-  const [projects, people, feed, recommended, skills, stats, quota] = await Promise.all([
+  const [projects, people, feed, recommended, skills, stats, quota, ads] = await Promise.all([
     latestProjects(context, viewerId, 8),
     featuredPeople(context, viewerId, 6),
     feedPosts(context, { viewerId, limit: 5 }),
@@ -31,6 +32,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       ? countsForProfile(context, me.id)
       : Promise.resolve({ projects: 0, posts: 0, followers: 0, following: 0, acks_received: 0 }),
     me ? ackQuotaToday(context, me.id, utc8DayKey()) : Promise.resolve({ used: 0, limit: 2 as const, remaining: 2 }),
+    activeAds(context),
   ]);
 
   return {
@@ -42,11 +44,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     skills,
     stats,
     quota,
+    ads,
   };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { me, projects, people, posts, recommended, skills, stats, quota } = loaderData;
+  const { me, projects, people, posts, recommended, skills, stats, quota, ads } = loaderData;
 
   if (!me) return <Landing projects={projects} people={people} posts={posts} />;
 
@@ -202,6 +205,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               </div>
             </div>
           )}
+        <AdSlot variant="right" ad={ads.right_rail[0]} />
         </div>
       </aside>
     </div>

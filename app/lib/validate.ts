@@ -56,6 +56,11 @@ export function cleanUrl(raw: string): CleanUrlResult {
   if (!s) return { value: null, error: null };
   if (s.length > 2048) return { value: null, error: "链接太长了" };
 
+  // Local uploaded media / bundled covers are same-origin paths, not URLs.
+  if (/^\/(media|covers)\/[a-zA-Z0-9._-]+$/.test(s)) {
+    return { value: s, error: null };
+  }
+
   // scheme-less input ("github.com/me") is assumed to be https
   const candidate = /^[a-z][a-z0-9+.-]*:/i.test(s)
     ? s

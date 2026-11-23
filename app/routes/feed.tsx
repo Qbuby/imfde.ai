@@ -22,12 +22,14 @@ import {
   promptBySlug,
   recommendedPeople,
   latestRadarItems,
+  activeAds,
 } from "~/lib/queries.server";
 import { FollowButton } from "~/components/cards";
 import { CoverArt } from "~/components/media";
 import { FeedCard } from "~/components/cards";
 import { PageHead } from "~/components/page-head";
 import { UnderlineTabs } from "~/components/underline-tabs";
+import { AdSlot } from "~/components/ad-slot";
 import { extractTags } from "~/lib/tags";
 
 const KINDS = [
@@ -59,7 +61,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
   const promptSlug = url.searchParams.get("prompt")?.trim() || "";
 
-  const [feed, tags, myProjects, sidePeople, sideProjects, prompts, quota, promptRow, opportunityItems, toolItems] = await Promise.all([
+  const [feed, tags, myProjects, sidePeople, sideProjects, prompts, quota, promptRow, opportunityItems, toolItems, ads] = await Promise.all([
     feedPosts(context, {
       viewerId: me?.id ?? null,
       scope: tab,
@@ -79,6 +81,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     promptSlug ? promptBySlug(context, promptSlug) : Promise.resolve(null),
     latestRadarItems(context, "opportunity", 5),
     latestRadarItems(context, "tool", 5),
+    activeAds(context),
   ]);
 
   return {
@@ -100,6 +103,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     promptSlug,
     opportunityItems,
     toolItems,
+    ads,
   };
 }
 
@@ -139,7 +143,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
   const {
     me, tab, kind, tag, sort, page, posts, hasMore,
     myProjects, sidePeople, sideProjects, prompts, quota, prompt, promptSlug,
-    opportunityItems, toolItems,
+    opportunityItems, toolItems, ads,
   } = loaderData;
   const [params] = useSearchParams();
   const viewerId = me?.id ?? null;
@@ -238,9 +242,14 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           </div>
         ) : (
           <div className="divide-y divide-[#eff3f4]">
-            {posts.map((post) => (
-              <div key={post.id} className="px-4 py-3.5 transition-colors hover:bg-[#fafafa]">
-                <FeedCard post={post} viewerId={viewerId} showReplyPreview />
+            {posts.map((post, i) => (
+              <div key={post.id}>
+                <div className="px-4 py-3.5 transition-colors hover:bg-[#fafafa]">
+                  <FeedCard post={post} viewerId={viewerId} showReplyPreview />
+                </div>
+                {(i === 2 || (i > 2 && (i + 1) % 10 === 0)) && (
+                  <AdSlot variant="inline" ad={ads.feed_inline[0]} />
+                )}
               </div>
             ))}
           </div>
@@ -304,6 +313,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
               </div>
             </section>
           )}
+        <AdSlot variant="right" ad={ads.right_rail[0]} />
         </div>
       </aside>
       </div>

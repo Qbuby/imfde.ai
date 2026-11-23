@@ -333,3 +333,10 @@ INSERT OR IGNORE INTO radar_items
   '把显存、并发和量化参数整理成一份可复用的检查步骤，适合在客户机房里按项核对。',
   '私有部署','GitHub · 320 ★',
   CAST((strftime('%s','now') - 345600) * 1000 AS INTEGER), CAST((strftime('%s','now') - 1100) * 1000 AS INTEGER));
+
+-- ── G. 三处克制的赞助位示例（与自然内容分表，显式标注）──
+INSERT OR IGNORE INTO ad_slots
+ (id, placement, title, description, cta_label, target_url, image_url, badge, active, priority, created_at) VALUES
+ ('seed_ad_left','left_rail','把项目放到同行面前','给在场做交付的人看作品，不写推荐语。','了解主页','https://imfde.ai/discover','', '赞助',1,10, CAST((strftime('%s','now')) * 1000 AS INTEGER)),
+ ('seed_ad_right','right_rail','写点现场踩过的坑','一条短动态就够，别人会按方向找到你。','去广场','https://imfde.ai/feed','', '赞助',1,10, CAST((strftime('%s','now')) * 1000 AS INTEGER)),
+ ('seed_ad_inline','feed_inline','把做过的项目放上来','发一条动态，同行会按方向找到你。','建主页','https://imfde.ai/join','', '赞助',1,10, CAST((strftime('%s','now')) * 1000 AS INTEGER));

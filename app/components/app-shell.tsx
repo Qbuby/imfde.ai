@@ -13,6 +13,8 @@ import {
   Users,
 } from "lucide-react";
 import { Avatar } from "./media";
+import { AdSlot } from "./ad-slot";
+import type { AdItem } from "~/lib/queries.server";
 import { BrandLogo, BrandMark } from "./brand-logo";
 import { QuickPostModal } from "./quick-post";
 import { CommandPalette } from "./command-palette";
@@ -41,20 +43,33 @@ export const RAIL_ITEMS = [
   { icon: "messages", label: "消息", to: "/notifications", end: false },
 ] as const;
 
-export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone: number; unreadCount?: number }) {
+const TAB_BAR_ITEMS = [
+  { icon: Home, label: "首页", to: "/", end: true },
+  { icon: MessageSquareText, label: "广场", to: "/feed", end: false },
+  { icon: Users, label: "发现", to: "/discover", end: false },
+  { icon: Layers, label: "作品", to: "/discover/projects", end: false },
+  { icon: Bell, label: "消息", to: "/notifications", end: false },
+] as const;
+
+export function AppShell({ me, setupDone, unreadCount = 0, ads }: {
+  me: Me;
+  setupDone: number;
+  unreadCount?: number;
+  ads?: Record<"left_rail" | "right_rail" | "feed_inline", AdItem[]>;
+}) {
   return (
     <div className="min-h-dvh bg-[var(--color-canvas-warm)]">
       {/* ── mobile top bar ─────────────────────────────────────────── */}
-      <div className="frost flex items-center gap-3 border-b border-[#eff3f4] px-4 py-3 md:hidden">
-        <NavLink to="/" aria-label="ImFDE 首页">
-          <BrandLogo size="md" />
+      <div className="frost flex items-center gap-1.5 border-b border-[#eff3f4] px-3 py-2.5 md:hidden">
+        <NavLink to="/" aria-label="ImFDE 首页" className="shrink-0">
+          <BrandLogo size="sm" />
         </NavLink>
         <CommandPalette
           me={me}
           trigger={
             <button
               aria-label="快捷搜索"
-              className="ml-auto grid h-9 w-9 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-paper)]"
+              className="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-paper)]"
             >
               <Search size={17} strokeWidth={1.65} aria-hidden />
             </button>
@@ -63,13 +78,13 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
         <QuickPostModal
           me={me}
           trigger={
-            <button className="btn btn-primary btn-sm !h-9 group">
-              <Plus size={15} strokeWidth={1.8} className="transition-transform duration-200 ease-out group-hover:rotate-90" aria-hidden />
-              写点什么
+            <button aria-label="写点什么" className="btn btn-primary btn-sm !h-11 !min-w-0 !gap-0 !px-3 group">
+              <Plus size={17} strokeWidth={1.8} className="transition-transform duration-200 ease-out group-hover:rotate-90" aria-hidden />
+              <span className="hidden sm:inline">写点什么</span>
             </button>
           }
         />
-        <NavLink to={`/@${me.handle}`} aria-label="我的主页">
+        <NavLink to={`/@${me.handle}`} aria-label="我的主页" className="grid h-11 w-11 shrink-0 place-items-center">
           <Avatar name={me.display_name} src={me.avatar_url} size={32} />
         </NavLink>
       </div>
@@ -176,38 +191,40 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
               上传作品 →
             </p>
           </NavLink>
+          <div className="mt-3 lg:block">
+            <AdSlot variant="left" ad={ads?.left_rail?.[0]} />
+          </div>
         </aside>
 
         {/* ── reading panel ─────────────────────────────────────────── */}
         <div className="min-w-0 flex-1 pb-4 pr-0 md:pr-4">
-          <div className="surface-panel min-h-[calc(100dvh-16px)] px-5 pb-10 pt-6 md:px-10 md:pt-9 lg:px-14">
-            <div className="mb-6 flex gap-1 overflow-x-auto md:hidden">
-              {RAIL_ITEMS.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `shrink-0 rounded-full px-3 py-1.5 text-[14px] font-medium ${
-                      isActive
-                        ? "bg-[var(--color-ink-2)] text-white"
-                        : "text-[var(--color-ink-soft)]"
-                    }`
-                  }
-                >
-                  {item.label}
-                  {item.icon === "messages" && unreadCount > 0 && (
-                    <span className="ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#f43f5e] px-1 font-sans text-[11px] font-semibold text-white tabular-nums">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
-                  )}
-                </NavLink>
-              ))}
-            </div>
+          <div className="surface-panel min-h-[calc(100dvh-16px)] px-5 pb-24 pt-6 md:pb-10 md:px-10 md:pt-9 lg:px-14">
             <Outlet />
           </div>
         </div>
       </div>
+
+      {/* ── mobile bottom tab bar ───────────────────────────────────── */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-[#eff3f4] bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="主导航">
+        {TAB_BAR_ITEMS.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              `relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition ${
+                isActive ? "text-[#0f1419]" : "text-[#8b93a3]"
+              }`
+            }
+          >
+            <item.icon size={20} strokeWidth={1.65} aria-hidden />
+            <span>{item.label}</span>
+            {item.icon === Bell && unreadCount > 0 && (
+              <span className="absolute right-[calc(50%-18px)] top-1.5 h-2 w-2 rounded-full bg-[#f43f5e]" aria-label={`${unreadCount} 条未读`} />
+            )}
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }

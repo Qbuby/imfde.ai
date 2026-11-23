@@ -338,9 +338,9 @@ export function FeedCard({
             <span className="micro-mono hidden truncate sm:inline">@{post.handle}</span>
             <span className="micro-mono shrink-0">· {post.time_label}</span>
           </div>
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex min-w-0 shrink items-center justify-end gap-1 sm:gap-2">
             {post.prompt_slug && (
-              <Link to={`/feed?prompt=${post.prompt_slug}`} className="inline-flex items-center gap-1 rounded-full border border-[#e2e5ea] bg-white px-2 py-0.5 text-[11.5px] font-medium text-[#0f1419] transition hover:border-[#0f1419]" title={post.prompt_title ?? ""}>
+              <Link to={`/feed?prompt=${post.prompt_slug}`} className="hidden max-w-[130px] truncate rounded-full border border-[#e2e5ea] bg-white px-2 py-0.5 text-[11.5px] font-medium text-[#0f1419] transition hover:border-[#0f1419] sm:inline-flex sm:items-center sm:gap-1" title={post.prompt_title ?? ""}>
                 同题 · {post.prompt_title}
               </Link>
             )}
@@ -425,7 +425,7 @@ export function FeedCard({
           </Link>
         )}
         {/* action bar: ACK → 评论 → 转发 → 赞 → 收藏 → 复制链接 */}
-        <footer className="mt-3 flex max-w-[480px] items-center justify-between gap-1 text-[12.5px] text-[var(--color-muted)] tabular-nums">
+        <footer className="mt-3 flex max-w-[480px] items-center justify-between gap-0.5 text-[12.5px] text-[var(--color-muted)] tabular-nums">
           <AckButton postId={post.id} acks={post.acks} acked={Boolean(post.acked)} viewerId={viewerId} authorId={post.author_id} />
 
           <Link to={`/posts/${post.id}`} aria-label="评论" className="action-btn action-link">

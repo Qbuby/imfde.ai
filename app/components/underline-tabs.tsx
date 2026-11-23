@@ -27,7 +27,7 @@ export function UnderlineTabs({
     <div
       className={`${sticky ? "sticky top-0 z-20 bg-white/85 backdrop-blur-md " : ""}border-b border-[#eff3f4] ${className}`}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((t) => (
           <Link
             key={t.id}

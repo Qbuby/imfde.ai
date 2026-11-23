@@ -4,6 +4,7 @@ import { requireMe } from "~/lib/session.server";
 import { many, one, stmt, batch } from "~/lib/db.server";
 import { cleanUrl, clamp } from "~/lib/validate";
 import { Avatar, CoverArt } from "~/components/media";
+import { ImageUploader } from "~/components/image-uploader";
 import { PageHead } from "~/components/page-head";
 import { SettingsTabs } from "~/components/settings-tabs";
 import { useState } from "react";
@@ -241,30 +242,16 @@ export default function SettingsProfile({
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label="头像 URL"
-            hint="留空则用名称首字"
-            error={actionData?.errors?.avatar_url}
-          >
-            <input
-              name="avatar_url"
-              {...bind("avatar_url")}
-              placeholder="https://…"
-              className="field"
-            />
-          </Field>
-          <Field
-            label="封面 URL"
-            hint="留空则生成配色封面"
-            error={actionData?.errors?.cover_url}
-          >
-            <input
-              name="cover_url"
-              {...bind("cover_url")}
-              placeholder="https://…"
-              className="field"
-            />
-          </Field>
+          <ImageUploader
+            name="avatar_url" kind="avatar" label="头像"
+            value={live.avatar_url} onChange={(v) => setLive((x) => ({ ...x, avatar_url: v }))}
+            placeholder="https://…" hint="留空则用名称首字" error={actionData?.errors?.avatar_url}
+          />
+          <ImageUploader
+            name="cover_url" kind="profile_cover" label="主页封面"
+            value={live.cover_url} onChange={(v) => setLive((x) => ({ ...x, cover_url: v }))}
+            placeholder="https://…" hint="留空则生成配色封面" error={actionData?.errors?.cover_url}
+          />
         </div>
 
         {actionData?.errors?.display_name && (

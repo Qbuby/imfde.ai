@@ -24,6 +24,9 @@ export default [
     route("new/post", "routes/new-post.tsx"),
     route("new/project", "routes/new-project.tsx"),
 
+    // Same-origin uploaded images; must precede the :handle catch-all.
+    route("media/:id", "routes/media-file.tsx"),
+
     route(":handle", "routes/profile.tsx"),
     route(":handle/projects", "routes/profile-projects.tsx"),
 
@@ -34,6 +37,8 @@ export default [
     route("actions/bookmark", "routes/actions-bookmark.tsx"),
     route("actions/repost", "routes/actions-repost.tsx"),
     route("actions/radar-sync", "routes/actions-radar-sync.tsx"),
+    route("actions/upload", "routes/actions-upload.tsx"),
+    route("actions/avatar-reset", "routes/actions-avatar-reset.tsx"),
   ]),
 
   // auth lives outside the shell: full-bleed, no nav chrome

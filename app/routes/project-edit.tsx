@@ -5,6 +5,7 @@ import { batch, one, run, stmt } from "~/lib/db.server";
 import { cleanUrl, clamp } from "~/lib/validate";
 import { PageHead } from "~/components/page-head";
 import { CoverArt } from "~/components/media";
+import { ImageUploader } from "~/components/image-uploader";
 import { useState } from "react";
 import { ConfirmDialog } from "~/components/confirm-dialog";
 
@@ -316,18 +317,12 @@ export default function ProjectEdit({ loaderData, actionData }: Route.ComponentP
               </span>
             </span>
           </label>
-          <label className="block">
-            <span className="mb-1.5 flex gap-2 text-[12.5px] font-medium">
-              封面图 URL · 支持图片或 .mp4 / .webm 短视频（自动静音循环）
-              {errors.cover_url && <span className="text-[#c0392b]">{errors.cover_url}</span>}
-            </span>
-            <input
-              name="cover_url"
-              {...bind("cover_url")}
-              placeholder="图片或 .mp4 / .webm 短视频链接，留空则自动生成"
-              className="field"
-            />
-          </label>
+          <ImageUploader
+            name="cover_url" kind="project_cover" label="作品封面"
+            value={live.cover_url} onChange={(v) => setLive((x) => ({ ...x, cover_url: v }))}
+            placeholder="图片或 .mp4 / .webm 短视频链接" allowVideoUrl
+            hint="留空则自动生成；短视频自动静音循环" error={errors.cover_url}
+          />
           <label className="block">
             <span className="mb-1.5 flex gap-2 text-[12.5px] font-medium">
               在线 Demo

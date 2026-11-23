@@ -907,3 +907,31 @@ export async function latestRadarItems(
     limit,
   );
 }
+
+/** Active sponsorship slots grouped by placement; independent of community data. */
+export interface AdItem {
+  id: string;
+  placement: "left_rail" | "right_rail" | "feed_inline";
+  title: string;
+  description: string;
+  cta_label: string;
+  target_url: string;
+  image_url: string | null;
+  badge: string;
+}
+
+export async function activeAds(
+  context: AppLoadContext,
+): Promise<Record<"left_rail" | "right_rail" | "feed_inline", AdItem[]>> {
+  const rows = await many<AdItem>(
+    context,
+    `SELECT id, placement, title, description, cta_label, target_url, image_url, badge
+       FROM ad_slots WHERE active = 1
+      ORDER BY placement, priority DESC, created_at DESC`,
+  );
+  const grouped: Record<"left_rail" | "right_rail" | "feed_inline", AdItem[]> = {
+    left_rail: [], right_rail: [], feed_inline: [],
+  };
+  for (const row of rows) grouped[row.placement].push(row);
+  return grouped;
+}

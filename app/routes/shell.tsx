@@ -2,6 +2,7 @@ import type { Route } from "./+types/shell";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { getMe } from "~/lib/session.server";
 import { one } from "~/lib/db.server";
+import { activeAds } from "~/lib/queries.server";
 import { AppShell } from "~/components/app-shell";
 import { BrandLogo } from "~/components/brand-logo";
 import { useEffect, useState } from "react";
@@ -15,7 +16,8 @@ import { Search } from "lucide-react";
  */
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
-  if (!me) return { me: null, setupDone: 0, unreadCount: 0 };
+  const ads = await activeAds(context);
+  if (!me) return { me: null, setupDone: 0, unreadCount: 0, ads };
 
   const row = await one<{
     headline: number;
@@ -41,7 +43,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     ? Number(row.headline > 0) + Number(row.avatar_url > 0) + Number(row.projects > 0) + Number(row.links > 0)
     : 0;
 
-  return { me, setupDone, unreadCount: row?.unread ?? 0 };
+  return { me, setupDone, unreadCount: row?.unread ?? 0, ads };
 }
 
 const GUEST_NAV = [
@@ -66,7 +68,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
   }, [transparentHome]);
 
   // Signed in: Contra's app view (rail + panel). Signed out: marketing chrome.
-  if (me) return <AppShell me={me} setupDone={loaderData.setupDone} />;
+  if (me) return <AppShell me={me} setupDone={loaderData.setupDone} unreadCount={loaderData.unreadCount} ads={loaderData.ads} />;
 
   const headerClass = transparentHome
     ? `fixed inset-x-0 top-0 z-30 transition-colors duration-300 ${
@@ -130,10 +132,10 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
               <Search size={14} strokeWidth={1.65} aria-hidden />
               <span>搜 FDE 或作品…</span>
             </Link>
-            <Link to="/login" className="hidden sm:inline-flex h-10 items-center rounded-full border border-[#e2e5ea] bg-white/80 px-5 text-[14px] font-semibold text-[var(--color-ink)] backdrop-blur-sm transition hover:border-[#4a5264]">
+            <Link to="/login" className="hidden sm:inline-flex h-10 items-center rounded-full border border-[#e2e5ea] bg-white/80 px-3.5 text-[14px] font-semibold text-[var(--color-ink)] backdrop-blur-sm transition hover:border-[#4a5264]">
               登录
             </Link>
-            <Link to="/join" className="inline-flex h-10 items-center rounded-full bg-[#0f1419] px-5 text-[14px] font-semibold text-white transition hover:bg-[#272c30]">
+            <Link to="/join" className="inline-flex h-10 items-center rounded-full bg-[#0f1419] px-3.5 sm:px-5 text-[14px] font-semibold text-white transition hover:bg-[#272c30]">
               加入
             </Link>
           </div>

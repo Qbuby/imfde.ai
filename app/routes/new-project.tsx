@@ -7,6 +7,7 @@ import { slugify } from "~/lib/format";
 import { insertPost } from "~/lib/queries.server";
 import { PageHead } from "~/components/page-head";
 import { CoverArt } from "~/components/media";
+import { ImageUploader } from "~/components/image-uploader";
 import { useState } from "react";
 
 const ACCESS_MODES = [
@@ -318,13 +319,12 @@ export default function NewProject({ actionData }: Route.ComponentProps) {
             链接与图片
           </legend>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1.5 flex gap-2 text-[12px] text-[var(--color-ink-soft)]">
-                封面图 URL · 支持图片或 .mp4 / .webm 短视频（自动静音循环）
-                {errors.cover_url && <span className="text-[#c0392b]">{errors.cover_url}</span>}
-              </span>
-              <input name="cover_url" {...bind("cover_url")} placeholder="图片 URL 或 https://…/demo.mp4" className="field !h-[42px]" />
-            </label>
+            <ImageUploader
+              name="cover_url" kind="project_cover" label="作品封面"
+              value={live.cover_url} onChange={(v) => setLive((x) => ({ ...x, cover_url: v }))}
+              placeholder="图片 URL 或 https://…/demo.mp4" allowVideoUrl
+              hint="支持图片或 .mp4 / .webm 短视频（自动静音循环）" error={errors.cover_url}
+            />
             <label className="block">
               <span className="mb-1.5 flex gap-2 text-[12px] text-[var(--color-ink-soft)]">
                 在线 Demo

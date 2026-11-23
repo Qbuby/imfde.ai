@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { MapPin } from "lucide-react";
 import { getMe, normalizeHandle } from "~/lib/session.server";
 import { many, one } from "~/lib/db.server";
-import { Avatar, CoverArt } from "~/components/media";
+import { CoverArt } from "~/components/media";
+import { AvatarDialog } from "~/components/avatar-dialog";
 import { FeedCard, FollowButton, ProjectCard } from "~/components/cards";
 import { CopyLinkButton } from "~/components/copy-link";
 import { BRAND_ICONS } from "~/components/brand-icons";
@@ -151,7 +152,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
       <section className="grid items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)]">
         <div className="min-w-0">
           <div className="flex items-start gap-3">
-            <Avatar name={user.display_name} src={user.avatar_url} size={64} />
+            <AvatarDialog name={user.display_name} src={user.avatar_url} isSelf={isSelf} size={64} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.03em] text-[#0f1419] sm:text-[42px]">
