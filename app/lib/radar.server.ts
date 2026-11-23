@@ -30,6 +30,9 @@ interface Refined {
 }
 
 const FETCH_TIMEOUT = 8000;
+// The OpenAI-compatible endpoint used in production reasons before answering
+// and regularly takes 45-70s. Give it room; the 8s timeout is for raw fetches.
+const LLM_TIMEOUT = 90000;
 const PER_KIND_NEW = 6;      // at most 6 new items refined per kind per run
 const KEEP_PER_KIND = 40;    // trim older rows beyond this per kind
 
@@ -207,7 +210,7 @@ async function refine(items: Candidate[], env: Env): Promise<Refined[]> {
             { role: "user", content: JSON.stringify(payload) },
           ],
         }),
-        signal: AbortSignal.timeout(FETCH_TIMEOUT),
+        signal: AbortSignal.timeout(LLM_TIMEOUT),
       });
       if (res.ok) {
         const j: any = await res.json();
@@ -247,6 +250,9 @@ export async function runRadarJob(env: Env): Promise<{ insertedOpportunities: nu
     };
 
     const c = ctx(env);
+    // Pre-compute which kinds have fresh candidates, then refine both in
+    // parallel: the slow reasoning model costs ~60s per call, not ~120s.
+    const freshByKind: Record<Kind, Candidate[]> = { opportunity: [], tool: [] };
     for (const kind of ["opportunity", "tool"] as Kind[]) {
       const placeholders = grouped[kind].map(() => "?").join(",") || "''";
       const existing = await many<{ source_url: string }>(
@@ -255,10 +261,18 @@ export async function runRadarJob(env: Env): Promise<{ insertedOpportunities: nu
         ...grouped[kind].map((i) => i.source_url),
       );
       const known = new Set(existing.map((r) => r.source_url));
-      const fresh = grouped[kind].filter((i) => !known.has(i.source_url)).slice(0, PER_KIND_NEW);
-      if (!fresh.length) continue;
+      freshByKind[kind] = grouped[kind].filter((i) => !known.has(i.source_url)).slice(0, PER_KIND_NEW);
+    }
+    const [refinedOpportunities, refinedTools] = await Promise.all([
+      freshByKind.opportunity.length ? refine(freshByKind.opportunity, env) : Promise.resolve([]),
+      freshByKind.tool.length ? refine(freshByKind.tool, env) : Promise.resolve([]),
+    ]);
+    const refinedByKind = { opportunity: refinedOpportunities, tool: refinedTools };
 
-      const refined = await refine(fresh, env);
+    for (const kind of ["opportunity", "tool"] as Kind[]) {
+      const fresh = freshByKind[kind];
+      if (!fresh.length) continue;
+      const refined = refinedByKind[kind];
       const byUrl = new Map(refined.map((r) => [r.source_url, r]));
       const now = Date.now();
       const statements = fresh
