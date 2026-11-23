@@ -1,19 +1,21 @@
 /**
- * ImFDE official mark: two parallel, forward-sheared geometric wings.
+ * ImFDE official mark (方案 A): three forward-sheared geometric bars.
  * Pure vector, monochrome, sharp down to 16px. No external image dependency.
  */
 export function BrandMark({ size = 22, className = "" }: { size?: number; className?: string }) {
   return (
     <svg
+      xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
       viewBox="0 0 32 32"
-      fill="none"
+      fill="currentColor"
       aria-hidden="true"
       className={className}
     >
-      <path d="M5 5H27L23 12H5V5Z" fill="currentColor" />
-      <path d="M5 15H21L17 22H12V27H5V15Z" fill="currentColor" />
+      <path d="M10.5 4H28L26.5 10H9L10.5 4Z" />
+      <path d="M8.25 13H21.25L19.75 19H6.75L8.25 13Z" />
+      <path d="M6 22H13L11.5 28H4.5L6 22Z" />
     </svg>
   );
 }
