@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { Avatar } from "./media";
+import { BrandLogo, BrandMark } from "./brand-logo";
 import { QuickPostModal } from "./quick-post";
 import { CommandPalette } from "./command-palette";
 import type { Me } from "~/lib/session.server";
@@ -45,8 +46,8 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
     <div className="min-h-dvh bg-[var(--color-canvas-warm)]">
       {/* ── mobile top bar ─────────────────────────────────────────── */}
       <div className="frost flex items-center gap-3 border-b border-[#eff3f4] px-4 py-3 md:hidden">
-        <NavLink to="/" className="display text-[22px]">
-          ImFDE
+        <NavLink to="/" aria-label="ImFDE 首页">
+          <BrandLogo size="md" />
         </NavLink>
         <CommandPalette
           me={me}
@@ -77,8 +78,13 @@ export function AppShell({ me, setupDone, unreadCount = 0 }: { me: Me; setupDone
         {/* ── rail: 256px, icon-only on md, full on lg ─────────────── */}
         <aside className="sticky top-0 hidden h-dvh w-[76px] shrink-0 flex-col px-3 pb-4 pt-4 md:flex lg:w-[256px]">
           <div className="flex h-9 items-center gap-2 px-2">
-            <NavLink to="/" className="display text-[22px] lg:text-[24px]">
-              ImFDE
+            <NavLink to="/" aria-label="ImFDE 首页" className="flex items-center justify-center lg:justify-start lg:w-full">
+              <span className="lg:hidden">
+                <BrandMark size={24} />
+              </span>
+              <span className="hidden lg:inline-flex">
+                <BrandLogo size="md" />
+              </span>
             </NavLink>
             <CommandPalette
               me={me}

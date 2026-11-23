@@ -5,6 +5,7 @@ import { hashPassword, createSessionCookie } from "~/lib/auth.server";
 import { one, stmt, batch } from "~/lib/db.server";
 import { checkDisplayName, checkEmail, checkHandle, checkPassword } from "~/lib/validate";
 import { getMe } from "~/lib/session.server";
+import { BrandLogo } from "~/components/brand-logo";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
@@ -239,8 +240,8 @@ export function AuthShell({
     <div className="min-h-dvh bg-[var(--color-canvas)]">
       <div className="mx-auto grid min-h-dvh max-w-[1100px] items-center gap-12 px-6 py-12 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
         <div>
-          <Link to="/" className="display text-[22px]">
-            ImFDE<span className="text-[var(--color-ink-soft)]">.</span>
+          <Link to="/" aria-label="ImFDE 首页">
+            <BrandLogo size="lg" />
           </Link>
           <h1 className="display mt-8 text-[clamp(26px,3.2vw,34px)]">{title}</h1>
           <p className="mt-2 text-[13.5px] text-[var(--color-muted)]">{subtitle}</p>

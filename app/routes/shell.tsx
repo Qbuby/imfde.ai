@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { getMe } from "~/lib/session.server";
 import { one } from "~/lib/db.server";
 import { AppShell } from "~/components/app-shell";
+import { BrandLogo } from "~/components/brand-logo";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Search } from "lucide-react";
@@ -79,8 +80,8 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
     <div className="min-h-dvh bg-[var(--color-canvas)]">
       <header className={headerClass}>
         <div className="frame flex h-[74px] items-center gap-1">
-          <Link to="/" className="mr-6 shrink-0">
-            <span className="display text-[24px] tracking-[-0.02em]">ImFDE</span>
+          <Link to="/" className="mr-6 shrink-0" aria-label="ImFDE 首页">
+            <BrandLogo size="md" />
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex" onMouseLeave={() => setHoveredNav(null)}>
@@ -165,7 +166,7 @@ export default function Shell({ loaderData }: Route.ComponentProps) {
       <footer className="border-t border-[var(--color-line-soft)]">
         <div className="frame flex flex-wrap items-center justify-between gap-4 py-10">
           <div>
-            <p className="display text-[16px]">ImFDE</p>
+            <BrandLogo size="sm" />
             <p className="mt-1.5 text-[12.5px] text-[var(--color-muted)]">FDE 作品集与交流社区</p>
           </div>
           <div className="flex flex-wrap items-center gap-5 text-[14px] text-[var(--color-muted)]">

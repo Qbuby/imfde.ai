@@ -3,6 +3,7 @@ import { data, Form, Link, redirect } from "react-router";
 import { createSessionCookie, verifyPassword } from "~/lib/auth.server";
 import { one } from "~/lib/db.server";
 import { safeNext, getMe } from "~/lib/session.server";
+import { BrandLogo } from "~/components/brand-logo";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const me = await getMe(context, request);
@@ -55,8 +56,8 @@ export default function Login({ loaderData, actionData }: Route.ComponentProps) 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-[var(--color-canvas)] px-6 py-12">
       <div className="w-full max-w-[400px]">
-        <Link to="/" className="display text-[22px]">
-          ImFDE<span className="text-[var(--color-ink-soft)]">.</span>
+        <Link to="/" aria-label="ImFDE 首页">
+          <BrandLogo size="lg" />
         </Link>
         <h1 className="display mt-8 text-[30px]">登录</h1>
         <p className="mt-2 text-[13.5px] text-[var(--color-muted)]">欢迎回来</p>
