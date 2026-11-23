@@ -33,6 +33,7 @@ export default [
     route("actions/comment", "routes/actions-comment.tsx"),
     route("actions/bookmark", "routes/actions-bookmark.tsx"),
     route("actions/repost", "routes/actions-repost.tsx"),
+    route("actions/radar-sync", "routes/actions-radar-sync.tsx"),
   ]),
 
   // auth lives outside the shell: full-bleed, no nav chrome

@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Flame, History } from "lucide-react";
 import { utc8DayKey } from "~/lib/format";
-import { RailTrio, PromptsRail, TopicsRail } from "~/components/feed-rail";
+import { RailTrio, OpportunitiesRail, ToolsRail } from "~/components/feed-rail";
+import type { RadarItem } from "~/lib/queries.server";
 import { getMe, requireMe } from "~/lib/session.server";
 import type { Me } from "~/lib/session.server";
 import {
@@ -20,6 +21,7 @@ import {
   projectsForComposer,
   promptBySlug,
   recommendedPeople,
+  latestRadarItems,
 } from "~/lib/queries.server";
 import { FollowButton } from "~/components/cards";
 import { CoverArt } from "~/components/media";
@@ -57,7 +59,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
   const promptSlug = url.searchParams.get("prompt")?.trim() || "";
 
-  const [feed, tags, myProjects, sidePeople, sideProjects, prompts, quota, promptRow] = await Promise.all([
+  const [feed, tags, myProjects, sidePeople, sideProjects, prompts, quota, promptRow, opportunityItems, toolItems] = await Promise.all([
     feedPosts(context, {
       viewerId: me?.id ?? null,
       scope: tab,
@@ -75,6 +77,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     activePrompts(context, 3),
     me ? ackQuotaToday(context, me.id, utc8DayKey()) : Promise.resolve({ used: 0, limit: 2 as const, remaining: 2 }),
     promptSlug ? promptBySlug(context, promptSlug) : Promise.resolve(null),
+    latestRadarItems(context, "opportunity", 5),
+    latestRadarItems(context, "tool", 5),
   ]);
 
   return {
@@ -94,6 +98,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     quota,
     prompt: promptRow,
     promptSlug,
+    opportunityItems,
+    toolItems,
   };
 }
 
@@ -132,10 +138,20 @@ export async function action({ request, context }: Route.ActionArgs) {
 export default function Feed({ loaderData }: Route.ComponentProps) {
   const {
     me, tab, kind, tag, sort, page, posts, hasMore,
-    hotTags: tags, myProjects, sidePeople, sideProjects, prompts, quota, prompt, promptSlug,
+    myProjects, sidePeople, sideProjects, prompts, quota, prompt, promptSlug,
+    opportunityItems, toolItems,
   } = loaderData;
   const [params] = useSearchParams();
   const viewerId = me?.id ?? null;
+  const [prefill, setPrefill] = useState<{ text: string; n: number } | null>(null);
+
+  const discuss = (item: RadarItem) => {
+    setPrefill({
+      text: `看到一条跟 ${item.tag} 有关的线索：${item.title}\n${item.source_url}\n我的一点想法：`,
+      n: Date.now(),
+    });
+    document.querySelector('textarea[name="body"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   const href = (overrides: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -187,7 +203,7 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
           </div>
         )}
 
-        {me ? <Composer me={me} myProjects={myProjects} prompts={prompts} defaultPromptSlug={promptSlug} /> : null}
+        {me ? <Composer me={me} myProjects={myProjects} prompts={prompts} defaultPromptSlug={promptSlug} prefill={prefill} /> : null}
 
         <div className="flex flex-wrap items-center gap-1.5 border-b border-[#eff3f4] px-4 py-2.5">
           {me && KINDS.map((k) => (
@@ -247,8 +263,8 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
             </div>
           )}
 
-          <PromptsRail prompts={prompts} activeSlug={promptSlug} />
-          <TopicsRail tags={tags} />
+          <OpportunitiesRail items={opportunityItems} signedIn={Boolean(me)} onDiscuss={me ? discuss : undefined} />
+          <ToolsRail items={toolItems} signedIn={Boolean(me)} onDiscuss={me ? discuss : undefined} />
 
           {sidePeople.length > 0 && (
             <section className="rounded-[16px] bg-[#f7f9f9] p-4">
@@ -304,11 +320,13 @@ function Composer({
   myProjects,
   prompts = [],
   defaultPromptSlug = "",
+  prefill,
 }: {
   me: Me;
   myProjects: Array<{ id: string; title: string }>;
   prompts?: Array<{ id: string; slug: string; title: string }>;
   defaultPromptSlug?: string;
+  prefill?: { text: string; n: number } | null;
 }) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
@@ -319,6 +337,15 @@ function Composer({
   const pending = fetcher.state !== "idle";
   const sent = useRef<string | null>(null);
   const pct = Math.min(100, Math.round((length / 4000) * 100));
+
+  // "聊一下" pre-fills the composer from the radar rail; nothing is published.
+  useEffect(() => {
+    if (!prefill || !textareaRef.current) return;
+    textareaRef.current.value = prefill.text;
+    setLength(prefill.text.length);
+    setFocused(true);
+    textareaRef.current.focus();
+  }, [prefill]);
 
   useEffect(() => {
     const data = fetcher.data as { ok?: boolean; id?: string } | undefined;

@@ -878,3 +878,32 @@ export async function promptBySlug(
   );
   return { ...prompt, participants: people };
 }
+
+/** Radar items (hourly external opportunities & new tools), newest first. */
+export interface RadarItem {
+  id: string;
+  kind: "opportunity" | "tool";
+  source: string;
+  source_url: string;
+  title: string;
+  summary: string;
+  tag: string;
+  meta: string | null;
+  published_at: number;
+  fetched_at: number;
+}
+
+export async function latestRadarItems(
+  context: AppLoadContext,
+  kind: "opportunity" | "tool",
+  limit = 5,
+): Promise<RadarItem[]> {
+  return many<RadarItem>(
+    context,
+    `SELECT id, kind, source, source_url, title, summary, tag, meta, published_at, fetched_at
+       FROM radar_items WHERE kind = ?1
+      ORDER BY fetched_at DESC, published_at DESC LIMIT ?2`,
+    kind,
+    limit,
+  );
+}

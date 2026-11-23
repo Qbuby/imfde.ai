@@ -14,3 +14,4 @@ DELETE FROM profile_skills WHERE user_id LIKE 'seed_user_%';
 DELETE FROM external_accounts WHERE id LIKE 'seed_ext_%';
 DELETE FROM users WHERE id LIKE 'seed_user_%';
 DELETE FROM prompts WHERE id LIKE 'seed_prompt_%';
+DELETE FROM radar_items WHERE id LIKE 'seed_radar_%';

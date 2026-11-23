@@ -1,5 +1,6 @@
 import { createRequestHandler } from "react-router";
 import type { Env } from "./env";
+import { runRadarJob } from "../app/lib/radar.server";
 
 declare module "react-router" {
   export interface AppLoadContext {
@@ -102,5 +103,9 @@ export default {
     return requestHandler(request, {
       cloudflare: { env, ctx },
     });
+  },
+  // Hourly radar: the only external-request + AI channel. Writes D1 only.
+  async scheduled(_controller, env, ctx) {
+    ctx.waitUntil(runRadarJob(env));
   },
 } satisfies ExportedHandler<Env>;

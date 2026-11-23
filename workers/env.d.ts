@@ -5,4 +5,14 @@ export interface Env {
   ASSETS: Fetcher;
   /** HMAC key for the session cookie. `wrangler secret put SECRET_KEY`. */
   SECRET_KEY?: string;
+  /** Cloudflare Workers AI, used only by the scheduled radar job. */
+  AI?: Ai;
+  /** Optional OpenAI-compatible endpoint; falls back to Workers AI. */
+  LLM_API_KEY?: string;
+  LLM_BASE_URL?: string;
+  LLM_MODEL?: string;
+  /** Optional GitHub token for a higher Search API rate limit. */
+  GITHUB_TOKEN?: string;
+  /** Shared secret for the manual POST /actions/radar-sync trigger. */
+  RADAR_CRON_SECRET?: string;
 }

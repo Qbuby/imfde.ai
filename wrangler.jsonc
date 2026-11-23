@@ -6,6 +6,9 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "observability": { "enabled": true },
+  // 每小时一次的雷达抓取：唯一允许的外部请求 + AI 提炼通道，只写 D1。
+  "triggers": { "crons": ["0 * * * *"] },
+  "ai": { "binding": "AI" },
   "assets": {
     "directory": "./build/client",
     "binding": "ASSETS",
