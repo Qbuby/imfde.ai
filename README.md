@@ -59,7 +59,7 @@ app/
   routes/           每个页面对应一个路由模块
     shell.tsx       导航与页脚，所有登录态页面都挂在它下面
     home.tsx        落地页（未登录）/ 动态流（已登录）
-    profile.tsx     /@handle 主页
+    profile.tsx     /@id 主页
     project.tsx     /projects/{slug} 作品详情
     post.tsx        /posts/{id} 动态详情与评论
     discover*.tsx   发现 FDE 与发现作品

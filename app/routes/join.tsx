@@ -101,7 +101,7 @@ export default function Join({ actionData }: Route.ComponentProps) {
   return (
     <AuthShell
       title="注册 ImFDE"
-      subtitle="选一个 handle，创建你的公开主页"
+      subtitle="选一个 id，创建你的公开主页"
       side={<JoinPreview handle={draft.handle} displayName={draft.display_name} kind={draft.kind} />}
     >
       <Form method="post" className="space-y-4">
@@ -129,7 +129,7 @@ export default function Join({ actionData }: Route.ComponentProps) {
           />
         </Field>
 
-        <Field label="Handle" error={errors.handle} hint="你的地址：imfde.ai/@handle">
+        <Field label="Id" error={errors.handle} hint="你的地址：imfde.ai/@id">
           <div className="relative">
             <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[14px] text-[var(--color-faint)]">
               @

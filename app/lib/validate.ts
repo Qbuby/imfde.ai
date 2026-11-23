@@ -24,10 +24,10 @@ export function checkPassword(v: string): string | null {
 
 export function checkHandle(v: string): string | null {
   const s = v.trim().toLowerCase();
-  if (!s) return "请填写 handle";
+  if (!s) return "请填写 id";
   if (!/^[a-z0-9][a-z0-9_]{1,23}$/.test(s))
-    return "handle 只能用小写字母、数字和下划线，2–24 位，且以字母或数字开头";
-  if (RESERVED.has(s)) return "这个 handle 被系统保留了，换一个";
+    return "id 只能用小写字母、数字和下划线，2–24 位，且以字母或数字开头";
+  if (RESERVED.has(s)) return "这个 id 被系统保留了，换一个";
   return null;
 }
 

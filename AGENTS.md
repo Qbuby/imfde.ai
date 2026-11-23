@@ -26,9 +26,9 @@
   `unicode-range` 按需加载，可变字重 100-700）。两者都经 Cloudflare Static Assets 自托管。
   **禁止**改回 Inter / Instrument Sans / Microsoft YaHei 回退，禁止引入 Google Fonts 或任何外部字体 CDN，
   禁止把未切片的完整 `.ttf` 放进 `public/`。真实代码片段与 ⌘K / ESC 快捷键才用 `font-mono`；
-  handle、时间戳、计数用 `font-sans tabular-nums`。
+  id、时间戳、计数用 `font-sans tabular-nums`。
 - 中文回退顺序：`PingFang SC` → `Hiragino Sans GB` → `Microsoft YaHei`；
-  计数、时间戳与 `@handle` 必须保留 `font-variant-numeric: tabular-nums`。
+  计数、时间戳与 `@id` 必须保留 `font-variant-numeric: tabular-nums`。
 
 ## 文案规范
 
@@ -50,7 +50,7 @@
 
 - **材质**：只有两种语言。X（`/feed`、`/posts/:id`、`/notifications`）：纯白底、
   `1px #eff3f4` 线条网格、3px 滑动下划线 Tab、`#f7f9f9` 无边框无阴影右栏、轻量语义互动反馈。
-  Contra（`/`、`/discover*`、`/@handle`、`/projects/:slug`、`/join`、`/login`）：纯白画布、
+  Contra（`/`、`/discover*`、`/@id`、`/projects/:slug`、`/join`、`/login`）：纯白画布、
   零阴影 1px 细线卡片、单层扁平筛选条、干净空状态。
   **禁止**：大块黑底营销区、`Spotlight`/`BorderBeam`/`Tilt`/`Marquee`/`dot-grid`/`hero-glow`/`sweep`、
   胶囊套胶囊筛选栏、全大写英文装饰标、普通内容卡片的 `box-shadow`、虚线空占位大框。

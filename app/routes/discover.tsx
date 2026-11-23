@@ -73,7 +73,7 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
       <form method="get" className="mt-6 max-w-[560px]">
         <div className="flex h-[48px] items-center gap-2 rounded-full border border-[#e2e5ea] bg-[#f7f9f9] pl-4 pr-1.5 transition focus-within:border-[#0f1419] focus-within:bg-white">
           <Search size={18} className="shrink-0 text-[#8b93a3]" strokeWidth={1.65} aria-hidden />
-          <input name="q" defaultValue={q} placeholder="搜名字、handle 或一句话介绍" aria-label="搜索 FDE"
+          <input name="q" defaultValue={q} placeholder="搜名字、id 或一句话介绍" aria-label="搜索 FDE"
             className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#8b93a3]" />
           {kind && <input type="hidden" name="kind" value={kind} />}
           {sort && <input type="hidden" name="sort" value={sort} />}

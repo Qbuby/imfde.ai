@@ -82,7 +82,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
           {is404
-            ? "链接可能已经失效，或者这个 FDE 已经改了 handle。"
+            ? "链接可能已经失效，或者这个 FDE 已经改了 id。"
             : "我们已经记录，稍后再试一次。"}
         </p>
         <Link
