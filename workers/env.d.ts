@@ -15,4 +15,6 @@ export interface Env {
   GITHUB_TOKEN?: string;
   /** Shared secret for the manual POST /actions/radar-sync trigger. */
   RADAR_CRON_SECRET?: string;
+  /** Set to "0" to disable hourly seed simulation. */
+  SEED_SIM_ENABLED?: string;
 }

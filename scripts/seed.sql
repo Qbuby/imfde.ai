@@ -3,10 +3,16 @@
 -- email, so scripts/unseed.sql can remove all of it without touching real accounts.
 -- Timestamps are relative to insert time and spread over the last 40 minutes..12 days.
 
--- ── 0. remove leftover test data from earlier QA runs ──────────────────
-DELETE FROM users WHERE handle = 'live46279';
-UPDATE posts SET deleted_at = CAST(strftime('%s','now') * 1000 AS INTEGER)
- WHERE id = '2d4eb2cf-b0b7-4150-b191-51df5100b2d4';
+-- ─── 0. remove leftover QA/testing accounts (whitelist protected) ───────
+-- Real accounts blues / victor / dasheng / dash and all seed_user_* are kept.
+DELETE FROM users
+ WHERE id NOT LIKE 'seed_user_%'
+   AND handle NOT IN ('blues','victor','dasheng','dash')
+   AND (handle LIKE 'live%' OR handle LIKE 'plana%' OR handle LIKE 'radar%'
+        OR handle LIKE 'probe%' OR handle LIKE 'qa%' OR handle LIKE 'test%'
+        OR id IN (SELECT user_id FROM profiles
+                   WHERE display_name LIKE '%验收%' OR display_name LIKE '%排查%'
+                      OR display_name LIKE '%线上ACK%' OR display_name LIKE '%测试%'));
 
 -- ── A. people ───────────────────────────────────────────────────────────
 INSERT OR IGNORE INTO users (id, email, password_hash, handle, kind, status, created_at) VALUES
@@ -356,3 +362,66 @@ INSERT OR IGNORE INTO intel_items
  ('seed_intel_g4','gig','domestic','电鸭','https://eleduck.com/posts/8f3k2a','外包：私有化部署一个 RAG 原型','电鸭项目合作','北京 / 上海','预算 5-8 万','客户在内网环境做文档检索原型，要能在没有外网的机器上跑起来，并给出可交接的部署文档。','需求/岗位背景：一家企业服务团队接了个内网知识库项目，需要在客户机房里把一个 RAG 原型跑通并交给他们的运维。' || char(10) || '核心要求：能在离线环境装好模型与向量库，处理依赖和权重拷贝；写清部署步骤和常见故障排查。' || char(10) || '方式与备注：电鸭帖子可跟帖报价；建议按环境确认、部署试点、文档交接三段交付，尾款在验收后结。','私有部署','项目', CAST((strftime('%s','now') - 50400) * 1000 AS INTEGER), CAST((strftime('%s','now') - 540) * 1000 AS INTEGER)),
  ('seed_intel_g5','gig','domestic','V2EX','https://www.v2ex.com/t/931208','找人做工作流自动化改造','V2EX 外包','远程','预算 3-5 万','客户的工单和内部表格之间还在人工复制，希望用自动化脚本把重复录入和通知替换掉。','需求/岗位背景：一个十人小团队内部流程靠人工搬运数据，想先把工单到表格这一段自动化，后续再接更多系统。' || char(10) || '核心要求：做过工作流或 RPA 类项目，能读现有系统的接口或导出格式；交付包含异常处理和回退说明。' || char(10) || '方式与备注：V2EX 帖子联系；先做一页流程图确认范围，再按模块报价，避免把模糊需求一口吃下。','Agent','项目', CAST((strftime('%s','now') - 144000) * 1000 AS INTEGER), CAST((strftime('%s','now') - 1200) * 1000 AS INTEGER)),
  ('seed_intel_g6','gig','domestic','电鸭','https://eleduck.com/posts/2m7q9c','语音机器人联调外包','电鸭项目合作','上海 · 驻场','预算 4-6 万','电话机器人在运营商线路上有回声和断连，发帖方需要有人到现场把音频链路和转写延迟一起排查。','需求/岗位背景：一家客服系统团队在客户现场上线语音机器人后发现真实线路与测试环境差异很大，需要一次集中联调。' || char(10) || '核心要求：熟悉 SIP/WebRTC 链路，能抓包定位回声来源；现场和客户IT一起改配置并留下问题清单。' || char(10) || '方式与备注：电鸭可跟帖或私信；按人天报价并写明差旅，联调结束后留一份可复用的排查清单给客户。','语音交互','驻场', CAST((strftime('%s','now') - 223200) * 1000 AS INTEGER), CAST((strftime('%s','now') - 1680) * 1000 AS INTEGER));
+
+-- ── A2. international FDE seeds (ja / ko / en / en) ─────────────────────
+INSERT OR IGNORE INTO users (id, email, password_hash, handle, kind, status, created_at) VALUES
+ ('seed_user_kenji','kenji@seed.imfde.invalid','locked$seed_account_disabled','ksato_fde','individual','active',CAST((strftime('%s','now') - 576000) * 1000 AS INTEGER)),
+ ('seed_user_minji','minji@seed.imfde.invalid','locked$seed_account_disabled','minji_ops','individual','active',CAST((strftime('%s','now') - 547200) * 1000 AS INTEGER)),
+ ('seed_user_elena','elena@seed.imfde.invalid','locked$seed_account_disabled','erostova','individual','active',CAST((strftime('%s','now') - 518400) * 1000 AS INTEGER)),
+ ('seed_user_devon','devon@seed.imfde.invalid','locked$seed_account_disabled','dbrooks','individual','active',CAST((strftime('%s','now') - 489600) * 1000 AS INTEGER));
+
+INSERT OR IGNORE INTO profiles (user_id, display_name, avatar_url, cover_url, headline, about, location, timezone, visibility, hide_follows, updated_at) VALUES
+ ('seed_user_kenji','Kenji Sato (佐藤 健司)',NULL,NULL,'工場・物流向けのエッジ推論と画像検査の現場導入。古いPLCとの連携が多いです。','工場や物流現場で画像検査とエッジ推論を導入しています。古いPLCや独自プロトコルとの接続が仕事の半分。現場のネットワーク制約を前提に設計します。','東京','UTC+9','public',0,CAST((strftime('%s','now') - 432000) * 1000 AS INTEGER)),
+ ('seed_user_minji','Minji Park (박민지)',NULL,NULL,'금융·커머스 고객사 Voice Agent 및 사내 RAG 구축. 실제 콜 로그 기반 Eval 위주로 작업합니다.','금융과 커머스 고객사에서 voice agent와 사내 RAG를 구축합니다. 데모보다 실제 콜 로그 기반 eval과 운영 안정성에 시간을 많이 씁니다.','首尔','UTC+9','public',0,CAST((strftime('%s','now') - 403200) * 1000 AS INTEGER)),
+ ('seed_user_elena','Elena Rostova',NULL,NULL,'Forward deployed engineer wiring legacy SAP & SharePoint into auditable enterprise RAG.','I work on the unglamorous part of enterprise AI: connecting old SAP and SharePoint systems to retrieval that can actually be audited. Mostly on-site with regulated customers.','柏林','UTC+1','public',0,CAST((strftime('%s','now') - 374400) * 1000 AS INTEGER)),
+ ('seed_user_devon','Devon Brooks',NULL,NULL,'Deploying claims triage agents for healthcare ops. Mostly writing eval harnesses and human-in-the-loop fallbacks.','Healthcare ops, claims triage agents. A lot of my time goes into eval harnesses and deciding where a human needs to stay in the loop before anything ships.','纽约','UTC-5','public',0,CAST((strftime('%s','now') - 345600) * 1000 AS INTEGER));
+
+INSERT OR IGNORE INTO profile_skills (user_id, skill_name, position) VALUES
+ ('seed_user_kenji','私有部署',0),
+ ('seed_user_kenji','OCR',1),
+ ('seed_user_kenji','vLLM',2),
+ ('seed_user_kenji','Python',3),
+ ('seed_user_kenji','Edge AI',4),
+ ('seed_user_minji','语音交互',0),
+ ('seed_user_minji','RAG',1),
+ ('seed_user_minji','Eval',2),
+ ('seed_user_minji','TypeScript',3),
+ ('seed_user_minji','LiveKit',4),
+ ('seed_user_elena','RAG',0),
+ ('seed_user_elena','MCP',1),
+ ('seed_user_elena','私有部署',2),
+ ('seed_user_elena','Go',3),
+ ('seed_user_elena','Eval',4),
+ ('seed_user_devon','Agent 编排',0),
+ ('seed_user_devon','Eval',1),
+ ('seed_user_devon','工作流自动化',2),
+ ('seed_user_devon','Python',3),
+ ('seed_user_devon','Playwright',4);
+
+INSERT OR IGNORE INTO external_accounts (id, user_id, provider, provider_user_id, profile_url, connection, position, created_at) VALUES
+ ('seed_ext_kenji_gh','seed_user_kenji','github',NULL,'https://github.com/ksato-edge','link',0,CAST((strftime('%s','now') - 547200) * 1000 AS INTEGER)),
+ ('seed_ext_kenji_web','seed_user_kenji','website',NULL,'https://ksato.dev','link',1,CAST((strftime('%s','now') - 547200) * 1000 AS INTEGER)),
+ ('seed_ext_minji_gh','seed_user_minji','github',NULL,'https://github.com/minji-ops','link',0,CAST((strftime('%s','now') - 518400) * 1000 AS INTEGER)),
+ ('seed_ext_minji_li','seed_user_minji','linkedin',NULL,'https://www.linkedin.com/in/minji-voice','link',1,CAST((strftime('%s','now') - 518400) * 1000 AS INTEGER)),
+ ('seed_ext_elena_gh','seed_user_elena','github',NULL,'https://github.com/erostova','link',0,CAST((strftime('%s','now') - 489600) * 1000 AS INTEGER)),
+ ('seed_ext_elena_li','seed_user_elena','linkedin',NULL,'https://www.linkedin.com/in/erostova-fde','link',1,CAST((strftime('%s','now') - 489600) * 1000 AS INTEGER)),
+ ('seed_ext_devon_gh','seed_user_devon','github',NULL,'https://github.com/dbrooks-eval','link',0,CAST((strftime('%s','now') - 460800) * 1000 AS INTEGER)),
+ ('seed_ext_devon_x','seed_user_devon','x',NULL,'https://x.com/dbrooks_ops','link',1,CAST((strftime('%s','now') - 460800) * 1000 AS INTEGER));
+
+INSERT OR IGNORE INTO follows (follower_id, followed_id, created_at) VALUES
+ ('seed_user_kenji','seed_user_linyu',CAST((strftime('%s','now') - 518400) * 1000 AS INTEGER)),
+ ('seed_user_kenji','seed_user_minji',CAST((strftime('%s','now') - 489600) * 1000 AS INTEGER)),
+ ('seed_user_minji','seed_user_ming',CAST((strftime('%s','now') - 489600) * 1000 AS INTEGER)),
+ ('seed_user_minji','seed_user_elena',CAST((strftime('%s','now') - 460800) * 1000 AS INTEGER)),
+ ('seed_user_elena','seed_user_siyu',CAST((strftime('%s','now') - 460800) * 1000 AS INTEGER)),
+ ('seed_user_elena','seed_user_devon',CAST((strftime('%s','now') - 432000) * 1000 AS INTEGER)),
+ ('seed_user_devon','seed_user_ming',CAST((strftime('%s','now') - 432000) * 1000 AS INTEGER)),
+ ('seed_user_devon','seed_user_kenji',CAST((strftime('%s','now') - 403200) * 1000 AS INTEGER)),
+ ('seed_user_kwu','seed_user_kenji',CAST((strftime('%s','now') - 345600) * 1000 AS INTEGER)),
+ ('seed_user_linyu','seed_user_minji',CAST((strftime('%s','now') - 345600) * 1000 AS INTEGER));
+
+INSERT OR IGNORE INTO posts (id, author_id, kind, body, project_id, visibility, created_at, updated_at, deleted_at, repost_of_id) VALUES
+ ('seed_post_kenji','seed_user_kenji','build','古いPLCのファーム更新が工場停止時間とぶつかる。夜間バッチにずらしてから画像検査の再デプロイが安定した #OCR',NULL,'public',CAST((strftime('%s','now') - 504000) * 1000 AS INTEGER),CAST((strftime('%s','now') - 504000) * 1000 AS INTEGER),NULL,NULL),
+ ('seed_post_minji','seed_user_minji','thought','콜 로그 200개쯤 모아서 eval 돌려보니 VAD 끝점을 80ms만 앞당겨도 끊김 체감이 확 달라졌다. 수치보다 체감이 먼저 바뀜 #语音交互',NULL,'public',CAST((strftime('%s','now') - 475200) * 1000 AS INTEGER),CAST((strftime('%s','now') - 475200) * 1000 AS INTEGER),NULL,NULL),
+ ('seed_post_elena','seed_user_elena','build','SharePoint permissions changed twice mid-migration. Ended up snapshotting the ACLs per run so the RAG index can be audited later #RAG',NULL,'public',CAST((strftime('%s','now') - 446400) * 1000 AS INTEGER),CAST((strftime('%s','now') - 446400) * 1000 AS INTEGER),NULL,NULL),
+ ('seed_post_devon','seed_user_devon','discussion','Anyone keep a human-in-the-loop rule that is not just "low confidence"? We are testing escalation on missing source citations instead #Eval',NULL,'public',CAST((strftime('%s','now') - 417600) * 1000 AS INTEGER),CAST((strftime('%s','now') - 417600) * 1000 AS INTEGER),NULL,NULL);

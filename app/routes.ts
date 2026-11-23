@@ -41,6 +41,7 @@ export default [
     route("actions/bookmark", "routes/actions-bookmark.tsx"),
     route("actions/repost", "routes/actions-repost.tsx"),
     route("actions/radar-sync", "routes/actions-radar-sync.tsx"),
+    route("actions/seed-sim", "routes/actions-seed-sim.tsx"),
     route("actions/upload", "routes/actions-upload.tsx"),
     route("actions/avatar-reset", "routes/actions-avatar-reset.tsx"),
   ]),

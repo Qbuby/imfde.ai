@@ -1,6 +1,7 @@
 import { createRequestHandler } from "react-router";
 import type { Env } from "./env";
 import { runRadarJob } from "../app/lib/radar.server";
+import { runSeedSimulation } from "../app/lib/seed-sim.server";
 
 declare module "react-router" {
   export interface AppLoadContext {
@@ -106,6 +107,7 @@ export default {
   },
   // Hourly radar: the only external-request + AI channel. Writes D1 only.
   async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(runRadarJob(env));
+    ctx.waitUntil(runRadarJob(env).catch(() => {}));
+    ctx.waitUntil(runSeedSimulation(env).catch(() => {}));
   },
 } satisfies ExportedHandler<Env>;
