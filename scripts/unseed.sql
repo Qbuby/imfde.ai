@@ -16,3 +16,4 @@ DELETE FROM users WHERE id LIKE 'seed_user_%';
 DELETE FROM prompts WHERE id LIKE 'seed_prompt_%';
 DELETE FROM radar_items WHERE id LIKE 'seed_radar_%';
 DELETE FROM ad_slots WHERE id LIKE 'seed_ad_%';
+DELETE FROM intel_items WHERE id LIKE 'seed_intel_%';

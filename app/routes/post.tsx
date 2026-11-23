@@ -10,7 +10,6 @@ import { Avatar } from "~/components/media";
 import { FollowButton } from "~/components/cards";
 import { AckButton } from "~/components/ack-button";
 import { AuthorHoverCard } from "~/components/author-hover-card";
-import { ConfirmDialog } from "~/components/confirm-dialog";
 import { SlidingNumber } from "~/components/motion/sliding-number";
 import { fireLikeBurst } from "~/lib/burst";
 import {
@@ -24,6 +23,7 @@ import {
 } from "lucide-react";
 import { relativeTime } from "~/lib/format";
 import { PostBody } from "~/components/post-body";
+import { CommentItem, type CommentView } from "~/components/comment-item";
 import { badgeFor, POST_KIND_STYLE } from "~/lib/badges";
 
 interface PostDetail {
@@ -129,24 +129,32 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     throw new Response("Not Found", { status: 404 });
   }
 
+  const viewer = me?.id ?? "·none·";
   const comments = await many<{
-    id: string;
-    body: string;
-    created_at: number;
-    author_id: string;
-    handle: string;
-    display_name: string;
-    avatar_url: string | null;
+    id: string; body: string; created_at: number; author_id: string;
+    parent_id: string | null; handle: string; display_name: string; avatar_url: string | null;
+    reply_handle: string | null;
+    likes: number; liked: number; acks: number; acked: number;
+    replies_count: number; reposts: number; bookmarked: number;
   }>(
     context,
-    `SELECT c.id, c.body, c.created_at, c.author_id,
-            u.handle, p.display_name, p.avatar_url
+    `SELECT c.id, c.body, c.created_at, c.author_id, c.parent_id,
+            u.handle, p.display_name, p.avatar_url,
+            (SELECT ru.handle FROM comments rc JOIN users ru ON ru.id = rc.author_id
+              WHERE rc.id = c.parent_id) AS reply_handle,
+            (SELECT COUNT(*) FROM comment_likes cl WHERE cl.comment_id = c.id) AS likes,
+            EXISTS(SELECT 1 FROM comment_likes cl WHERE cl.comment_id = c.id AND cl.user_id = ?2) AS liked,
+            (SELECT COUNT(*) FROM comment_acks ca WHERE ca.comment_id = c.id) AS acks,
+            EXISTS(SELECT 1 FROM comment_acks ca WHERE ca.comment_id = c.id AND ca.user_id = ?2) AS acked,
+            (SELECT COUNT(*) FROM comments rc WHERE rc.parent_id = c.id AND rc.deleted_at IS NULL) AS replies_count,
+            (SELECT COUNT(*) FROM posts rp WHERE rp.repost_comment_id = c.id AND rp.deleted_at IS NULL) AS reposts,
+            EXISTS(SELECT 1 FROM comment_bookmarks cb WHERE cb.comment_id = c.id AND cb.user_id = ?2) AS bookmarked
        FROM comments c
        JOIN users u ON u.id = c.author_id
        JOIN profiles p ON p.user_id = c.author_id
       WHERE c.post_id = ?1 AND c.deleted_at IS NULL
       ORDER BY c.created_at ASC`,
-    post.id,
+    post.id, viewer,
   );
 
 
@@ -195,6 +203,20 @@ export default function Post({ loaderData }: Route.ComponentProps) {
   const [copied, setCopied] = useState(false);
   const [localComments, setLocalComments] = useState(comments);
 
+  // Deep-link to a specific comment: scroll + brief highlight on first load.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash.startsWith("#comment-")) return;
+    const id = hash.slice(9);
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(`comment-${id}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.classList.add("comment-focus");
+      window.setTimeout(() => el?.classList.remove("comment-focus"), 1800);
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, []);
+
   const likeIntent = likeFetcher.formData?.get("intent");
   const isLiked = likeIntent ? likeIntent === "like" : Boolean(post.liked);
   const likeCount =
@@ -239,9 +261,12 @@ export default function Post({ loaderData }: Route.ComponentProps) {
           body: commentRef.current?.value ?? "",
           created_at: Date.now(),
           author_id: me?.id ?? "",
+          parent_id: null,
           handle: me?.handle ?? "",
           display_name: me?.display_name ?? "",
           avatar_url: me?.avatar_url ?? null,
+          reply_handle: null,
+          likes: 0, liked: 0, acks: 0, acked: 0, replies_count: 0, reposts: 0, bookmarked: 0,
           time_label: "刚刚",
         },
       ]);
@@ -485,32 +510,23 @@ export default function Post({ loaderData }: Route.ComponentProps) {
         {localComments.length === 0 ? (
           <p className="py-6 text-center text-[13.5px] text-[var(--color-muted)]">还没有评论。</p>
         ) : (
-          <div className="space-y-4">
-            {localComments.map((c) => (
-              <div key={c.id} className="flex gap-3">
-                <Link to={`/@${c.handle}`} className="shrink-0">
-                  <Avatar name={c.display_name} src={c.avatar_url} size={32} />
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-[12.5px]">
-                    <Link to={`/@${c.handle}`} className="font-medium hover:text-[var(--color-ink)]">{c.display_name}</Link>
-                    <span className="font-mono text-[10.5px] text-[var(--color-faint)]">{c.time_label}</span>
-                    {me?.id === c.author_id && (
-                      <ConfirmDialog
-                        action="/actions/comment"
-                        hidden={{ intent: "delete", post_id: post.id, comment_id: c.id, response: "json" }}
-                        title="删除这条评论？"
-                        description="删除后不会再显示，且无法恢复。"
-                        trigger={
-                          <button type="button" className="text-[11.5px] text-[var(--color-faint)] hover:text-[var(--color-ink)]">删除</button>
-                        }
-                      />
-                    )}
-                  </div>
-                  <p className="mt-1 whitespace-pre-wrap text-[14px] leading-[1.75] text-[var(--color-ink-2)]">{c.body}</p>
+          <div className="space-y-5">
+            {localComments.filter((c) => !c.parent_id).map((c) => {
+              const top = c as CommentView;
+              const replies = localComments.filter((r) => r.parent_id === top.id) as CommentView[];
+              return (
+                <div key={top.id} className="space-y-3">
+                  <CommentItem c={top} postId={post.id} viewerId={me?.id ?? null} self={me?.id === top.author_id} />
+                  {replies.length > 0 && (
+                    <div className="ml-11 space-y-3 border-l border-[#eff3f4] pl-4">
+                      {replies.map((r) => (
+                        <CommentItem key={r.id} c={{ ...r, replyTo: r.reply_handle ?? top.handle }} postId={post.id} viewerId={me?.id ?? null} self={me?.id === r.author_id} />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

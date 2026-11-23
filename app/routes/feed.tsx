@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Flame, History } from "lucide-react";
 import { utc8DayKey } from "~/lib/format";
-import { RailTrio, OpportunitiesRail, ToolsRail } from "~/components/feed-rail";
-import type { RadarItem } from "~/lib/queries.server";
+import { RailTrio, JobsRail, GigsRail } from "~/components/feed-rail";
+import type { IntelItem } from "~/lib/queries.server";
 import { getMe, requireMe } from "~/lib/session.server";
 import type { Me } from "~/lib/session.server";
 import {
@@ -21,7 +21,9 @@ import {
   projectsForComposer,
   promptBySlug,
   recommendedPeople,
-  latestRadarItems,
+  latestIntel,
+  countIntel,
+  intelById,
   activeAds,
 } from "~/lib/queries.server";
 import { FollowButton } from "~/components/cards";
@@ -61,7 +63,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
   const promptSlug = url.searchParams.get("prompt")?.trim() || "";
 
-  const [feed, tags, myProjects, sidePeople, sideProjects, prompts, quota, promptRow, opportunityItems, toolItems, ads] = await Promise.all([
+  const [feed, tags, myProjects, sidePeople, sideProjects, prompts, quota, promptRow, jobItems, gigItems, intelCounts, discussItem, ads] = await Promise.all([
     feedPosts(context, {
       viewerId: me?.id ?? null,
       scope: tab,
@@ -79,8 +81,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     activePrompts(context, 3),
     me ? ackQuotaToday(context, me.id, utc8DayKey()) : Promise.resolve({ used: 0, limit: 2 as const, remaining: 2 }),
     promptSlug ? promptBySlug(context, promptSlug) : Promise.resolve(null),
-    latestRadarItems(context, "opportunity", 5),
-    latestRadarItems(context, "tool", 5),
+    latestIntel(context, "job", 3),
+    latestIntel(context, "gig", 3),
+    countIntel(context),
+    url.searchParams.get("discuss") ? intelById(context, url.searchParams.get("discuss")!) : Promise.resolve(null),
     activeAds(context),
   ]);
 
@@ -101,9 +105,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     quota,
     prompt: promptRow,
     promptSlug,
-    opportunityItems,
-    toolItems,
+    jobItems,
+    gigItems,
+    intelCounts,
+    discussItem,
     ads,
+    now: Date.now(),
   };
 }
 
@@ -143,19 +150,27 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
   const {
     me, tab, kind, tag, sort, page, posts, hasMore,
     myProjects, sidePeople, sideProjects, prompts, quota, prompt, promptSlug,
-    opportunityItems, toolItems, ads,
+    jobItems, gigItems, intelCounts, discussItem, ads, now,
   } = loaderData;
   const [params] = useSearchParams();
   const viewerId = me?.id ?? null;
   const [prefill, setPrefill] = useState<{ text: string; n: number } | null>(null);
 
-  const discuss = (item: RadarItem) => {
+  const discuss = (item: IntelItem) => {
     setPrefill({
-      text: `看到一条跟 ${item.tag} 有关的线索：${item.title}\n${item.source_url}\n我的一点想法：`,
+      text: `看到一条跟 ${item.tag} 有关的${item.kind === "job" ? "招聘" : "接单"}信息：${item.title}
+${item.source_url}
+我的一点想法：`,
       n: Date.now(),
     });
     document.querySelector('textarea[name="body"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
+
+  // Deep link from a detail page: pre-fill the composer once on mount.
+  useEffect(() => {
+    if (discussItem) discuss(discussItem);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discussItem?.id]);
 
   const href = (overrides: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -183,6 +198,16 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
       <div className="mt-5 grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_310px]">
       <div className="min-w-0">
         <UnderlineTabs items={tabs} active={activeTab} sticky />
+
+        {/* Intel quick links for screens where the right rail is hidden. */}
+        <div className="flex items-center gap-2 border-b border-[#eff3f4] px-4 py-2.5 xl:hidden">
+          <Link to="/radar/jobs" className="inline-flex items-center gap-1 rounded-full bg-[#f7f9f9] px-3 py-1.5 text-[12.5px] font-medium text-[#0f1419] transition hover:bg-[#eef0f2]">
+            招聘信息 <span className="font-sans text-[11px] text-[#8b93a3] tabular-nums">{intelCounts.jobs}</span> →
+          </Link>
+          <Link to="/radar/gigs" className="inline-flex items-center gap-1 rounded-full bg-[#f7f9f9] px-3 py-1.5 text-[12.5px] font-medium text-[#0f1419] transition hover:bg-[#eef0f2]">
+            接单机会 <span className="font-sans text-[11px] text-[#8b93a3] tabular-nums">{intelCounts.gigs}</span> →
+          </Link>
+        </div>
 
         {!me && (
           <div className="flex items-center justify-between gap-3 border-b border-[#eff3f4] bg-[#f7f9f9] px-4 py-3">
@@ -272,8 +297,8 @@ export default function Feed({ loaderData }: Route.ComponentProps) {
             </div>
           )}
 
-          <OpportunitiesRail items={opportunityItems} signedIn={Boolean(me)} onDiscuss={me ? discuss : undefined} />
-          <ToolsRail items={toolItems} signedIn={Boolean(me)} onDiscuss={me ? discuss : undefined} />
+          <JobsRail items={jobItems} now={now} />
+          <GigsRail items={gigItems} now={now} />
 
           {sidePeople.length > 0 && (
             <section className="rounded-[16px] bg-[#f7f9f9] p-4">

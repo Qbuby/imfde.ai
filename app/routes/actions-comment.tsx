@@ -47,25 +47,43 @@ export async function action({ request, context }: Route.ActionArgs) {
     throw new Response("Not Found", { status: 404 });
   }
 
+  // Optional parent_id: must be an undeleted comment on the same post.
+  const parentRaw = String(form.get("parent_id") ?? "").trim();
+  let parent: { author_id: string; parent_id: string | null } | null = null;
+  let effectiveParent: string | null = null;
+  if (parentRaw) {
+    parent = await one<{ author_id: string; parent_id: string | null }>(context,
+      `SELECT author_id, parent_id FROM comments WHERE id = ?1 AND post_id = ?2 AND deleted_at IS NULL`,
+      parentRaw, postId);
+    if (!parent) {
+      if (asJson) return Response.json({ ok: false, error: "要回复的留言不存在" }, { status: 404 });
+      throw new Response("Not Found", { status: 404 });
+    }
+    // Second-level replies are grouped under their top-level ancestor.
+    effectiveParent = parent.parent_id ?? parentRaw;
+  }
+
   const commentId = crypto.randomUUID();
   await run(
     context,
     `INSERT INTO comments (id, post_id, author_id, parent_id, body, created_at)
-     VALUES (?1, ?2, ?3, NULL, ?4, ?5)`,
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
     commentId,
     postId,
     me.id,
+    effectiveParent,
     body,
     Date.now(),
   );
 
-  if (post.author_id !== me.id) {
+  const replyTarget = parent?.author_id ?? post.author_id;
+  if (replyTarget !== me.id) {
     await run(
       context,
       `INSERT INTO notifications (id, recipient_id, actor_id, type, target_type, target_id, created_at)
        VALUES (?1, ?2, ?3, 'comment', 'post', ?4, ?5)`,
       crypto.randomUUID(),
-      post.author_id,
+      replyTarget,
       me.id,
       postId,
       Date.now(),

@@ -153,6 +153,8 @@ export interface FeedPostRow extends AuthorCardRow {
     avatar_url: string | null;
   } | null;
   repost_of_id: string | null;
+  repost_comment_id: string | null;
+  repost_comment: { id: string; body: string; handle: string; display_name: string; post_id: string } | null;
   tags: string[];
   /** Non-null when the original is still readable; null means it is gone. */
   repost: RepostSource | null;
@@ -169,7 +171,7 @@ export interface FeedPostRow extends AuthorCardRow {
  */
 const FEED_SELECT = (viewerSlot: number) => `
   SELECT po.id, po.kind, po.body, po.created_at, po.author_id,
-         po.project_id, po.repost_of_id, po.prompt_id,
+         po.project_id, po.repost_of_id, po.repost_comment_id, po.prompt_id,
          prm.slug AS prompt_slug, prm.title AS prompt_title,
          u.handle, p.display_name, p.avatar_url,
          po.author_id AS author_id, p.headline AS author_headline,
@@ -204,7 +206,9 @@ const FEED_SELECT = (viewerSlot: number) => `
          ou.handle AS r_handle, opf.display_name AS r_display_name,
          opf.avatar_url AS r_avatar_url,
          rpr.slug AS r_project_slug, rpr.title AS r_project_title,
-         rpr.cover_url AS r_project_cover_url
+         rpr.cover_url AS r_project_cover_url,
+         rc.id AS rc_id, rc.body AS rc_body, rc.post_id AS rc_post_id,
+         rcu.handle AS rc_handle, rcp.display_name AS rc_display_name
     FROM posts po
     JOIN users u     ON u.id = po.author_id
     JOIN profiles p  ON p.user_id = po.author_id
@@ -224,11 +228,15 @@ const FEED_SELECT = (viewerSlot: number) => `
     LEFT JOIN projects rpr
            ON rpr.id = op.project_id
           AND (rpr.visibility <> 'private' OR rpr.owner_id = ?${viewerSlot})
+    LEFT JOIN comments rc
+           ON rc.id = po.repost_comment_id AND rc.deleted_at IS NULL
+    LEFT JOIN users rcu ON rcu.id = rc.author_id AND rcu.status = 'active'
+    LEFT JOIN profiles rcp ON rcp.user_id = rc.author_id AND rcp.visibility = 'public' 
    WHERE po.visibility = 'public' AND po.deleted_at IS NULL AND u.status = 'active'
      AND (p.visibility = 'public' OR po.author_id = ?${viewerSlot})
 `;
 
-type RawFeedRow = Omit<FeedPostRow, "time_label" | "tags" | "repost" | "preview_comment"> & {
+type RawFeedRow = Omit<FeedPostRow, "time_label" | "tags" | "repost" | "repost_comment" | "preview_comment"> & {
   r_id: string | null;
   r_kind: string | null;
   r_body: string | null;
@@ -239,6 +247,8 @@ type RawFeedRow = Omit<FeedPostRow, "time_label" | "tags" | "repost" | "preview_
   r_project_slug: string | null;
   r_project_title: string | null;
   r_project_cover_url: string | null;
+  rc_id: string | null; rc_body: string | null; rc_handle: string | null;
+  rc_display_name: string | null; rc_post_id: string | null;
 };
 
 export interface FeedPage {
@@ -323,6 +333,9 @@ export async function feedPosts(
     rows: page.map((r) => ({
       preview_comment: previews.get(r.id) ?? null,
       ...r,
+      repost_comment: r.rc_id && r.rc_body !== null && r.rc_handle
+        ? { id: r.rc_id, body: r.rc_body, handle: r.rc_handle, display_name: r.rc_display_name ?? "", post_id: r.rc_post_id ?? "" }
+        : null,
       time_label: relativeTime(r.created_at),
       tags: tags.get(r.id) ?? [],
       // joined-in original; null means deleted, private or banned
@@ -425,6 +438,7 @@ export async function insertPost(
     body: string;
     projectId?: string | null;
     repostOfId?: string | null;
+    repostCommentId?: string | null;
     promptId?: string | null;
     tags?: string[];
   },
@@ -435,15 +449,16 @@ export async function insertPost(
     stmt(
       context,
       `INSERT INTO posts
-         (id, author_id, kind, body, project_id, repost_of_id, prompt_id, visibility,
+         (id, author_id, kind, body, project_id, repost_of_id, repost_comment_id, prompt_id, visibility,
           created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'public', ?8, ?8)`,
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'public', ?9, ?9)`,
       id,
       input.authorId,
       input.kind,
       input.body,
       input.projectId ?? null,
       input.repostOfId ?? null,
+      input.repostCommentId ?? null,
       input.promptId ?? null,
       now,
     ),
@@ -879,33 +894,70 @@ export async function promptBySlug(
   return { ...prompt, participants: people };
 }
 
-/** Radar items (hourly external opportunities & new tools), newest first. */
-export interface RadarItem {
+/** Intel items (hourly job / gig intelligence), newest first. */
+export interface IntelItem {
   id: string;
-  kind: "opportunity" | "tool";
+  kind: "job" | "gig";
+  region: "domestic" | "overseas";
   source: string;
   source_url: string;
   title: string;
+  company: string | null;
+  location: string | null;
+  budget: string | null;
   summary: string;
+  detail_md: string;
   tag: string;
   meta: string | null;
   published_at: number;
   fetched_at: number;
 }
 
-export async function latestRadarItems(
+export async function latestIntel(
   context: AppLoadContext,
-  kind: "opportunity" | "tool",
-  limit = 5,
-): Promise<RadarItem[]> {
-  return many<RadarItem>(
+  kind: "job" | "gig",
+  limit = 3,
+): Promise<IntelItem[]> {
+  return many<IntelItem>(
     context,
-    `SELECT id, kind, source, source_url, title, summary, tag, meta, published_at, fetched_at
-       FROM radar_items WHERE kind = ?1
+    `SELECT * FROM intel_items WHERE kind = ?1
       ORDER BY fetched_at DESC, published_at DESC LIMIT ?2`,
     kind,
     limit,
   );
+}
+
+export async function countIntel(context: AppLoadContext): Promise<{ jobs: number; gigs: number }> {
+  const row = await one<{ jobs: number; gigs: number }>(
+    context,
+    `SELECT
+       (SELECT COUNT(*) FROM intel_items WHERE kind='job') AS jobs,
+       (SELECT COUNT(*) FROM intel_items WHERE kind='gig') AS gigs`,
+  );
+  return { jobs: row?.jobs ?? 0, gigs: row?.gigs ?? 0 };
+}
+
+export async function listIntel(
+  context: AppLoadContext,
+  opts: { kind: "job" | "gig"; region?: "domestic" | "overseas" | ""; tag?: string; q?: string; limit?: number },
+): Promise<IntelItem[]> {
+  const where = ["kind = ?1"];
+  const params: unknown[] = [opts.kind];
+  if (opts.region) { where.push("region = ?2"); params.push(opts.region); }
+  let i = params.length + 1;
+  if (opts.tag) { where.push(`tag = ?${i++}`); params.push(opts.tag); }
+  if (opts.q) { where.push(`(title LIKE ?${i} OR summary LIKE ?${i} OR COALESCE(company,'') LIKE ?${i})`); params.push(`%${opts.q}%`); i++; }
+  params.push(opts.limit ?? 60);
+  return many<IntelItem>(
+    context,
+    `SELECT * FROM intel_items WHERE ${where.join(" AND ")}
+      ORDER BY fetched_at DESC, published_at DESC LIMIT ?${i}`,
+    ...params,
+  );
+}
+
+export async function intelById(context: AppLoadContext, id: string): Promise<IntelItem | null> {
+  return one<IntelItem>(context, `SELECT * FROM intel_items WHERE id = ?1`, id);
 }
 
 /** Active sponsorship slots grouped by placement; independent of community data. */

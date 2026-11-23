@@ -9,11 +9,24 @@ export async function action({ request, context }: Route.ActionArgs) {
   const targetId = String(form.get("target_id") ?? "");
   const intent = String(form.get("intent") ?? "like");
 
-  if (!["post", "project"].includes(targetType) || !targetId) {
+  if (!["post", "project", "comment"].includes(targetType) || !targetId) {
     return Response.json({ ok: false }, { status: 400 });
   }
 
   // only something a viewer could actually see can be liked
+  if (targetType === "comment") {
+    const c = await one<{ n: number }>(context,
+      `SELECT COUNT(*) AS n FROM comments c JOIN posts po ON po.id = c.post_id
+        WHERE c.id = ?1 AND c.deleted_at IS NULL AND po.deleted_at IS NULL AND po.visibility = 'public'`, targetId);
+    if (!c?.n) return Response.json({ ok: false }, { status: 404 });
+    if (intent === "unlike") {
+      await run(context, `DELETE FROM comment_likes WHERE user_id = ?1 AND comment_id = ?2`, me.id, targetId);
+      return Response.json({ ok: true, liked: false });
+    }
+    await run(context, `INSERT OR IGNORE INTO comment_likes (user_id, comment_id, created_at) VALUES (?1, ?2, ?3)`, me.id, targetId, Date.now());
+    return Response.json({ ok: true, liked: true });
+  }
+
   const exists =
     targetType === "post"
       ? await one<{ n: number }>(

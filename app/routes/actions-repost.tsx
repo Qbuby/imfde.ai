@@ -10,8 +10,36 @@ export async function action({ request, context }: Route.ActionArgs) {
   const me = await requireMe(context, request);
   const form = await request.formData();
   const postId = String(form.get("post_id") ?? "");
+  const commentId = String(form.get("comment_id") ?? "");
   const body = String(form.get("body") ?? "").trim().slice(0, 2000);
   const intent = String(form.get("intent") ?? "repost");
+
+  if (commentId) {
+    const c = await one<{ author_id: string; body: string; post_id: string; deleted_at: number | null }>(
+      context,
+      `SELECT c.author_id, c.body, c.post_id, c.deleted_at FROM comments c WHERE c.id = ?1`, commentId);
+    if (!c || c.deleted_at !== null) return Response.json({ ok: false, error: "留言不存在" }, { status: 404 });
+    if (intent === "unrepost") {
+      await run(context,
+        `UPDATE posts SET deleted_at = ?1, updated_at = ?1 WHERE author_id = ?2 AND repost_comment_id = ?3 AND body = '' AND deleted_at IS NULL`,
+        Date.now(), me.id, commentId);
+      return Response.json({ ok: true, reposted: false });
+    }
+    const existing = await one<{ id: string }>(context,
+      `SELECT id FROM posts WHERE author_id = ?1 AND repost_comment_id = ?2 AND body = '' AND deleted_at IS NULL`,
+      me.id, commentId);
+    if (existing) return Response.json({ ok: true, id: existing.id, reposted: true, duplicate: true });
+    const id = await insertPost(context, {
+      authorId: me.id, kind: "thought", body, repostCommentId: commentId, tags: extractTags(body),
+    });
+    if (c.author_id !== me.id) {
+      await run(context,
+        `INSERT INTO notifications (id, recipient_id, actor_id, type, target_type, target_id, created_at)
+         VALUES (?1, ?2, ?3, 'repost', 'comment', ?4, ?5)`,
+        crypto.randomUUID(), c.author_id, me.id, commentId, Date.now());
+    }
+    return Response.json({ ok: true, id, reposted: true });
+  }
 
   const original = await one<{
     id: string;

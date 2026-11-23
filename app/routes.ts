@@ -10,6 +10,10 @@ export default [
     route("discover", "routes/discover.tsx"),
     route("discover/projects", "routes/discover-projects.tsx"),
 
+    // Intel pages; must precede the :handle catch-all.
+    route("radar/:kind", "routes/radar-list.tsx"),
+    route("radar/item/:id", "routes/radar-detail.tsx"),
+
     route("projects/:slug/edit", "routes/project-edit.tsx"),
     route("projects/:slug", "routes/project.tsx"),
     route("posts/:id/edit", "routes/post-edit.tsx"),

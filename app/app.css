@@ -616,3 +616,12 @@
     padding: 0 5px;
   }
 }
+
+/* Brief highlight when landing on /posts/:id#comment-<id>. */
+.comment-focus {
+  animation: comment-focus 1.8s ease-out;
+}
+@keyframes comment-focus {
+  0%, 30% { background: rgba(99, 102, 241, 0.12); }
+  100% { background: transparent; }
+}

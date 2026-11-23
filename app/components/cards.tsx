@@ -396,6 +396,18 @@ export function FeedCard({
           </div>
         )}
 
+        {post.repost_comment && (
+          <div className="mt-3 rounded-[12px] border border-[#e2e5ea] bg-[#f7f9f9] px-3 py-2.5">
+            <div className="flex items-center gap-2 text-[12.5px]">
+              <Avatar name={post.repost_comment.display_name} size={20} />
+              <Link to={`/@${post.repost_comment.handle}`} className="font-medium text-[#0f1419] hover:opacity-70">{post.repost_comment.display_name}</Link>
+              <span className="text-[11.5px] text-[#8b93a3]">的留言</span>
+            </div>
+            <p className="mt-1.5 line-clamp-3 whitespace-pre-wrap text-[13px] leading-relaxed text-[#2c353d]">{post.repost_comment.body}</p>
+            <Link to={`/posts/${post.repost_comment.post_id}#comment-${post.repost_comment.id}`} className="mt-1.5 inline-block text-[12px] font-medium text-[#536471] hover:text-[#0f1419]">查看原讨论 ↗</Link>
+          </div>
+        )}
+
         {(() => {
           const inline = new Set(extractTags(post.body).map((t) => t.toLowerCase()));
           const extra = post.tags.filter((t) => !inline.has(t.toLowerCase()));
