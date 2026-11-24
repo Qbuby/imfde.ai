@@ -105,9 +105,13 @@ export default {
       cloudflare: { env, ctx },
     });
   },
-  // Hourly radar: the only external-request + AI channel. Writes D1 only.
-  async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(runRadarJob(env).catch(() => {}));
-    ctx.waitUntil(runSeedSimulation(env).catch(() => {}));
+  // Radar runs hourly; seed simulation runs on the */5 tick with its own D1
+  // gate for a genuinely random 5-minute-to-4-hour cadence.
+  async scheduled(controller, env, ctx) {
+    if (controller.cron === "*/5 * * * *") {
+      ctx.waitUntil(runSeedSimulation(env).catch(() => {}));
+    } else {
+      ctx.waitUntil(runRadarJob(env).catch(() => {}));
+    }
   },
 } satisfies ExportedHandler<Env>;
