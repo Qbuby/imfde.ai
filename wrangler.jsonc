@@ -6,8 +6,8 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "observability": { "enabled": true },
-  // 每小时一次的雷达抓取：唯一允许的外部请求 + AI 提炼通道，只写 D1。
-  "triggers": { "crons": ["0 * * * *"] },
+  // 雷达每小时抓取；种子拟真互动由 */5 驱动，内部 D1 随机门控（5 分钟～4 小时）。
+  "triggers": { "crons": ["0 * * * *", "*/5 * * * *"] },
   "ai": { "binding": "AI" },
   "assets": {
     "directory": "./build/client",
