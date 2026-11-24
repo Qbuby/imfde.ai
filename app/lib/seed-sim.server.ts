@@ -1,7 +1,8 @@
 /**
  * Seed simulation: gives the seed personas natural, bounded activity so the
- * community feels alive. Runs on a genuinely random cadence (5m-4h) driven by
- * seed_sim_state.next_run_at. Also mints fresh simulated users and works, with
+ * community feels alive. EACH account has its own independent random cadence
+ * (5m-4h) in users.sim_next_at; new users are minted on their own gate and
+ * immediately get their own cycle. Also mints works with LLM SVG covers.
  * LLM-generated SVG covers stored as local media blobs. No hardcoded fake text;
  * all pages read D1.
  */
@@ -12,7 +13,7 @@ import { insertPost } from "./queries.server";
 import { extractTags } from "./tags";
 import { utc8DayKey, slugify } from "./format";
 
-type SeedUser = { id: string; handle: string; display_name: string; avatar_url: string | null };
+type SeedUser = { id: string; handle: string; display_name: string; avatar_url: string | null; sim_next_at: number | null };
 type Persona = {
   id: string; handle: string; lang: "zh" | "en" | "ja" | "ko" | "zh-en";
   field: string; tone: string;
@@ -102,13 +103,28 @@ function systemFor(persona: Persona): string {
 }
 
 /** Next-run gate backed by D1: genuinely random 5m-4h cadence. */
-async function isDue(c: AppLoadContext, force: boolean): Promise<boolean> {
+function nextDelay(): number {
+  return MIN_INTERVAL_MS + Math.floor(Math.random() * (MAX_INTERVAL_MS - MIN_INTERVAL_MS));
+}
+
+/** Per-account due check: each seed user has its own next-run timestamp. */
+function userDue(u: SeedUser, force: boolean): boolean {
   if (force) return true;
-  const row = await one<{ value: number }>(c, `SELECT value FROM seed_sim_state WHERE key='next_run_at'`);
+  return Date.now() >= (u.sim_next_at ?? 0);
+}
+
+/** Schedule this account's next activity at a fresh random point. */
+async function scheduleUser(c: AppLoadContext, id: string): Promise<void> {
+  await stmt(c, `UPDATE users SET sim_next_at=?1 WHERE id=?2`, Date.now() + nextDelay(), id).run();
+}
+
+/** New accounts are minted on their own random cadence, separate from any user. */
+async function newUserDue(c: AppLoadContext, force: boolean): Promise<boolean> {
+  if (force) return true;
+  const row = await one<{ value: number }>(c, `SELECT value FROM seed_sim_state WHERE key='next_new_user_at'`);
   if (Date.now() < (row?.value ?? 0)) return false;
-  const delay = MIN_INTERVAL_MS + Math.floor(Math.random() * (MAX_INTERVAL_MS - MIN_INTERVAL_MS));
-  await stmt(c, `INSERT INTO seed_sim_state (key,value) VALUES ('next_run_at',?1)
-                  ON CONFLICT(key) DO UPDATE SET value=excluded.value`, Date.now() + delay).run();
+  await stmt(c, `INSERT INTO seed_sim_state (key,value) VALUES ('next_new_user_at',?1)
+                  ON CONFLICT(key) DO UPDATE SET value=excluded.value`, Date.now() + nextDelay()).run();
   return true;
 }
 
@@ -128,7 +144,7 @@ async function usage(c: AppLoadContext): Promise<{ posts: number; comments: numb
 
 async function seedUsers(c: AppLoadContext): Promise<SeedUser[]> {
   return many<SeedUser>(c,
-    `SELECT u.id, u.handle, p.display_name, p.avatar_url
+    `SELECT u.id, u.handle, p.display_name, p.avatar_url, u.sim_next_at
        FROM users u JOIN profiles p ON p.user_id = u.id
       WHERE u.id LIKE 'seed_user_%' AND u.status = 'active'`);
 }
@@ -153,8 +169,8 @@ async function createSimUser(env: Env, c: AppLoadContext): Promise<{ user: SeedU
   const now = Date.now();
   const avatar = `/avatars/avatar-${String(1 + Math.floor(Math.random() * 16)).padStart(2, "0")}.svg`;
   await stmt(c,
-    `INSERT INTO users (id,email,password_hash,handle,kind,status,created_at) VALUES (?1,?2,'locked$seed_account_disabled',?3,'individual','active',?4)`,
-    id, `${handle}@seed.imfde.invalid`, handle, now).run();
+    `INSERT INTO users (id,email,password_hash,handle,kind,status,created_at,sim_next_at) VALUES (?1,?2,'locked$seed_account_disabled',?3,'individual','active',?4,?5)`,
+    id, `${handle}@seed.imfde.invalid`, handle, now, now + nextDelay()).run();
   await stmt(c,
     `INSERT INTO profiles (user_id,display_name,avatar_url,cover_url,headline,about,location,timezone,visibility,hide_follows,updated_at)
      VALUES (?1,?2,?3,NULL,?4,?5,?6,?7,'public',0,?8)`,
@@ -165,7 +181,7 @@ async function createSimUser(env: Env, c: AppLoadContext): Promise<{ user: SeedU
     await stmt(c, `INSERT OR IGNORE INTO profile_skills (user_id,skill_name,position) VALUES (?1,?2,?3)`, id, sk, i).run();
   }
   return {
-    user: { id, handle, display_name: clean(identity.display_name, 60) || handle, avatar_url: avatar },
+    user: { id, handle, display_name: clean(identity.display_name, 60) || handle, avatar_url: avatar, sim_next_at: now + 60_000 },
     persona: { ...base, id, handle },
   };
 }
@@ -212,6 +228,111 @@ async function createSimProject(env: Env, c: AppLoadContext, u: SeedUser, person
   return title;
 }
 
+/** Execute one (weighted) action for a specific account. */
+async function performAction(
+  env: Env, c: AppLoadContext, u: SeedUser, persona: Persona,
+  kind: string, used: { posts: number; comments: number; profile: number },
+): Promise<Action> {
+  if (kind === "project") {
+    const title = await createSimProject(env, c, u, persona);
+    return { kind: "project", actor: u.handle, detail: title ? `published work: ${title}` : "skipped: no valid LLM output" };
+  }
+  if (kind === "comment" && used.comments < CAPS.comments) {
+    const target = await one<{ id: string; body: string; author_id: string; comments: number }>(c,
+      `SELECT po.id, po.body, po.author_id,
+              (SELECT COUNT(*) FROM comments cm WHERE cm.post_id=po.id AND cm.deleted_at IS NULL) AS comments
+         FROM posts po JOIN users au ON au.id=po.author_id
+        WHERE po.visibility='public' AND po.deleted_at IS NULL AND po.created_at >= ?1 AND po.author_id <> ?2
+        ORDER BY comments ASC, po.created_at DESC LIMIT 40`, Date.now() - 7 * 86400000, u.id);
+    if (target) {
+      const text = await callLLM(env, systemFor(persona), `Reply to this post:\n${clean(target.body, 600)}`);
+      if (text && text.length >= 15 && text.length <= 300) {
+        await stmt(c, `INSERT INTO comments (id,post_id,author_id,parent_id,body,created_at) VALUES (?1,?2,?3,NULL,?4,?5)`,
+          crypto.randomUUID(), target.id, u.id, text, Date.now()).run();
+        await stmt(c,
+          `INSERT INTO notifications (id,recipient_id,actor_id,type,target_type,target_id,created_at)
+           VALUES (?1,?2,?3,'comment','post',?4,?5)`,
+          crypto.randomUUID(), target.author_id, u.id, target.id, Date.now()).run();
+        used.comments++;
+        return { kind: "comment", actor: u.handle, detail: `${text.slice(0, 80)} → ${target.author_id.slice(0, 8)}` };
+      }
+      return { kind: "comment", actor: u.handle, detail: "skipped: no valid LLM output" };
+    }
+    return { kind: "comment", actor: u.handle, detail: "no target" };
+  }
+  if (kind === "post" && used.posts < CAPS.posts) {
+    let spark = "";
+    if (Math.random() < 0.4) {
+      const r = await one<{ title: string; summary: string }>(c, `SELECT title, summary FROM intel_items ORDER BY fetched_at DESC LIMIT 1`);
+      if (r) spark = `Loose inspiration (do not copy): ${r.title} — ${r.summary}`;
+    }
+    const text = await callLLM(env, systemFor(persona), `Write one new short post about your work. ${spark}`);
+    if (text && text.length >= 20 && text.length <= 400) {
+      const k2 = pick(["build", "thought", "discussion", "show"]) ?? "thought";
+      await insertPost(c, { authorId: u.id, kind: k2, body: text, tags: extractTags(text) });
+      used.posts++;
+      return { kind: "post", actor: u.handle, detail: `${k2}: ${text.slice(0, 80)}` };
+    }
+    return { kind: "post", actor: u.handle, detail: "skipped: no valid LLM output" };
+  }
+  if (kind === "social") {
+    const post = await one<{ id: string; author_id: string }>(c,
+      `SELECT id, author_id FROM posts WHERE visibility='public' AND deleted_at IS NULL AND author_id <> ?1 ORDER BY created_at DESC LIMIT 30`, u.id);
+    if (post) {
+      const liked = await one<{ n: number }>(c,
+        `SELECT COUNT(*) AS n FROM reactions WHERE user_id=?1 AND target_type='post' AND target_id=?2`, u.id, post.id);
+      if (!liked?.n) {
+        await stmt(c, `INSERT OR IGNORE INTO reactions (user_id,target_type,target_id,type,created_at) VALUES (?1,'post',?2,'like',?3)`, u.id, post.id, Date.now()).run();
+        return { kind: "like", actor: u.handle, detail: `post ${post.id.slice(0, 8)}` };
+      }
+      const f = await one<{ n: number }>(c, `SELECT COUNT(*) AS n FROM follows WHERE follower_id=?1 AND followed_id=?2`, u.id, post.author_id);
+      if (!f?.n) {
+        await stmt(c, `INSERT OR IGNORE INTO follows (follower_id,followed_id,created_at) VALUES (?1,?2,?3)`, u.id, post.author_id, Date.now()).run();
+        return { kind: "follow", actor: u.handle, detail: `FDE ${post.author_id.slice(0, 8)}` };
+      }
+      return { kind: "social", actor: u.handle, detail: "nothing new to react to" };
+    }
+    return { kind: "social", actor: u.handle, detail: "no target" };
+  }
+  if (kind === "ack") {
+    const dayKey = utc8DayKey();
+    const usedAcks = await one<{ n: number }>(c,
+      `SELECT (SELECT COUNT(*) FROM acks WHERE user_id=?1 AND day_key=?2) + (SELECT COUNT(*) FROM comment_acks WHERE user_id=?1 AND day_key=?2) AS n`, u.id, dayKey);
+    if ((usedAcks?.n ?? 0) < 2) {
+      const target = await one<{ id: string }>(c,
+        `SELECT id FROM posts WHERE visibility='public' AND deleted_at IS NULL AND author_id <> ?1 ORDER BY created_at DESC LIMIT 20`, u.id);
+      if (target) {
+        await stmt(c, `INSERT INTO acks (id,user_id,post_id,day_key,created_at) VALUES (?1,?2,?3,?4,?5)`,
+          crypto.randomUUID(), u.id, target.id, dayKey, Date.now()).run();
+        return { kind: "ack", actor: u.handle, detail: `post ${target.id.slice(0, 8)}` };
+      }
+    }
+    return { kind: "ack", actor: u.handle, detail: "daily quota full" };
+  }
+  if (kind === "profile" && used.profile < CAPS.profile) {
+    const text = await callLLM(env, systemFor(persona), "Write a new one-line headline for your profile (max 60 chars), same language.");
+    if (text && text.length <= 100) {
+      await stmt(c, `UPDATE profiles SET headline=?1, updated_at=?2 WHERE user_id=?3`, text, Date.now(), u.id).run();
+      used.profile++;
+      return { kind: "headline", actor: u.handle, detail: text };
+    }
+    return { kind: "headline", actor: u.handle, detail: "skipped: no valid LLM output" };
+  }
+  if (kind === "avatar" && used.profile < CAPS.profile) {
+    const n = 1 + Math.floor(Math.random() * 16);
+    const path = `/avatars/avatar-${String(n).padStart(2, "0")}.svg`;
+    if (u.avatar_url !== path) {
+      await stmt(c, `UPDATE profiles SET avatar_url=?1, updated_at=?2 WHERE user_id=?3`, path, Date.now(), u.id).run();
+      used.profile++;
+      return { kind: "avatar", actor: u.handle, detail: path };
+    }
+    return { kind: "avatar", actor: u.handle, detail: "already using this avatar" };
+  }
+  return { kind: "idle", actor: u.handle, detail: "capped" };
+}
+
+const ACTION_KINDS = ["comment", "comment", "comment", "post", "social", "social", "ack", "profile", "avatar", "project"];
+
 export async function runSeedSimulation(env: Env, opts?: { force?: boolean }): Promise<{ actions: Action[]; llmMode: string; skipped?: string }> {
   const actions: Action[] = [];
   if (env.SEED_SIM_ENABLED === "0") return { actions, llmMode: "disabled", skipped: "SEED_SIM_ENABLED=0" };
@@ -219,106 +340,37 @@ export async function runSeedSimulation(env: Env, opts?: { force?: boolean }): P
   const c = ctx(env);
   try {
     const force = Boolean(opts?.force);
-    if (!(await isDue(c, force))) return { actions, llmMode, skipped: "not due (random 5m-4h cadence)" };
     const users = await seedUsers(c);
     if (!users.length) return { actions, llmMode, skipped: "no seed users" };
     const used = await usage(c);
-    const n = force ? 2 : (Math.random() < 0.5 ? 1 : 2);
-    const kinds = ["comment", "comment", "comment", "post", "social", "social", "ack", "profile", "avatar", "new_user", "project"];
 
-    for (let step = 0; step < n; step++) {
-      const kind = force ? ["project", "new_user", "social", "ack", "avatar"][step % 5] : (pick(kinds) ?? "social");
-      let u = pick(users)!;
-      let persona = PERSONAS.find((p) => p.id === u.id) ?? PERSONAS[0];
-
-      if (kind === "new_user") {
-        const made = await createSimUser(env, c);
-        if (made) {
-          users.push(made.user);
-          actions.push({ kind: "new_user", actor: made.user.handle, detail: `new simulated FDE @${made.user.handle}` });
-        } else actions.push({ kind: "new_user", actor: "-", detail: "skipped: cap or no LLM" });
-      } else if (kind === "project") {
-        const title = await createSimProject(env, c, u, persona);
-        actions.push({ kind: "project", actor: u.handle, detail: title ? `published work: ${title}` : "skipped: no valid LLM output" });
-      } else if (kind === "comment" && used.comments < CAPS.comments) {
-        const target = await one<{ id: string; body: string; author_id: string; comments: number }>(c,
-          `SELECT po.id, po.body, po.author_id,
-                  (SELECT COUNT(*) FROM comments cm WHERE cm.post_id=po.id AND cm.deleted_at IS NULL) AS comments
-             FROM posts po JOIN users au ON au.id=po.author_id
-            WHERE po.visibility='public' AND po.deleted_at IS NULL AND po.created_at >= ?1 AND po.author_id <> ?2
-            ORDER BY comments ASC, po.created_at DESC LIMIT 40`, Date.now() - 7 * 86400000, u.id);
-        if (target) {
-          const text = await callLLM(env, systemFor(persona), `Reply to this post:\n${clean(target.body, 600)}`);
-          if (text && text.length >= 15 && text.length <= 300) {
-            await stmt(c, `INSERT INTO comments (id,post_id,author_id,parent_id,body,created_at) VALUES (?1,?2,?3,NULL,?4,?5)`,
-              crypto.randomUUID(), target.id, u.id, text, Date.now()).run();
-            await stmt(c,
-              `INSERT INTO notifications (id,recipient_id,actor_id,type,target_type,target_id,created_at)
-               VALUES (?1,?2,?3,'comment','post',?4,?5)`,
-              crypto.randomUUID(), target.author_id, u.id, target.id, Date.now()).run();
-            used.comments++;
-            actions.push({ kind: "comment", actor: u.handle, detail: `${text.slice(0, 80)} → ${target.author_id.slice(0, 8)}` });
-          } else actions.push({ kind: "comment", actor: u.handle, detail: "skipped: no valid LLM output" });
-        }
-      } else if (kind === "post" && used.posts < CAPS.posts) {
-        let spark = "";
-        if (Math.random() < 0.4) {
-          const r = await one<{ title: string; summary: string }>(c, `SELECT title, summary FROM intel_items ORDER BY fetched_at DESC LIMIT 1`);
-          if (r) spark = `Loose inspiration (do not copy): ${r.title} — ${r.summary}`;
-        }
-        const text = await callLLM(env, systemFor(persona), `Write one new short post about your work. ${spark}`);
-        if (text && text.length >= 20 && text.length <= 400) {
-          const k2 = pick(["build", "thought", "discussion", "show"]) ?? "thought";
-          await insertPost(c, { authorId: u.id, kind: k2, body: text, tags: extractTags(text) });
-          used.posts++;
-          actions.push({ kind: "post", actor: u.handle, detail: `${k2}: ${text.slice(0, 80)}` });
-        } else actions.push({ kind: "post", actor: u.handle, detail: "skipped: no valid LLM output" });
-      } else if (kind === "social") {
-        const post = await one<{ id: string; author_id: string }>(c,
-          `SELECT id, author_id FROM posts WHERE visibility='public' AND deleted_at IS NULL AND author_id <> ?1 ORDER BY created_at DESC LIMIT 30`, u.id);
-        if (post) {
-          const liked = await one<{ n: number }>(c,
-            `SELECT COUNT(*) AS n FROM reactions WHERE user_id=?1 AND target_type='post' AND target_id=?2`, u.id, post.id);
-          if (!liked?.n) {
-            await stmt(c, `INSERT OR IGNORE INTO reactions (user_id,target_type,target_id,type,created_at) VALUES (?1,'post',?2,'like',?3)`, u.id, post.id, Date.now()).run();
-            actions.push({ kind: "like", actor: u.handle, detail: `post ${post.id.slice(0, 8)}` });
-          } else {
-            const f = await one<{ n: number }>(c, `SELECT COUNT(*) AS n FROM follows WHERE follower_id=?1 AND followed_id=?2`, u.id, post.author_id);
-            if (!f?.n) {
-              await stmt(c, `INSERT OR IGNORE INTO follows (follower_id,followed_id,created_at) VALUES (?1,?2,?3)`, u.id, post.author_id, Date.now()).run();
-              actions.push({ kind: "follow", actor: u.handle, detail: `FDE ${post.author_id.slice(0, 8)}` });
-            } else actions.push({ kind: "social", actor: u.handle, detail: "nothing new to react to" });
-          }
-        }
-      } else if (kind === "ack") {
-        const dayKey = utc8DayKey();
-        const usedAcks = await one<{ n: number }>(c,
-          `SELECT (SELECT COUNT(*) FROM acks WHERE user_id=?1 AND day_key=?2) + (SELECT COUNT(*) FROM comment_acks WHERE user_id=?1 AND day_key=?2) AS n`, u.id, dayKey);
-        if ((usedAcks?.n ?? 0) < 2) {
-          const target = await one<{ id: string }>(c,
-            `SELECT id FROM posts WHERE visibility='public' AND deleted_at IS NULL AND author_id <> ?1 ORDER BY created_at DESC LIMIT 20`, u.id);
-          if (target) {
-            await stmt(c, `INSERT INTO acks (id,user_id,post_id,day_key,created_at) VALUES (?1,?2,?3,?4,?5)`,
-              crypto.randomUUID(), u.id, target.id, dayKey, Date.now()).run();
-            actions.push({ kind: "ack", actor: u.handle, detail: `post ${target.id.slice(0, 8)}` });
-          }
-        } else actions.push({ kind: "ack", actor: u.handle, detail: "daily quota full" });
-      } else if (kind === "profile" && used.profile < CAPS.profile) {
-        const text = await callLLM(env, systemFor(persona), "Write a new one-line headline for your profile (max 60 chars), same language.");
-        if (text && text.length <= 100) {
-          await stmt(c, `UPDATE profiles SET headline=?1, updated_at=?2 WHERE user_id=?3`, text, Date.now(), u.id).run();
-          used.profile++;
-          actions.push({ kind: "headline", actor: u.handle, detail: text });
-        } else actions.push({ kind: "headline", actor: u.handle, detail: "skipped: no valid LLM output" });
-      } else if (kind === "avatar" && used.profile < CAPS.profile) {
-        const n = 1 + Math.floor(Math.random() * 16);
-        const path = `/avatars/avatar-${String(n).padStart(2, "0")}.svg`;
-        if (u.avatar_url !== path) {
-          await stmt(c, `UPDATE profiles SET avatar_url=?1, updated_at=?2 WHERE user_id=?3`, path, Date.now(), u.id).run();
-          used.profile++;
-          actions.push({ kind: "avatar", actor: u.handle, detail: path });
-        } else actions.push({ kind: "avatar", actor: u.handle, detail: "already using this avatar" });
+    // New accounts appear on their own independent random gate.
+    if (force || await newUserDue(c, force)) {
+      const made = await createSimUser(env, c);
+      if (made) {
+        users.push(made.user);
+        actions.push({ kind: "new_user", actor: made.user.handle, detail: `new simulated FDE @${made.user.handle} (own cycle scheduled)` });
       }
+    }
+
+    if (force) {
+      // Debug: exercise two accounts deterministically; each still rescheduled.
+      const chosen = ["project", "social", "ack", "comment", "avatar"];
+      for (let i = 0; i < Math.min(2, users.length); i++) {
+        const u = users[i];
+        const persona = PERSONAS.find((p) => p.id === u.id) ?? PERSONAS[0];
+        actions.push(await performAction(env, c, u, persona, chosen[i % chosen.length], used));
+        await scheduleUser(c, u.id);
+      }
+    } else {
+      // Only accounts whose own sim_next_at has passed act this tick.
+      const due = users.filter((u) => userDue(u, false));
+      for (const u of due) {
+        const persona = PERSONAS.find((p) => p.id === u.id) ?? PERSONAS[0];
+        actions.push(await performAction(env, c, u, persona, pick(ACTION_KINDS) ?? "social", used));
+        await scheduleUser(c, u.id);
+      }
+      if (!due.length) return { actions, llmMode, skipped: "no account due yet (per-account 5m-4h cadence)" };
     }
   } catch { /* never break the scheduled task */ }
   return { actions, llmMode };
