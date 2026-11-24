@@ -8,6 +8,7 @@
 import type { AppLoadContext } from "react-router";
 import type { Env } from "../../workers/env";
 import { many, stmt, batch } from "./db.server";
+import { webContext } from "./web-search.server";
 
 type Kind = "job" | "gig";
 type Region = "domestic" | "overseas";
@@ -218,6 +219,10 @@ function parseIntel(text: string | null, items: Candidate[]): Intel[] {
 async function refine(items: Candidate[], env: Env): Promise<Intel[]> {
   if (!items.length) return [];
   const payload = items.map((c) => ({ source_url: c.source_url, source: c.source, title: c.title, text: c.raw, region: c.region, kind: c.kind }));
+  // Ground the model with live facts for the dominant topic of this batch.
+  const topic = items[0]?.title ?? "AI";
+  let groundedPrompt = SYSTEM_PROMPT;
+  try { groundedPrompt = SYSTEM_PROMPT + "\n\n" + await webContext(topic, 3); } catch { /* no change */ }
   let text: string | null = null;
 
   if (env.LLM_API_KEY) {
@@ -229,7 +234,7 @@ async function refine(items: Candidate[], env: Env): Promise<Intel[]> {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.LLM_API_KEY}` },
         body: JSON.stringify({
           model, temperature: 0.2, max_tokens: 2200,
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: JSON.stringify(payload) }],
+          messages: [{ role: "system", content: groundedPrompt }, { role: "user", content: JSON.stringify(payload) }],
         }),
         signal: AbortSignal.timeout(LLM_TIMEOUT),
       });
@@ -243,7 +248,7 @@ async function refine(items: Candidate[], env: Env): Promise<Intel[]> {
   if (!text && env.AI) {
     try {
       const out: any = await (env.AI as any).run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: JSON.stringify(payload) }],
+        messages: [{ role: "system", content: groundedPrompt }, { role: "user", content: JSON.stringify(payload) }],
         temperature: 0.2, max_tokens: 2200,
       });
       text = typeof out?.response === "string" ? out.response : (out?.result ?? null);

@@ -12,6 +12,7 @@ import { many, one, stmt } from "./db.server";
 import { insertPost } from "./queries.server";
 import { extractTags } from "./tags";
 import { utc8DayKey, slugify } from "./format";
+import { webContext } from "./web-search.server";
 
 type SeedUser = { id: string; handle: string; display_name: string; avatar_url: string | null; sim_next_at: number | null };
 type Persona = {
@@ -50,44 +51,53 @@ function clean(s: unknown, max = 400): string {
   return String(s ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+/** A model call grounded in live web facts when the prompt concerns current things. */
 async function callLLM(env: Env, system: string, user: string, maxTokens = 600): Promise<string | null> {
-  let text: string | null = null;
-  if (env.LLM_API_KEY) {
-    const base = env.LLM_BASE_URL || "https://api.openai.com/v1";
-    const model = env.LLM_MODEL || "gpt-4o-mini";
-    try {
-      const res = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.LLM_API_KEY}` },
-        body: JSON.stringify({ model, temperature: 0.8, max_tokens: maxTokens, messages: [
-          { role: "system", content: system }, { role: "user", content: user },
-        ] }),
-        signal: AbortSignal.timeout(LLM_TIMEOUT),
-      });
-      if (res.ok) {
-        const j: any = await res.json();
-        text = j?.choices?.[0]?.message?.content ?? null;
-      }
-    } catch { /* try AI binding */ }
+  const timeSensitive = /发布|released|launch|news|今天|最新|now|current|Gemini|Neon|model|新模型/i.test(user) ||
+                        /发布|released|launch|今天|最新|now|current/i.test(system);
+  let groundedSystem = system;
+  if (timeSensitive) {
+    const query = user.replace(/[\n\r]+/g, " ").slice(0, 120);
+    const ctx = await webContext(query, 4);
+    groundedSystem = `${system}\n\n${ctx}\nBase any claim about releases/current events ONLY on the facts above. If the facts do not confirm a release, do not assert one.`;
   }
-  if (!text && env.AI) {
+  const final = (raw: string | null): string | null => {
+    if (!raw) return null;
+    const t = String(raw).trim().replace(/^["'「]|["'」]$/g, "");
+    return t && !BANNED.some((w) => t.includes(w)) ? t : null;
+  };
+
+  if (!env.LLM_API_KEY) {
+    if (!env.AI) return null;
     for (const model of ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/meta/llama-3.1-8b-instruct"]) {
       try {
         const out: any = await (env.AI as any).run(model, {
-          messages: [{ role: "system", content: system }, { role: "user", content: user }],
+          messages: [{ role: "system", content: groundedSystem }, { role: "user", content: user }],
           temperature: 0.8, max_tokens: maxTokens,
         });
-        text = typeof out?.response === "string" ? out.response : (out?.result ?? null);
-        if (text) break;
-      } catch { /* next model */ }
+        const r = final(typeof out?.response === "string" ? out.response : (out?.result ?? null));
+        if (r) return r;
+      } catch { /* next */ }
     }
+    return null;
   }
-  if (!text) return null;
-  const t = text.trim().replace(/^["'「]|["'」]$/g, "");
-  if (BANNED.some((w) => t.includes(w))) return null;
-  return t;
-}
 
+  const base = env.LLM_BASE_URL || "https://api.openai.com/v1";
+  const model = env.LLM_MODEL || "gpt-4o-mini";
+  try {
+    const res = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.LLM_API_KEY}` },
+      body: JSON.stringify({ model, temperature: 0.8, max_tokens: maxTokens, messages: [
+        { role: "system", content: groundedSystem }, { role: "user", content: user },
+      ] }),
+      signal: AbortSignal.timeout(LLM_TIMEOUT),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    return final(j?.choices?.[0]?.message?.content ?? null);
+  } catch { return null; }
+}
 const LANG_RULE: Record<Persona["lang"], string> = {
   zh: "write in natural mainland Chinese",
   "zh-en": "write in natural Chinese, mixing in English technical terms where real engineers do",
